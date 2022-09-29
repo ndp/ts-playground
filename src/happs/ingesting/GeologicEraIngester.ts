@@ -1,8 +1,11 @@
 import { strict as assert } from 'assert'
 import fs from 'fs'
-import { Happ } from './Happ'
+import path from 'node:path'
+import { GeologicDuration, Happ } from '../Happ'
+import { Ingester } from './Ingester'
 
-export class GeologicEraProcessor {
+
+export class GeologicEraIngester implements Ingester {
 
   score (s: string): number {
     return this.process(s).length / s.split('\n').length
@@ -30,24 +33,32 @@ export class GeologicEraProcessor {
   }
 
   processOne (line: string): Happ | null {
-    const m = /(.*)\s*\((.*)\s+to\s+(.*)\)/.exec(line)
+    const DescFromToNNRE = /(?<desc>.*)\s*\((?<from>.*)\s+to\s+(?<to>.*)\)(?:\s+"(?<nickname>.+)")?/
+    const DescIncidentRE = /(?<desc>.*)\s*\((?<from>.*)\)(?:\s+"(?<nickname>.+)")?/
+
+    const m = DescFromToNNRE.exec(line) || DescIncidentRE.exec(line)
+
     if (!m) return null
 
-    const [, desc, fromToken, toToken] = m
+    const groups = m.groups as { from: string, to: string, desc: string, nickname?: string }
 
-    const f = this.toMya(fromToken)
-    const t = this.toMya(toToken)
+    const description: Happ['description'] = { name: groups.desc.trim() }
+    if (groups.nickname) description.nickname = groups.nickname
 
-    // console.log({ desc, fromToken, toToken, f, t })
 
-    if (f === undefined) return null
-    if (t === undefined) return null
+    // console.log({ m, groups })
+    const from = this.toMya(groups.from)
+    if (from === undefined) return null
 
-    return new Happ(
-      {
-        unit: 'Mya',
-        from: f, to: t
-      }, { name: desc.trim() })
+    const to = groups.to ? this.toMya(groups.to) : from // incidents have just 1 date
+    if (to === undefined) return null
+
+    const duration: GeologicDuration = {
+      unit: 'Mya',
+      from, to
+    }
+
+    return new Happ(duration, description)
   }
 
   toMya (s: string): number | undefined {
@@ -66,9 +77,9 @@ export class GeologicEraProcessor {
 
 function testGeologicEraProcessor () {
 
-  const geos = fs.readFileSync(__dirname + '/geological-eras.txt').toString()
+  const geos = fs.readFileSync(path.join(__dirname, '..', '/data/geological-eras.txt')).toString()
 
-  const p = new GeologicEraProcessor()
+  const p = new GeologicEraIngester()
   console.log({ score: p.score(geos) })
 
   const geoTimeline = p.process(geos)
@@ -90,11 +101,18 @@ function testGeologicEraProcessor () {
   assert.equal(miocene.duration.to, 5)
 
   const plio = p.process('Pliocene (5 to 1.8 mya)')[0]
-  assert.equal(plio.duration.to, 1.8)
+  assert.equal(plio.duration.to, 1.8, 'reads decimal points')
 
-  const prec = p.process('Precambrian Time (4,500 to 544 mya) "deep time on earth"')[0]
-  assert.equal(prec.duration.from, 4500)
-  assert.equal(prec.duration.to, 544)
+  const precamb = p.process('Precambrian Time (4,500 to 544 mya) "deep time on earth"')[0]
+  assert.equal(precamb.duration.from, 4500, 'ignores commas in numbers')
+  assert.equal(precamb.description.name, 'Precambrian Time')
+  assert.equal(precamb.description.nickname, 'deep time on earth', 'picks out nickname')
+
+  const bb = 'The Big Bang (13,700 mya)'
+  assert.equal(p.score(bb), 1, 'matches incident')
+  const big = p.process(bb)[0]
+  assert.equal(big.duration.from, 13700)
+  assert.equal(big.duration.to, 13700)
 }
 
 testGeologicEraProcessor()

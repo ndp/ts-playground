@@ -50,10 +50,12 @@ export class Happ {
  Things that really happened in a short, non-quantifiable period
   */
   isIncident (): boolean {
-    return this.duration.from === this.duration.to
+    return this.duration.from == this.duration.to
   }
 
   toString () {
-    return `${this.description.name} ${this.duration.from} — ${this.duration.to} ${this.duration.unit}`
+    return this.isIncident() ?
+       `${this.description.name} ${this.duration.from} ${this.duration.unit}`
+       : `${this.description.name} ${this.duration.from} — ${this.duration.to} ${this.duration.unit}`
   }
 }

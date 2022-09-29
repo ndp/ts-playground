@@ -1,5 +1,5 @@
 import { strict as assert } from 'assert'
-import { Duration, Happ } from '../Happ'
+import { Duration, Happ } from './Happ'
 
 export function areUniform (happs: Happ[]): boolean {
   return new Set(happs.map(h => h.duration.unit)).size === 1

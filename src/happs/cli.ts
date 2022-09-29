@@ -1,9 +1,9 @@
 import * as fs from 'fs'
-import { GeologicEraProcessor } from './GeologicEraProcessor'
+import { GeologicEraIngester } from './ingesting/GeologicEraIngester'
 import { Happ } from './Happ'
-import { sort } from './happs/util'
-import { asString } from './happs/viz/asString'
-import { asTextBarChart } from './happs/viz/asTextBarChart'
+import { sort } from './util'
+import { asString } from './viz/asString'
+import { asTextBarChart } from './viz/asTextBarChart'
 
 
 // references
@@ -33,9 +33,9 @@ interface Processor {
 }
 
 
-const geos = fs.readFileSync(__dirname + '/geological-eras.txt').toString()
+const geos = fs.readFileSync(__dirname + '/data/geological-eras.txt').toString()
 
-const p = new GeologicEraProcessor()
+const p = new GeologicEraIngester()
 console.log({ score: p.score(geos) })
 
 const geoTimeline = p.process(geos)

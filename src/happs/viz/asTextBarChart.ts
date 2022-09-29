@@ -1,5 +1,5 @@
-import { Happ } from '../../Happ'
-import { fill } from '../../string-util'
+import { Happ } from '../Happ'
+import { fill } from '../../util/string'
 import { range, sort } from '../util'
 
 export function asTextBarChart (happs: Happ[]): string {
