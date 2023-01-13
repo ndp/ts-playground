@@ -11,3 +11,21 @@ function testFill () {
 }
 
 testFill()
+
+
+/**
+ * The infamous "left pad".
+ * @param s
+ * @param len
+ */
+export const lpad = (s: string, len: number): string => s.length < len ? lpad(' ' + s, len) : s;
+
+
+function testLeftPad() {
+  assert.equal(lpad('a', 0), 'a')
+  assert.equal(lpad('a', 1), 'a')
+  assert.equal(lpad('a', 2), ' a')
+  assert.equal(lpad('a', 10), '         a')
+}
+
+testLeftPad()
