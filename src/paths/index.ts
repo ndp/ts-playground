@@ -34,6 +34,7 @@ function extractBaseFromUrlStr<U extends UrlStr> (url: U): ExtractBaseFromUrlStr
  * Build a canonical version of a URL string. Canonical means:
  * - each parameter only once
  * - parameters alphabetized
+ * - parameters with value "true" are included with '=' sign.
  */
 function buildUrlString<Params extends URLParams, Base extends string> (
   urlOrBase: Base,
