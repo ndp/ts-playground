@@ -26,5 +26,6 @@
     "typescript": "^4.8.2"
   },
   "dependencies": {
+    "vexflow": "^4.1.0"
   }
 }
