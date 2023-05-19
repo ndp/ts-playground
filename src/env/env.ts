@@ -51,22 +51,7 @@ type EnvsAccessor<T extends EnvsConfiguration> =
   } & EnvsFunctions
 
 export function configure<T extends EnvsConfiguration>(configuration: T): EnvsAccessor<T> {
-  const envsAccessor: Record<string, unknown> = {
-    // helpText: () => helpText(configuration),
-    // errors: () => checkEnvironmentalVariables(configuration),
-    // verifyEnvironment: () => {
-    //   const errors = checkEnvironmentalVariables(configuration)
-    //
-    //   if (errors.length === 0) return true
-    //
-    //   console.error('Environmental variable errors:')
-    //   for (const e of errors)
-    //     console.error(` -> ${e}`)
-    //   console.log('')
-    //   console.log(helpText(configuration))
-    //   return false
-    // }
-  }
+  const envsAccessor: Record<string, unknown> = {}
 
   Object.defineProperties(envsAccessor, {
     helpText: {

@@ -1,6 +1,6 @@
 {
   "name": "ts-envs",
-  "version": "0.9.0",
+  "version": "0.9.3",
   "description": "Verification and type coercion for process.env environment variables in node.js",
   "main": "dist/env.js",
   "types": "dist/env.d.ts",
@@ -9,7 +9,8 @@
     "prepublish": "tsc"
   },
   "repository": {
-    "foo": "https://github.com/ndp/ts-playground.git"
+    "type": "git",
+    "url": "https://github.com/ndp/ts-playground/tree/main/src/env"
   },
   "keywords": [
     "dotenv",
@@ -28,5 +29,6 @@
     "ts"
   ],
   "author": "Andrew Peterson",
-  "license": "ISC"
+  "license": "ISC",
+  "files": ["README.md", "dist/env.d.ts", "dist/env.js", "env.ts"]
 }
