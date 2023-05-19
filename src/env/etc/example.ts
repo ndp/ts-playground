@@ -1,4 +1,4 @@
-import {configure} from "./env";
+import {configure} from "../env";
 
 const envs = configure({
   hostname: {

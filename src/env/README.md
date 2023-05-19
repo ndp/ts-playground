@@ -1,5 +1,5 @@
 No-nonsense help with ENVironmental variable processing for your Typescript project.
-[Accessing environmental variables](https://nodejs.org/dist/latest-v8.x/docs/api/process.html#process_process_env)  within a node app is straightforward, 
+[Accessing environment variables](https://nodejs.org/dist/latest-v8.x/docs/api/process.html#process_process_env)  within a node app is straightforward, 
 but as an app ages and grows, small problems crop up. This is a small
 solution to those small problems.
 
@@ -7,7 +7,7 @@ solution to those small problems.
 
 - When setting up a project in a new environment, things break. It can be obvious, or it can be an exception that is thrown after some time. It can be a bit of a treasure hunt to find and fix these.
 - When you start working on a project, incomplete or outdated documentation may mean it's hard to get a project working.
-- When an environmental variable is used in multiple parts of the code, it may be used inconsistently. Maintaining and updating default values may be error prone.
+- When an environment variable is used in multiple parts of the code, it may be used inconsistently. Maintaining and updating default values may be error prone.
 
 ## Features:
 
@@ -18,7 +18,7 @@ solution to those small problems.
 
 ## Usage
 
-This is done by providing a configuration of the allowed variables. This returns an object that is an alternate to `process.env`. With it you can access environmental variables coerced to their proper types, validate that all required variables were configured, and output a help text with descriptions of all the variables.
+This is done by providing a configuration of the allowed variables. This returns an object that is an alternate to `process.env`. With it you can access environment variables coerced to their proper types, validate that all required variables were configured, and output a help text with descriptions of all the variables.
 
 ```ts
 import {configure} from "./env";
@@ -71,9 +71,9 @@ const a5: number = envs.threads
 
 ```
 ## Non-features:
-- Creating some hierarchy out of your environmental variables, based on their names.
-- Allow you to create aliases of environmental variables.
-- Parsing apart complex values within environmental variables.
+- Creating some hierarchy out of your environment variables, based on their names.
+- Allow you to create aliases of environment variables.
+- Parsing apart complex values within environment variables.
 - Reading alternate `.env` files.
 - Use some third-party schema definitions. (Typescript only!)
 

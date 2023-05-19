@@ -1,4 +1,3 @@
-import {lpad, rpad} from "../util/string";
 
 type EnvMetaDescription = {
   description: string,
@@ -118,7 +117,7 @@ export function helpText(configuration: EnvsConfiguration) {
   let output = 'E N V I R O N M E N T   V A R I A B L E S\n\n'
 
   if (requiredCount > 0)
-    output += 'Required environmental variables:\n'
+    output += 'Required environment variables:\n'
   for (const k in configuration) {
     if (!configuration[k].required) continue
     output += `${rpad(jsKey2envName(k), maxLength)}   ${configuration[k].description}\n`
@@ -127,7 +126,7 @@ export function helpText(configuration: EnvsConfiguration) {
   if (requiredCount > 0 && optionalCount > 0)
     output += '\n'
   if (optionalCount > 0)
-    output += 'Optional environmental variables [default value]:\n'
+    output += 'Optional environment variables [default value]:\n'
   for (const k in configuration) {
     if (configuration[k].required) continue
     output += `${rpad(jsKey2envName(k), maxLength)}   ${configuration[k].description} ["${configuration[k].default}"]\n`
@@ -164,7 +163,7 @@ export function readEnv<T extends EnvMetadata>(jsKey: string, meta: T): EnvType<
     if (!meta.required)
       return meta.default as EnvType<T>
     else
-      throw Error(`Missing environmental variable "${name}"\nDescription: ${meta.description}`)
+      throw Error(`Missing environment variable "${name}"\nDescription: ${meta.description}`)
 
   if ((meta as EnvMetadataBaseNoDefault).type !== 'integer')
     return rawValue as EnvType<T>
@@ -172,13 +171,15 @@ export function readEnv<T extends EnvMetadata>(jsKey: string, meta: T): EnvType<
   const value = parseInt(rawValue)
 
   if (isNaN(value))
-    throw Error(`Non-numeric environmental variable "${name}" should be an integer\n'+
-    'It cannot be parsed using \`parseInt()\`.\n'+
-    'Description: ${meta.description}`)
+    throw Error(`Non-numeric environment variable "${name}" expected to be an integer.\nIt cannot be parsed using parseInt().\nDescription: ${meta.description}`)
 
   return value as EnvType<T>
 }
 
 function jsKey2envName(k: string) {
   return k.toLocaleUpperCase()
+}
+
+function rpad(s: string, len: number): string {
+  return s.length < len ? rpad(s.toString() + ' ', len) : s;
 }

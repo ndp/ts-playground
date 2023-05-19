@@ -1,7 +1,7 @@
 import {test, describe} from 'node:test'
 import assert from 'node:assert/strict'
 
-import {checkEnvironmentalVariables, configure, helpText, readEnv} from './env'
+import {checkEnvironmentalVariables, configure, helpText, readEnv} from '../env'
 
 
 describe('configure', () => {
@@ -123,12 +123,12 @@ describe('checkEnvironmentalVariables', () => {
     const result = checkEnvironmentalVariables({
       _NO_SUCH_ENV_VARIABLE_: {
         required: true,
-        description: ''
+        description: 'desc'
       }
     })
 
-    assert.deepEqual(result, ['Missing environmental variable: "_NO_SUCH_ENV_VARIABLE_"\n' +
-    '  _NO_SUCH_ENV_VARIABLE_: '])
+    assert.deepEqual(result, ['Missing environment variable "_NO_SUCH_ENV_VARIABLE_"\n' +
+    'Description: desc'])
   })
 
 
@@ -142,8 +142,10 @@ describe('checkEnvironmentalVariables', () => {
       }
     })
 
-    assert.deepEqual(result, ['Bad environmental variable: "AN_INT" should be an integer, but it cannot be parsed using `parseInt()`.\n' +
-    '  AN_INT: i am not a number'])
+    assert.deepEqual(result, [
+      'Non-numeric environment variable "AN_INT" expected to be an integer.\n' +
+      'It cannot be parsed using parseInt().\n' +
+      'Description: i am not a number'])
 
   })
 
@@ -159,8 +161,9 @@ describe('helpText', () => {
         required: true
       }
     })
-    assert.equal(result, 'Required environmental variables:' +
-      '\nMY_VAR   a variable called "my var"\n')
+    assert.equal(result, 'E N V I R O N M E N T   V A R I A B L E S\n\n' +
+      'Required environment variables:\n' +
+      'MY_VAR   a variable called "my var"\n')
   })
 
   test('returns optional variables', () => {
@@ -171,7 +174,7 @@ describe('helpText', () => {
         default: 'horse'
       }
     })
-    assert.equal(result, 'Optional environmental variables:' +
+    assert.equal(result, 'E N V I R O N M E N T   V A R I A B L E S\n\nOptional environment variables [default value]:' +
       '\nMY_VAR   a variable called "my var" ["horse"]\n')
   })
   test('returns both required and optional variables', () => {
@@ -186,9 +189,9 @@ describe('helpText', () => {
         default: 'oh'
       }
     })
-    assert.equal(result, 'Required environmental variables:' +
+    assert.equal(result, 'E N V I R O N M E N T   V A R I A B L E S\n\nRequired environment variables:' +
       '\nMY_REQ   a variable called "MY_REQ"' +
-      '\nOptional environmental variables:' +
+      '\n\nOptional environment variables [default value]:' +
       '\nMY_OPT   a variable called "MY_OPT" ["oh"]\n')
   })
 
@@ -207,7 +210,7 @@ describe('helpText', () => {
         required: true
       },
     })
-    const expected = 'Required environmental variables:\n' +
+    const expected = 'E N V I R O N M E N T   V A R I A B L E S\n\nRequired environment variables:\n' +
       'J   a variable called "j"\n' +
       'Z   a variable called "z"\n' +
       'A   a variable called "a"\n';
@@ -225,7 +228,7 @@ describe('helpText', () => {
         required: true
       }
     })
-    assert.equal(result, 'Required environmental variables:\n' +
+    assert.equal(result, 'E N V I R O N M E N T   V A R I A B L E S\n\nRequired environment variables:\n' +
       'AAAAAAAAAAAA   a variable called "a"\n' +
       'Z              a variable called "z"\n')
   })
