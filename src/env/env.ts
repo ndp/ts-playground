@@ -1,99 +1,184 @@
-/*
-Goals:
-- detect missing configurations
-- provide documentation about what is expected
-- provide default configs
-- coerce to specific type
-
- */
+import {lpad, rpad} from "../util/string";
 
 type EnvMetaDescription = {
   description: string,
 }
+type EnvMetaDefaultStringBase = EnvMetaDescription
 type EnvMetaStringBase = {
-  type?: 'string',
-}
+  type: 'string',
+} & EnvMetaDescription
 type EnvMetaIntegerBase = {
   type: 'integer',
+} & EnvMetaDescription
+
+type EnvMetadataBaseNoDefault = EnvMetaStringBase | EnvMetaIntegerBase
+type EnvMetadataBase = EnvMetaDefaultStringBase | EnvMetadataBaseNoDefault
+
+type EnvType<T extends EnvMetadataBase> =
+  T extends { type: any }
+    ? T['type'] extends 'integer'
+      ? number
+      : string
+    : string
+
+type RequiredMetadata<Metadata extends EnvMetadataBase> = Metadata & {
+  required: true,
+  default?: never
 }
-type EnvMetaJSONBase = {
-  type: 'json',
-}
-type EnvMetaTypeBase = EnvMetaStringBase | EnvMetaIntegerBase | EnvMetaJSONBase
 
-
-// type TypeString = Required<EnvMetaTypeBase>['type']
-type TypeString = EnvMetaTypeBase['type']
-
-type StandardFields<T extends TypeString> = {
-  type: T,
-  description: string,
-}
-
-type RequiredEnvMetaData<T extends TypeString> = {
-  required: true
-} & StandardFields<T>
-
-type OptionalEnvMetaData<T extends TypeString> = {
+type OptionalMetadata<Metadata extends EnvMetadataBase> = Metadata & {
   required: false,
-  default: T extends 'integer' ? number : string
-} & StandardFields<T>
-type EnvMetaOptionalOrRequired<T extends TypeString> = (RequiredEnvMetaData<T> |
-  OptionalEnvMetaData<T>)
+  default: EnvType<Metadata>
+}
 
-type EnvMeta =
-  EnvMetaOptionalOrRequired<'string'>
-  | EnvMetaOptionalOrRequired<'json'>
-  | EnvMetaOptionalOrRequired<'integer'>
+type EnvMetadata =
+  RequiredMetadata<EnvMetaIntegerBase> |
+  RequiredMetadata<EnvMetaDefaultStringBase> |
+  RequiredMetadata<EnvMetaStringBase> |
+  OptionalMetadata<EnvMetaIntegerBase> |
+  OptionalMetadata<EnvMetaStringBase> |
+  OptionalMetadata<EnvMetaDefaultStringBase>
 
-  type EnvsSpec = Record<string, EnvMeta>
+type EnvsConfiguration = Record<string, EnvMetadata>
 
-const envs = setup({
-  port: {
-    type: 'integer',
-    description: 'port to launch server on',
-    required: true,
-  },
-  threads: {
-    type: 'integer',
-    description: 'port to launch server on',
-    required: false,
-    default: 8
-  },
-  hostname: {
-    description: 'hostname used sometimes',
-    required: false,
-    default: 'jj'
-  },
-  db_url: {
-    description: 'URL used to connect to the database',
-    required: true,
-    default: 'sqlite3://localhost:3495'
-  },
+type EnvsFunctions = {
+  verifyEnvironment: () => boolean,
+  helpText: () => string,
+  errors: () => Array<string> | false
+}
+type EnvsAccessor<T extends EnvsConfiguration> =
+  {
+    [P in keyof T]: EnvType<T[P]>
+  } & EnvsFunctions
 
-  cache_url: {
-    type: 'string',
-    description: 'URL used to connect to the database',
-    required: true,
-    default: 'memcached://localhost:1234'
+export function configure<T extends EnvsConfiguration>(configuration: T): EnvsAccessor<T> {
+  const envsAccessor: Record<string, unknown> = {
+    // helpText: () => helpText(configuration),
+    // errors: () => checkEnvironmentalVariables(configuration),
+    // verifyEnvironment: () => {
+    //   const errors = checkEnvironmentalVariables(configuration)
+    //
+    //   if (errors.length === 0) return true
+    //
+    //   console.error('Environmental variable errors:')
+    //   for (const e of errors)
+    //     console.error(` -> ${e}`)
+    //   console.log('')
+    //   console.log(helpText(configuration))
+    //   return false
+    // }
   }
 
-})
+  Object.defineProperties(envsAccessor, {
+    helpText: {
+      get: () => helpText(configuration),
+      enumerable: false
+    },
+    errors: {
+      get: () => checkEnvironmentalVariables(configuration),
+      enumerable: false
+    },
+    verifyEnvironment: {
+      value: () => {
+        const errors = checkEnvironmentalVariables(configuration)
 
-const a1  = envs.cache_url
-const a2  = envs.db_url
-const a3  = envs.port
-const a4  = envs.hostname
-const a5  = envs.threads
+        if (errors.length === 0) return true
 
-type MapMetaToReturnType<T extends EnvMeta, Type = EnvMeta['type']> =
-  T['type'] extends 'integer' ? number : string
+        console.error('Environmental variable errors!')
+        for (const e of errors)
+          console.error(`${e}\n`)
+        console.log('')
+        console.log(helpText(configuration))
+        return false
+      },
+      enumerable: false
+    }
+  })
 
-type EnvsAccessor<T extends EnvsSpec> =
-   {
-  [P in keyof T]: MapMetaToReturnType<T[P]>
+  // Build an object that can be lazily evaluated
+  Object.keys(configuration).forEach(k => {
+    Object.defineProperty(envsAccessor, k, {
+      get() {
+        return readEnv(k, configuration[k])
+      },
+      enumerable: true
+    })
+  })
+
+  return envsAccessor as EnvsAccessor<T>
 }
 
-function setup<S extends EnvsSpec>(envsSpec: S): EnvsAccessor<S> {
-  return {} as EnvsAccessor<S>
+export function helpText(configuration: EnvsConfiguration) {
+
+  const requiredCount = Object.values(configuration).filter(e => e.required).length
+  const optionalCount = Object.values(configuration).filter(e => !e.required).length
+  const maxLength =
+    Math.max(...Object.keys(configuration).map(jsKey2envName).map(s => s.length))
+
+  let output = 'E N V I R O N M E N T   V A R I A B L E S\n\n'
+
+  if (requiredCount > 0)
+    output += 'Required environmental variables:\n'
+  for (const k in configuration) {
+    if (!configuration[k].required) continue
+    output += `${rpad(jsKey2envName(k), maxLength)}   ${configuration[k].description}\n`
+  }
+
+  if (requiredCount > 0 && optionalCount > 0)
+    output += '\n'
+  if (optionalCount > 0)
+    output += 'Optional environmental variables [default value]:\n'
+  for (const k in configuration) {
+    if (configuration[k].required) continue
+    output += `${rpad(jsKey2envName(k), maxLength)}   ${configuration[k].description} ["${configuration[k].default}"]\n`
+  }
+
+  return output
+}
+
+
+export function checkEnvironmentalVariables(configuration: EnvsConfiguration) {
+
+  const errors = [] as Array<string>
+
+  Object.keys(configuration).forEach(k => {
+    try {
+      readEnv(k, configuration[k])
+    } catch (e: unknown) {
+      errors.push((e as Error).message)
+    }
+  })
+
+  return errors
+}
+
+export function readEnv<T extends EnvMetadata>(jsKey: string, meta: T): EnvType<T> {
+
+  const name = jsKey2envName(jsKey);
+
+  const rawValue = process.env[name]
+
+  const missing = rawValue === '' || rawValue === undefined;
+
+  if (missing)
+    if (!meta.required)
+      return meta.default as EnvType<T>
+    else
+      throw Error(`Missing environmental variable "${name}"\nDescription: ${meta.description}`)
+
+  if ((meta as EnvMetadataBaseNoDefault).type !== 'integer')
+    return rawValue as EnvType<T>
+
+  const value = parseInt(rawValue)
+
+  if (isNaN(value))
+    throw Error(`Non-numeric environmental variable "${name}" should be an integer\n'+
+    'It cannot be parsed using \`parseInt()\`.\n'+
+    'Description: ${meta.description}`)
+
+  return value as EnvType<T>
+}
+
+function jsKey2envName(k: string) {
+  return k.toLocaleUpperCase()
 }
