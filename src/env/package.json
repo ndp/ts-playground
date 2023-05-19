@@ -1,5 +1,5 @@
 {
-  "name": "ts-env",
+  "name": "ts-envs",
   "version": "0.9.0",
   "description": "Verification and type coercion for process.env environment variables in node.js",
   "main": "dist/env.js",
