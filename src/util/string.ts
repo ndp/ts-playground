@@ -29,3 +29,16 @@ function testLeftPad() {
 }
 
 testLeftPad()
+
+
+export const rpad = (s: string, len: number): string => s.length < len ? rpad(s.toString() + ' ', len) : s;
+
+
+function testRightPad() {
+  assert.equal(rpad('a', 0), 'a')
+  assert.equal(rpad('a', 1), 'a')
+  assert.equal(rpad('a', 2), 'a ')
+  assert.equal(rpad('a', 10), 'a         ')
+}
+
+testRightPad()
