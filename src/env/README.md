@@ -75,13 +75,13 @@ There are a few improvements to `process.env`:
 
 The `envs` object also has additional features:
 
-### `envsOK(): boolean`
+### `envsValid(): boolean`
 
-It is valuable to detect and notify the programmer that not all the configured variables are present. It's even better to do so early in the run cycle, so the app doesn't fail deep inside. Note: `configure` above does _not_ perform check variables, and instead you must call `envsOK()`. 
+It is valuable to detect and notify the programmer that not all the configured variables are present. It's even better to do so early in the run cycle, so the app doesn't fail deep inside. Note: `configure` above does _not_ perform check variables, and instead you must call `envsValid()`. 
 
 This method returns `true` if the all the variables are set, and false if not. Typical usage:
 ```ts
-if (!envs.envsOK())
+if (!envs.envsValid())
   process.exit(1)
 ```
 As a side effect, if there is a problem, it outputs to the `console` an easy-to-understand error message:
@@ -111,7 +111,7 @@ This output is followed by a complete "help text" (below) that describes all the
 
 ### `env.errors: Array<string>`
 
-`env.errors` is an array of strings spelling out the errors. This is accessed automatically in `envsOK` above, but they are made available for any other usage.
+`env.errors` is an array of strings spelling out the errors. This is accessed automatically in `envsValid` above, but they are made available for any other usage.
 
 ## Non-features:
 
@@ -139,3 +139,9 @@ This library does not aim to:
 ## NOTES
 
 - Created package using https://medium.com/cameron-nokes/the-30-second-guide-to-publishing-a-typescript-package-to-npm-89d93ff7bccd
+
+## TODOs
+
+- Add verification function, to make sure the value is acceptable. Wouldn't do any sort of conversion, just check and throw exception. This code would just call it. Allow this to support more complicated things
+- Support "coercion" function, so complex values, like JSON, or encoded values can be used. I'd need to do this in a type-safe way.
+- automatically verify on configuration

@@ -50,7 +50,7 @@ type EnvsAccessor<T extends EnvsConfiguration> =
   {
     [P in keyof T]: EnvType<T[P]>
   } & {
-  envsOK: () => boolean,
+  envsValid: () => boolean,
   helpText: string,
   errors: Array<string>
 }
@@ -76,7 +76,7 @@ export function configure<T extends EnvsConfiguration>(configuration: T): EnvsAc
       get: () => checkEnvironmentalVariables(configuration),
       enumerable: false
     },
-    envsOK: {
+    envsValid: {
       value: () => {
         const errors = checkEnvironmentalVariables(configuration)
 
