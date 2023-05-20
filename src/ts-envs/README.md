@@ -21,12 +21,7 @@ solution to those small problems.
 ## Usage
 
 ### `configure`
-This package replaces the normal uses of `process.env` with an alternative. To create it, call `configure` providing metadata about each of the expected variables. This is done with an object, where the keys are the variable names, and the metadata attributes are:
-- `description` (required): a textual description of the variable
-- `type` (default "string"): `string`, `boolean` or `integer`
-- `required`: `true` or `false`
-- `default`: a default value, if the variable is not required
-
+This package replaces the normal uses of `process.env` with an alternative object. It's called `envs` in this documentation (but you can call it whatever you want). To create it, call `configure` providing metadata about each of the expected variables. 
 Here is an example:
 ```ts
 import {configure} from "ts-envs";
@@ -56,10 +51,16 @@ export const envs = configure({
 ```
 In most cases, you will export this configuration and access it throughout your 
 code where you need access to environment variables, using it instead of 
-`process.env` everywhere.
+`process.env` everywhere. 
+
+The configuration for each variable name is called "metadata", and the metadata attributes are:
+- `description` (required): a textual description of the variable
+- `type` (default "string"): `string`, `boolean` or `integer`
+- `required`: `true` or `false`
+- `default`: a default value, if the variable is not required
 
 ### Access
-Access the variables works like `process.env`:
+Access the variables in `envs` just like `process.env`:
 
 ```ts
 const hostName: string  = envs.hostname
@@ -71,20 +72,24 @@ There are a few improvements to `process.env`:
 - In Typescript, variables are of the specified type
 - Variable name are automatically converted to uppercase before extraction from `process.env`. For example, `envs.hostname` will grab the value of `process.env.HOSTNAME`. Javascript code does not need to have bulky upper-cased strings uglifying the code (although you are free to use uppercase if you prefer). 
 - If the variable is not required and missing, the default value will be returned.
-- If the variable is required and missing, or of the wrong type, an exception will be thrown. With manual code, these cases go undetected.
+- If the variable is required and missing, or of the wrong type, and there was no previous validation, an exception will be thrown. With manual access to `process.env`, these cases go undetected.
 
-The `envs` object also has additional features:
+## Additional Tweaks
+
+The one function, `configure`, above, is all the API that is needed to access your validated, typed environment variables! If you want to dig deeper, the `envs` object has additional features:
 
 ### `envsValid(): boolean`
 
-It is valuable to detect and notify the programmer that not all the configured variables are present. It's even better to do so early in the run cycle, so the app doesn't fail deep inside. Note: `configure` above does _not_ perform check variables, and instead you must call `envsValid()`. 
+It is valuable to detect a misconfigured environment and notify the programmer, and it's even better to do so early in the run cycle. To this aim, `configure` does this validation when it is called. If you want to do validation elsewhere, or in more detail, this default can be suppressed and validation done manually:
 
-This method returns `true` if the all the variables are set, and false if not. Typical usage:
+1. Turn off the default validation by passing `{ validate: false }` as a second parameter to `configure`.
+
+2. Do your own manual validation by calling `envs.envsValid()`. This method returns `true` if the all the variables are set, and false if not. Typical usage:
 ```ts
 if (!envs.envsValid())
   process.exit(1)
 ```
-As a side effect, if there is a problem, it outputs to the `console` an easy-to-understand error message:
+As a side effect, if there is a problem, `envsValid` outputs to the `console` an easy-to-understand error message:
 ```
 Environmental variable errors!
 Missing environment variable "DB_URL"

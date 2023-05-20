@@ -1,11 +1,12 @@
 {
   "name": "ts-envs",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Verification and type coercion for process.env environment variables in node.js",
   "main": "dist/env.js",
   "types": "dist/env.d.ts",
   "scripts": {
     "test": "ts-node etc/test.ts",
+    "example": "DB_URL=SQL://foo PORT=4000 PERMISSIONS={} VERBOSE=0 ts-node etc/example.ts",
     "prepublish": "tsc"
   },
   "repository": {

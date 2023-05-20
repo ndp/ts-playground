@@ -42,14 +42,11 @@ const envs = configure({
   }
 })
 
-if (!envs.envsValid())
-  process.exit(1)
-
 // Entries come out as the right type!
-const a1: string = envs.cache_url
-const a2: string = envs.db_url
-const a3: number = envs.port
-const a4: string = envs.hostname
-const a5: number = envs.threads
-const a6:  boolean = envs.verbose
+const a1: string  = envs.cache_url
+const a2: string  = envs.db_url
+const a3: number  = envs.port
+const a4: string  = envs.hostname
+const a5: number  = envs.threads
+const a6: boolean = envs.verbose
 

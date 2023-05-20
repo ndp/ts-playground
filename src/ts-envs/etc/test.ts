@@ -20,7 +20,7 @@ describe('configure', () => {
         required: true,
         description: 'a taco string'
       }
-    })
+    }, { validate: false })
 
     const result = [] as Array<string>
     for (const s in envs) result.push(s)
