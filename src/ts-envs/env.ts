@@ -64,8 +64,24 @@ const BooleanValues = {
   'true': true,
 } as Record<string, boolean>;
 
-export function configure<T extends EnvsConfiguration>(configuration: T): EnvsAccessor<T> {
+export function configure<T extends EnvsConfiguration>(
+  configuration: T,
+  options: { validate: boolean } = {validate: true}
+): EnvsAccessor<T> {
   const envsAccessor: Record<string, unknown> = {}
+
+  const envsValid = () => {
+    const errors = checkEnvironmentalVariables(configuration)
+
+    if (errors.length === 0) return true
+
+    console.error('Environmental variable errors!')
+    for (const e of errors)
+      console.error(`${e}\n`)
+    console.log('')
+    console.log(helpText(configuration))
+    return false
+  }
 
   Object.defineProperties(envsAccessor, {
     helpText: {
@@ -77,18 +93,7 @@ export function configure<T extends EnvsConfiguration>(configuration: T): EnvsAc
       enumerable: false
     },
     envsValid: {
-      value: () => {
-        const errors = checkEnvironmentalVariables(configuration)
-
-        if (errors.length === 0) return true
-
-        console.error('Environmental variable errors!')
-        for (const e of errors)
-          console.error(`${e}\n`)
-        console.log('')
-        console.log(helpText(configuration))
-        return false
-      },
+      value: envsValid,
       enumerable: false
     }
   })
@@ -102,6 +107,9 @@ export function configure<T extends EnvsConfiguration>(configuration: T): EnvsAc
       enumerable: true
     })
   })
+
+  if (options.validate && !envsValid())
+    process.exit(1)
 
   return envsAccessor as EnvsAccessor<T>
 }
