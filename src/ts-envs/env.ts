@@ -11,7 +11,8 @@ type EnvMetaIntegerBase = {
   valid?: (s: number) => boolean
 } & EnvMetaDescription
 type EnvMetaBooleanBase = {
-  type: 'boolean'
+  type: 'boolean',
+  valid?: (b: boolean) => boolean
 } & EnvMetaDescription
 
 type EnvMetadataBaseNoDefault = EnvMetaStringBase | EnvMetaIntegerBase | EnvMetaBooleanBase
@@ -196,6 +197,13 @@ export function readEnv<T extends EnvMetadata>(jsKey: string, meta: T): EnvType<
 
       if (value === undefined)
         throw Error(`Non-boolean environment variable "${name}" expected to be an truthy or falsey, but got "${rawValue}".\nTruthy values are "TRUE" or "1". Falsey values are "FALSE" and "0".\nDescription: ${meta.description}`)
+
+      // call user validation, if provided. This seems
+      // silly, but for consistency adding it.
+      const m = meta as EnvMetaBooleanBase
+      if (m.valid && !m.valid(value))
+        throw Error(`Environment variable "${name}" with value ${value} ("${rawValue}") failed validation.\nDescription: ${meta.description}`)
+
 
       return value as EnvType<T>
     }
