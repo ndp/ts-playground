@@ -23,7 +23,7 @@ solution to those small problems.
 ### `configure`
 This package replaces the normal uses of `process.env` with an alternative. To create it, call `configure` providing metadata about each of the expected variables. This is done with an object, where the keys are the variable names, and the metadata attributes are:
 - `description` (required): a textual description of the variable
-- `type` (default "string"): `string` or `integer` (to come: `boolean`)
+- `type` (default "string"): `string`, `boolean` or `integer`
 - `required`: `true` or `false`
 - `default`: a default value, if the variable is not required
 
@@ -45,6 +45,12 @@ const envs = configure({
     type:        'integer',
     description: 'Port to listen for HTTP requests',
     required:     true
+  },
+  verbose: {
+    type:        'boolean',
+    description: 'Log more stuff',
+    required:     false,
+    default:      false
   }
 })
 ```
@@ -53,9 +59,10 @@ const envs = configure({
 Access the variables works like `process.env`:
 
 ```ts
-const hostName: string = envs.hostname
-const dbUrl:    string = envs.db_url
-const port:     number = envs.port
+const hostName: string  = envs.hostname
+const dbUrl:    string  = envs.db_url
+const port:     number  = envs.port
+const verbose:  boolean = envs.verbose
 ```
 There are a few improvements to `process.env`:
 - In Typescript, variables are of the specified type

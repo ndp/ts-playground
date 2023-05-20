@@ -66,6 +66,46 @@ describe('readEnv', () => {
     }))
   })
 
+  test('reads boolean (number values)', () => {
+    process.env.T_BOOL = '1'
+    process.env.F_BOOL = '0'
+    assert.equal(readEnv('T_BOOL', {
+      type: 'boolean',
+      required: true,
+      description: ''
+    }), true)
+    assert.equal(readEnv('F_BOOL', {
+      type: 'boolean',
+      required: true,
+      description: ''
+    }), false)
+  })
+
+  test('reads boolean (string values)', () => {
+    process.env.T_BOOL = 'TRUE'
+    process.env.F_BOOL = 'false'
+    assert.equal(readEnv('T_BOOL', {
+      type: 'boolean',
+      required: true,
+      description: ''
+    }), true)
+    assert.equal(readEnv('F_BOOL', {
+      type: 'boolean',
+      required: true,
+      description: ''
+    }), false)
+  })
+
+  test('throws if not a boolean', () => {
+    process.env.A_BOOL = 'MAYBE'
+    assert.throws(() => readEnv('A_BOOL', {
+      required: true,
+      type: 'boolean',
+      description: 'not booleanish'
+    }))
+  })
+
+
   test('throws if missing required', () => {
     assert.throws(() => readEnv('_NO_SUCH_ENV_VARIABLE_', {
       required: true,
@@ -146,6 +186,23 @@ describe('checkEnvironmentalVariables', () => {
       'Non-numeric environment variable "AN_INT" expected to be an integer.\n' +
       'It cannot be parsed using parseInt().\n' +
       'Description: i am not a number'])
+
+  })
+
+  test('returns error if boolean config is not boolean', () => {
+    process.env.A_BOOL = 'FOO'
+    const result = checkEnvironmentalVariables({
+      A_BOOL: {
+        required: true,
+        type: 'boolean',
+        description: 'i am not false'
+      }
+    })
+
+    assert.deepEqual(result, [
+      'Non-boolean environment variable "A_BOOL" expected to be an truthy or falsey, but got "FOO".\n' +
+      'Truthy values are "TRUE" or "1". Falsey values are "FALSE" and "0".\n' +
+      'Description: i am not false'])
 
   })
 

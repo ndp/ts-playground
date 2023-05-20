@@ -34,6 +34,11 @@ const envs = configure({
     type: 'string',
     description: 'JSON configs would be strings',
     required: true
+  },
+  verbose: {
+    type: 'boolean',
+    description: 'set to see more details during the run',
+    required: true
   }
 })
 
@@ -46,4 +51,5 @@ const a2: string = envs.db_url
 const a3: number = envs.port
 const a4: string = envs.hostname
 const a5: number = envs.threads
+const a6:  boolean = envs.verbose
 

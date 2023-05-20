@@ -1,4 +1,3 @@
-
 type EnvMetaDescription = {
   description: string,
 }
@@ -9,15 +8,20 @@ type EnvMetaStringBase = {
 type EnvMetaIntegerBase = {
   type: 'integer',
 } & EnvMetaDescription
+type EnvMetaBooleanBase = {
+  type: 'boolean',
+} & EnvMetaDescription
 
-type EnvMetadataBaseNoDefault = EnvMetaStringBase | EnvMetaIntegerBase
+type EnvMetadataBaseNoDefault = EnvMetaStringBase | EnvMetaIntegerBase | EnvMetaBooleanBase
 type EnvMetadataBase = EnvMetaDefaultStringBase | EnvMetadataBaseNoDefault
 
 type EnvType<T extends EnvMetadataBase> =
-  T extends { type: any }
+  T extends { type: unknown }
     ? T['type'] extends 'integer'
       ? number
-      : string
+      : T['type'] extends 'boolean'
+        ? boolean
+        : string
     : string
 
 type RequiredMetadata<Metadata extends EnvMetadataBase> = Metadata & {
@@ -32,23 +36,33 @@ type OptionalMetadata<Metadata extends EnvMetadataBase> = Metadata & {
 
 type EnvMetadata =
   RequiredMetadata<EnvMetaIntegerBase> |
+  RequiredMetadata<EnvMetaBooleanBase> |
   RequiredMetadata<EnvMetaDefaultStringBase> |
   RequiredMetadata<EnvMetaStringBase> |
   OptionalMetadata<EnvMetaIntegerBase> |
+  OptionalMetadata<EnvMetaBooleanBase> |
   OptionalMetadata<EnvMetaStringBase> |
   OptionalMetadata<EnvMetaDefaultStringBase>
 
 type EnvsConfiguration = Record<string, EnvMetadata>
 
-type EnvsFunctions = {
-  verifyEnvironment: () => boolean,
-  helpText: () => string,
-  errors: () => Array<string> | false
-}
 type EnvsAccessor<T extends EnvsConfiguration> =
   {
     [P in keyof T]: EnvType<T[P]>
-  } & EnvsFunctions
+  } & {
+  verifyEnvironment: () => boolean,
+  helpText: string,
+  errors: Array<string>
+}
+
+const BooleanValues = {
+  '0': false,
+  'FALSE': false,
+  'false': false,
+  '1': true,
+  'TRUE': true,
+  'true': true,
+} as Record<string, boolean>;
 
 export function configure<T extends EnvsConfiguration>(configuration: T): EnvsAccessor<T> {
   const envsAccessor: Record<string, unknown> = {}
@@ -79,7 +93,7 @@ export function configure<T extends EnvsConfiguration>(configuration: T): EnvsAc
     }
   })
 
-  // Build an object that can be lazily evaluated
+  // Build an object whose properties are lazily evaluated
   Object.keys(configuration).forEach(k => {
     Object.defineProperty(envsAccessor, k, {
       get() {
@@ -150,15 +164,31 @@ export function readEnv<T extends EnvMetadata>(jsKey: string, meta: T): EnvType<
     else
       throw Error(`Missing environment variable "${name}"\nDescription: ${meta.description}`)
 
-  if ((meta as EnvMetadataBaseNoDefault).type !== 'integer')
-    return rawValue as EnvType<T>
+  const typ = (meta as EnvMetadataBaseNoDefault).type;
 
-  const value = parseInt(rawValue)
+  switch (typ) {
+    case 'integer': {
+      const value = parseInt(rawValue)
 
-  if (isNaN(value))
-    throw Error(`Non-numeric environment variable "${name}" expected to be an integer.\nIt cannot be parsed using parseInt().\nDescription: ${meta.description}`)
+      if (isNaN(value))
+        throw Error(`Non-numeric environment variable "${name}" expected to be an integer.\nIt cannot be parsed using parseInt().\nDescription: ${meta.description}`)
 
-  return value as EnvType<T>
+      return value as EnvType<T>
+    }
+
+    case 'boolean': {
+      const value = BooleanValues[rawValue]
+
+      if (value === undefined)
+        throw Error(`Non-boolean environment variable "${name}" expected to be an truthy or falsey, but got "${rawValue}".\nTruthy values are "TRUE" or "1". Falsey values are "FALSE" and "0".\nDescription: ${meta.description}`)
+
+      return value as EnvType<T>
+    }
+
+    default:
+      return rawValue as EnvType<T>
+  }
+
 }
 
 function jsKey2envName(k: string) {
