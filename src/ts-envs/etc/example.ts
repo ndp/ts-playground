@@ -15,8 +15,9 @@ const envs = configure({
   },
   port: {
     type: 'integer',
-    description: 'required integer',
-    required: true
+    description: 'required integer, must be >= 1000',
+    required: true,
+    valid: (i) => i >= 1000
   },
   threads: {
     type: 'integer',
@@ -28,7 +29,8 @@ const envs = configure({
     type: 'string',
     description: 'type of string can be specified explicitly',
     required: false,
-    default: 'memcached://localhost:1234'
+    default: 'memcached://localhost:1234',
+    valid: (s: string) => s.startsWith('memcached')
   },
   permissions: {
     type: 'string',

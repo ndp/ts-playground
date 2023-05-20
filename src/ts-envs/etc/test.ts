@@ -1,4 +1,4 @@
-import {test, describe} from 'node:test'
+import {test, describe, mock} from 'node:test'
 import assert from 'node:assert/strict'
 
 import {checkEnvironmentalVariables, configure, helpText, readEnv} from '../env'
@@ -20,7 +20,7 @@ describe('configure', () => {
         required: true,
         description: 'a taco string'
       }
-    }, { validate: false })
+    }, {validate: false})
 
     const result = [] as Array<string>
     for (const s in envs) result.push(s)
@@ -63,6 +63,32 @@ describe('readEnv', () => {
       required: true,
       type: 'integer',
       description: 'i am not a number'
+    }))
+  })
+
+  test('reads integer that passes validation', () => {
+    let count = 0
+    const validFn = (i: number) => {
+      count++
+      return true
+    }
+    process.env.AN_INT = '42'
+    assert.equal(readEnv('AN_INT', {
+      type: 'integer',
+      required: true,
+      description: '',
+      valid: validFn
+    }), 42)
+    assert.equal(count, 1)
+  })
+
+  test('throws if not an integer fails validation', () => {
+    process.env.AN_INT = '42'
+    assert.throws(() => readEnv('AN_INT', {
+      required: true,
+      type: 'integer',
+      description: 'i am not a number',
+      valid: (i: number) => i === 666
     }))
   })
 

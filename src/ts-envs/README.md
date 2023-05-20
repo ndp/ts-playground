@@ -1,27 +1,30 @@
-No-nonsense help with ENVironmental variable processing for your Typescript project.
+No-nonsense help with environmental variable processing for your Typescript project.
 
 
-[Accessing environment variables](https://nodejs.org/dist/latest-v8.x/docs/api/process.html#process_process_env)  within a node app is straightforward, 
+[Accessing environment variables](https://nodejs.org/dist/latest-v8.x/docs/api/process.html#process_process_env)  within a node app is straightforward, and should feel simple, 
 but as an app ages and grows, small problems crop up. This is a small
 solution to those small problems.
 
 ## Problems:
 
+- When you start working on a project, incomplete or outdated documentation about environment variables will mean it's hard to get a project working.
 - When setting up a project in a new environment, things break. It can be obvious, or it can be an exception that is thrown after the app has been running some time. It can be a bit of a treasure hunt to find and fix these.
-- When you start working on a project, incomplete or outdated documentation may mean it's hard to get a project working.
-- When an environment variable is used in multiple parts of the code, it may be used inconsistently. Maintaining and updating default values may be error prone.
+- When an environment variable is used in multiple parts of the code, it may be used inconsistently. 
+- Maintaining and updating default values may be error prone.
 
-## Features:
+## Features
 
-- detect missing configurations in one place
-- provide documentation about what is expected
-- provide config defaults for optional variables
-- coerce to specific (Typescript) type
+- Detect missing configurations in one place
+- Provide documentation about what is expected
+- Provide config defaults for optional variables
+- Provide great Typescript support, both in configuration and the variable access. Client code should not have to coerce any values.
 
 ## Usage
 
 ### `configure`
-This package replaces the normal uses of `process.env` with an alternative object. It's called `envs` in this documentation (but you can call it whatever you want). To create it, call `configure` providing metadata about each of the expected variables. 
+This package replaces the normal uses of `process.env` with an alternative object. It's called `envs` in this documentation (but you can call it whatever you want). You will initialize it with the result of the `configure` function, and export it to be used throughout your codebase. 
+
+The `configure` function requires simple metadata about each of the expected variables. 
 Here is an example:
 ```ts
 import {configure} from "ts-envs";
@@ -55,9 +58,11 @@ code where you need access to environment variables, using it instead of
 
 The configuration for each variable name is called "metadata", and the metadata attributes are:
 - `description` (required): a textual description of the variable
-- `type` (default "string"): `string`, `boolean` or `integer`
-- `required`: `true` or `false`
+- `type` (default "string"): `string`, `boolean` or `integer`. For booleans, only "0" or "1" or "true" or "false" are interpreted and valid.
+- `required`: `true` or `false` 
 - `default`: a default value, if the variable is not required
+
+These are fully typed, so it won't let you do silly things like specifying a default value for required variables (or vice versa). 
 
 ### Access
 Access the variables in `envs` just like `process.env`:
@@ -74,11 +79,12 @@ There are a few improvements to `process.env`:
 - If the variable is not required and missing, the default value will be returned.
 - If the variable is required and missing, or of the wrong type, and there was no previous validation, an exception will be thrown. With manual access to `process.env`, these cases go undetected.
 
-## Additional Tweaks
+## Optional Features
 
 The one function, `configure`, above, is all the API that is needed to access your validated, typed environment variables! If you want to dig deeper, the `envs` object has additional features:
 
-### `envsValid(): boolean`
+### `envs`
+#### `envsValid(): boolean`
 
 It is valuable to detect a misconfigured environment and notify the programmer, and it's even better to do so early in the run cycle. To this aim, `configure` does this validation when it is called. If you want to do validation elsewhere, or in more detail, this default can be suppressed and validation done manually:
 
@@ -101,7 +107,7 @@ Description: Port to listen for HTTP requests
 ```
 This output is followed by a complete "help text" (below) that describes all the variables.
 
-### `envs.helpText: string`
+#### `envs.helpText: string`
 
 `envs.helpText` describes all of the variables, based on the configuration. This is used for the error message above, but you might want to include it in other help information or documentation. It looks like (although, obviously, varies depending on the variables):
 
@@ -114,9 +120,13 @@ This output is followed by a complete "help text" (below) that describes all the
     Optional environment variables [default value]:
     HOSTNAME      Hostname to be reflected in logs ["www.example.com"]
 
-### `env.errors: Array<string>`
+#### `env.errors: Array<string>`
 
 `env.errors` is an array of strings spelling out the errors. This is accessed automatically in `envsValid` above, but they are made available for any other usage.
+
+### Metadata
+
+Metadata may also include a validation function, `valid()`. It will be called after the value is found and coerced to the correct type, but before the variable is returned. This can check the value of an integer is in a certain range, or run a regular expression to pre-check a URL or similar. Or perhaps verify that passwords are not being provided in configuration strings. Or perhaps check the integrity between multiple environment variables. This function return `true` or `false`.
 
 ## Non-features:
 
@@ -147,6 +157,4 @@ This library does not aim to:
 
 ## TODOs
 
-- Add verification function, to make sure the value is acceptable. Wouldn't do any sort of conversion, just check and throw exception. This code would just call it. Allow this to support more complicated things
-- Support "coercion" function, so complex values, like JSON, or encoded values can be used. I'd need to do this in a type-safe way.
-- automatically verify on configuration
+- (Maybe) Support "coercion" function, so complex values, like JSON, or encoded values can be used. I'd need to do this in a type-safe way.

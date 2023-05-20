@@ -4,12 +4,14 @@ type EnvMetaDescription = {
 type EnvMetaDefaultStringBase = EnvMetaDescription
 type EnvMetaStringBase = {
   type: 'string',
+  valid?: (s: string) => boolean
 } & EnvMetaDescription
 type EnvMetaIntegerBase = {
   type: 'integer',
+  valid?: (s: number) => boolean
 } & EnvMetaDescription
 type EnvMetaBooleanBase = {
-  type: 'boolean',
+  type: 'boolean'
 } & EnvMetaDescription
 
 type EnvMetadataBaseNoDefault = EnvMetaStringBase | EnvMetaIntegerBase | EnvMetaBooleanBase
@@ -181,6 +183,11 @@ export function readEnv<T extends EnvMetadata>(jsKey: string, meta: T): EnvType<
       if (isNaN(value))
         throw Error(`Non-numeric environment variable "${name}" expected to be an integer.\nIt cannot be parsed using parseInt().\nDescription: ${meta.description}`)
 
+      // call user validation, if provided
+      const m = meta as EnvMetaIntegerBase
+      if (m.valid && !m.valid(value))
+        throw Error(`Environment variable "${name}" with value ${value} failed validation.\nDescription: ${meta.description}`)
+
       return value as EnvType<T>
     }
 
@@ -193,8 +200,14 @@ export function readEnv<T extends EnvMetadata>(jsKey: string, meta: T): EnvType<
       return value as EnvType<T>
     }
 
-    default:
+    default: {
+      // call user validation, if provided
+      const m = meta as EnvMetaStringBase
+      if (m.valid && !m.valid(rawValue))
+        throw Error(`Environment variable "${name}" failed validation. Value: "${rawValue}"\nDescription: ${meta.description}`)
+
       return rawValue as EnvType<T>
+    }
   }
 
 }

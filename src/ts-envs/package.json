@@ -7,6 +7,8 @@
   "scripts": {
     "test": "ts-node etc/test.ts",
     "example": "DB_URL=SQL://foo PORT=4000 PERMISSIONS={} VERBOSE=0 ts-node etc/example.ts",
+    "example:invalid": "DB_URL=SQL://foo PORT=80 CACHE_URL=redis://foo PERMISSIONS={} VERBOSE=0 ts-node etc/example.ts",
+    "example:missing": "ts-node etc/example.ts",
     "prepublish": "tsc"
   },
   "repository": {
