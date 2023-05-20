@@ -42,7 +42,7 @@ const envs = configure({
   }
 })
 
-if (!envs.verifyEnvironment())
+if (!envs.envsOK())
   process.exit(1)
 
 // Entries come out as the right type!

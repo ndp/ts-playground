@@ -31,7 +31,7 @@ Here is an example:
 ```ts
 import {configure} from "ts-envs";
 
-const envs = configure({
+export const envs = configure({
   hostname: {
     description: 'Hostname to be reflected in logs',
     required:     false,
@@ -54,6 +54,9 @@ const envs = configure({
   }
 })
 ```
+In most cases, you will export this configuration and access it throughout your 
+code where you need access to environment variables, using it instead of 
+`process.env` everywhere.
 
 ### Access
 Access the variables works like `process.env`:
@@ -66,20 +69,22 @@ const verbose:  boolean = envs.verbose
 ```
 There are a few improvements to `process.env`:
 - In Typescript, variables are of the specified type
-- Variable name are automatically converted to uppercase before extraction from `process.env`. Javascript code does not have to have upper-cased strings uglifying the code (although you are free to use uppercase if you prefer that). 
-- If the variable is optional and not present in the environment, the default value will be returned
-- If the variable is missing or of the wrong type, an exception will be thrown
+- Variable name are automatically converted to uppercase before extraction from `process.env`. For example, `envs.hostname` will grab the value of `process.env.HOSTNAME`. Javascript code does not need to have bulky upper-cased strings uglifying the code (although you are free to use uppercase if you prefer). 
+- If the variable is not required and missing, the default value will be returned.
+- If the variable is required and missing, or of the wrong type, an exception will be thrown. With manual code, these cases go undetected.
 
 The `envs` object also has additional features:
 
-### `verifyEnvironment(): boolean`
+### `envsOK(): boolean`
 
-It's valuable to verify that all the configured variables are present early on when running a script, so the app doesn't fail deep inside. (And this is _not_ done automatically when you configure the variables.) This method returns `true` if the all the variables are set, and false if not. Usage:
+It is valuable to detect and notify the programmer that not all the configured variables are present. It's even better to do so early in the run cycle, so the app doesn't fail deep inside. Note: `configure` above does _not_ perform check variables, and instead you must call `envsOK()`. 
+
+This method returns `true` if the all the variables are set, and false if not. Typical usage:
 ```ts
-if (!envs.verifyEnvironment())
+if (!envs.envsOK())
   process.exit(1)
 ```
-As a side effect, it outputs to the `console` an easy-to-understand error message (if necessary):
+As a side effect, if there is a problem, it outputs to the `console` an easy-to-understand error message:
 ```
 Environmental variable errors!
 Missing environment variable "DB_URL"
@@ -93,7 +98,7 @@ This output is followed by a complete "help text" (below) that describes all the
 
 ### `envs.helpText: string`
 
-`envs.helpText` describes all of the variables, based on the configuration. This is used for the error message above, but you might want to include it in other help information or documentation. It looks like:
+`envs.helpText` describes all of the variables, based on the configuration. This is used for the error message above, but you might want to include it in other help information or documentation. It looks like (although, obviously, varies depending on the variables):
 
     E N V I R O N M E N T   V A R I A B L E S
     
@@ -106,33 +111,30 @@ This output is followed by a complete "help text" (below) that describes all the
 
 ### `env.errors: Array<string>`
 
-`env.errors` is an array of strings of the errors. This is accessed automatically in `verifyEnvironment` above, but they are made available for any other usage.
+`env.errors` is an array of strings spelling out the errors. This is accessed automatically in `envsOK` above, but they are made available for any other usage.
 
 ## Non-features:
-- Creating some hierarchy out of your environment variables, based on their names.
-- Allow you to create aliases of environment variables.
-- Parsing apart complex values within environment variables.
-- Reading alternate `.env` files.
-- Use some third-party schema definitions. (Typescript only!)
 
-## Similar Projects
+This library does not aim to:
+- Create some hierarchy out of your environment variables, based on their names.
+- Allow you to create aliases of environment variables, so they have multiple names.
+- Parse complex values, like XML or JSON, included within environment variables.
+- Reading alternate `.env` files, like `dotenv`.
+- Use some third-party schema definitions, like zod or joi. (We're Typescript only!)
+
+## Similar Projects (if you don't like this one)
 
 - https://www.npmjs.com/package/znv: Parses using zod types. 
-- https://www.npmjs.com/package/env-var: Verification, sanitization, and type coercion for environment variables in Node.js and web applications. Supports TypeScript!
+- https://www.npmjs.com/package/env-var: Verification, sanitization, and type coercion for environment variables in Node.js and web applications. Supports TypeScript! Somewhat deeper features, but slightly fussier syntax. 
 - https://www.npmjs.com/package/@sadams/environment: Similar, with custom parsers.
 - https://www.npmjs.com/package/chickenv: Detects missing variables
-- https://www.npmjs.com/package/common-env: Lots of options. Aliases.
+- https://www.npmjs.com/package/common-env: Lots of options. Aliases?
 - https://www.npmjs.com/package/@trenskow/config: Infers a hierarchy, and has a little bit of validation
 - https://www.npmjs.com/package/castenv: Casts process.env variables directly, based on heuristics
 - https://www.npmjs.com/package/@tonbul/env-parser: explicit conversion functions
 - https://www.npmjs.com/package/getenv2: Uses joi for types, and also defaults per environment
 - https://www.npmjs.com/package/strict-env-conf: Similar motivation; builds hierarchy of values
-- https://www.npmjs.com/package/safe-env-vars: Verification on `get`.
-
-## TODO
-
-- boolean values
-- enums (?)
+- https://www.npmjs.com/package/safe-env-vars: Verification build on `get`.
 
 ## NOTES
 
