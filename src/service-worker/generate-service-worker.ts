@@ -2,6 +2,7 @@ import {globSync} from 'glob'
 
 import {describe, test} from 'node:test'
 import assert from 'node:assert/strict'
+import {fileSpecsToPaths, FilesSpec} from "./files-specs";
 
 const anInput: InputSpec = [
   {
@@ -173,7 +174,7 @@ describe('unifyPreloadPaths', () => {
     ] satisfies Array<InputCacheStrategyAsPaths>
     const actual = extractAllPreloadPaths(input)
 
-    assert.deepEqual(actual, {strategy: "cache-on-install", paths: ['a', 'b', 'c']})
+    assert.deepEqual(actual,  ['a', 'b', 'c'])
   })
 
 
@@ -187,8 +188,7 @@ describe('unifyPreloadPaths', () => {
     const actual = extractAllPreloadPaths(input)
 
     assert.deepEqual(actual,
-      {paths: ['a.txt', 'b.txt'], strategy: 'cache-on-install'})
-
+      ['a.txt', 'b.txt'])
   })
 })
 
@@ -234,12 +234,12 @@ function pathToJS(path: string | RegExp) {
 }
 
 function generatePreloadCode(paths: OutputPaths) {
-  return `const PRELOAD_PATHS  = ${pathsToJS(paths)}`
+  return `const PRELOAD_PATHS = ${pathsToJS(paths)};\n`
 }
 
 function generateRoutes(spec: Array<RoutableStrategy<InputPaths>>) {
-  return spec
-    .map((s) => `[${s.strategy}, ${pathsToJS(s.paths)}]\n`)
-    .join('/')
+  return `const ROUTES = [\n  ${spec
+    .map((s) => `[${s.strategy}, ${pathsToJS(s.paths)}]`)
+    .join(',\n  ')}];\n`
 }
 
