@@ -1,3 +1,5 @@
+
+
 // Cache name is the major portion of the version.
 // To start a new cache, increment the major version.
 const CACHE_NAME = VERSION.split('.')[0];
@@ -7,6 +9,10 @@ self.addEventListener('install', function (event) {
   event.waitUntil(
     caches.open(CACHE_NAME).then(function (cache) {
       return cache.addAll(PRELOAD_PATHS)
+                  .then(x => {
+                    log(`Preloaded paths: ${PRELOAD_PATHS.length}`)
+                    return x
+                  })
     }),
   )
 })
@@ -18,7 +24,10 @@ self.addEventListener('activate', function (event) {
           .then(cacheNames => Promise.all(
             cacheNames
               .filter(cacheName => cacheName !== CACHE_NAME)
-              .map(cacheName => caches.delete(cacheName)),
+              .map(cacheName => {
+                log(`Clearing cache ${cacheName}` )
+                return caches.delete(cacheName)
+              }),
           )),
   )
 })
@@ -51,25 +60,48 @@ self.addEventListener('fetch', function (event) {
 })
 
 
-function fetchAndCache (event) {
-  log('fetchAndCache ', event.request.url)
-  return networkOnly(event)
-    .then(response => toCache(event, response))
-}
+// Caching strategies
 
 function staleWhileRevalidate (event) {
-  log('staleWhileRevalidate ', event.request.url)
   return fromCache(event)
     .then(function (response) {
       var fetchPromise = fetchAndCache(event)
+        .then(r => {
+          logEvent(event, 'staleWhileRevalidate revalidated ', event)
+          return r;
+        })
+      logEvent(event, `staleWhileRevalidate returning ${response ? '[stale]' : '[fresh]'}`)
+
       return response || fetchPromise
     })
 }
 
 function cacheFirst (event) {
-  log('cacheFirst ', event.request.url)
+  logEvent(event, 'cacheFirst')
   return fromCache(event)
     .then(response => response || fetchAndCache(event))
+}
+
+function networkFirst(event) {
+  logEvent(event, 'networkFirst')
+  return fetchRequest(event)
+    .then(response => response || fetchAndCache(event))
+}
+
+// Low-level helpers
+
+function networkOnly (event) {
+  logEvent(event, 'networkOnly')
+  return fetchRequest(event)
+}
+
+function fetchRequest(event) {
+  return fetch(event.request)
+}
+
+function fetchAndCache (event) {
+  return fetchRequest(event)
+    .then(response => toCache(event, response))
 }
 
 function fromCache (event) {
@@ -78,12 +110,10 @@ function fromCache (event) {
 
 function toCache (event, response) {
   if (!response.ok) {
-    log('request for ' + event.request.url +
-        ' failed with status ' + response.statusText)
+    log(`request for ${event.request.url} failed with status ${response.statusText}`)
     return response
   }
 
-  log('caching ', event.request.url)
   return caches.open(CACHE_NAME)
                .then(function (cache) {
                  cache.put(event.request, response.clone())
@@ -91,15 +121,10 @@ function toCache (event, response) {
                })
 }
 
-function networkFirst(event) {
-  return networkOnly(event)
-    .then(response => response || fetchAndCache(event))
+function logEvent(event, action) {
+  if (DEBUG)
+    console.log(`[Service Worker] ${action} for ` + event.request.url)
 }
-
-function networkOnly (event) {
-  return fetch(event.request)
-}
-
 function log (s) {
   if (DEBUG)
     console.log('[Service Worker]: ' + s)

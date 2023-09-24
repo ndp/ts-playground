@@ -9,6 +9,12 @@ const js = generateServiceWorker('1.0.4', [
     ]
   },
   {
+    strategy: "cacheFirst",
+    paths: [
+      '/favicon.ico'
+    ]
+  },
+  {
     strategy: "staleWhileRevalidate",
     paths: /\/data\/out\/.*\.json/
   }
