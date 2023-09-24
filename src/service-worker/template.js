@@ -1,5 +1,4 @@
 
-
 // Cache name is the major portion of the version.
 // To start a new cache, increment the major version.
 const CACHE_NAME = VERSION.split('.')[0];
@@ -88,12 +87,13 @@ function networkFirst(event) {
     .then(response => response || fetchAndCache(event))
 }
 
-// Low-level helpers
-
 function networkOnly (event) {
   logEvent(event, 'networkOnly')
   return fetchRequest(event)
 }
+
+
+// Low-level helpers
 
 function fetchRequest(event) {
   return fetch(event.request)

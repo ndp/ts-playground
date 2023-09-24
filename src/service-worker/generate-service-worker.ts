@@ -11,7 +11,10 @@ const js = generateServiceWorker('1.0.4', [
   {
     strategy: "cacheFirst",
     paths: [
-      '/favicon.ico'
+      '/favicon.ico',
+      '/symbola.css?wednesday',
+      '/open-search-description.xml',
+      /\/main\..*/   // main css and js
     ]
   },
   {
