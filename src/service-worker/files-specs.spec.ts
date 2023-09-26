@@ -6,47 +6,47 @@ import {fileSpecsToPaths} from "./files-specs";
 describe('fileSpecsToPaths', () => {
 
   test('finds raw file', () => {
-    const actual = fileSpecsToPaths('example/a.txt')
-    assert.deepEqual(actual, ['/example/a.txt'])
+    const actual = fileSpecsToPaths('example/data/a.txt')
+    assert.deepEqual(actual, ['/example/data/a.txt'])
   })
 
   test('finds raw files', () => {
-    const actual = fileSpecsToPaths(['example/a.txt', 'example/folder/b.txt'])
-    assert.deepEqual(actual, ['/example/a.txt', '/example/folder/b.txt'])
+    const actual = fileSpecsToPaths(['example/data/a.txt', 'example/data/folder/b.txt'])
+    assert.deepEqual(actual, ['/example/data/a.txt', '/example/data/folder/b.txt'])
   })
 
   test('finds raw wildcard file', () => {
-    const actual = fileSpecsToPaths('example/*.txt')
-    assert.deepEqual(actual, ['/example/a.txt'])
+    const actual = fileSpecsToPaths('example/data/*.txt')
+    assert.deepEqual(actual, ['/example/data/a.txt'])
   })
 
   test('finds file', () => {
-    const actual = fileSpecsToPaths({glob: 'example/a.txt'})
-    assert.deepEqual(actual, ['/example/a.txt'])
+    const actual = fileSpecsToPaths({glob: 'example/data/a.txt'})
+    assert.deepEqual(actual, ['/example/data/a.txt'])
   })
 
   test('finds file in folder', () => {
-    const actual = fileSpecsToPaths({glob: 'a.txt', dir: 'example'})
+    const actual = fileSpecsToPaths({glob: 'a.txt', dir: 'example/data'})
     assert.deepEqual(actual, ['/a.txt'])
   })
 
   test('finds wildcard file as explicit glob', () => {
-    const actual = fileSpecsToPaths({glob: 'example/*.txt'})
-    assert.deepEqual(actual, ['/example/a.txt'])
+    const actual = fileSpecsToPaths({glob: 'example/data/*.txt'})
+    assert.deepEqual(actual, ['/example/data/a.txt'])
   })
 
   test('finds wildcard files in folders', () => {
-    const actual = fileSpecsToPaths({glob: '**/*.txt', dir: 'example'})
+    const actual = fileSpecsToPaths({glob: '**/*.txt', dir: 'example/data'})
     assert.deepEqual(actual, ['/a.txt', '/folder/b.txt'])
   })
 
   test('prefixes files', () => {
-    const actual = fileSpecsToPaths({glob: '**/*.txt', dir: 'example', prefix: '/assets'})
+    const actual = fileSpecsToPaths({glob: '**/*.txt', dir: 'example/data', prefix: '/assets'})
     assert.deepEqual(actual, ['/assets/a.txt', '/assets/folder/b.txt'])
   })
 
   test('treats "/" as the null prefix', () => {
-    const actual = fileSpecsToPaths({glob: '**/*.txt', dir: 'example', prefix: '/'})
+    const actual = fileSpecsToPaths({glob: '**/*.txt', dir: 'example/data', prefix: '/'})
     assert.deepEqual(actual, ['/a.txt', '/folder/b.txt'])
   })
 
