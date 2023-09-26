@@ -3,7 +3,7 @@ import {
   convertAllPreloadFilesToPreloadPaths,
   convertPreloadPathsToCacheFirst,
   extractAllPreloadPaths,
-  InputCacheStrategy, InputPaths, OutputPaths, RoutableStrategy
+  InputCacheStrategy, InputPaths, Origin, OutputPaths, RoutableStrategy
 } from './strategies';
 import fs from 'fs';
 import * as Path from 'path';
@@ -35,12 +35,12 @@ export function generateServiceWorker(
 
   const routable = convertPreloadPathsToCacheFirst(spec)
 
-  return generateFlag('DEBUG', options.debug) +
+  const variables = generateFlag('DEBUG', options.debug) +
     generateFlag('SKIP_WAITING', options.skipWaiting) +
     generateVersion(version) +
     generatePreloadCode(preloadPaths) +
-    generateRoutes(routable) +
-    includeTemplate()
+    generateRoutes(routable);
+  return includeTemplate(variables)
 }
 
 export function generateVersion(version: Version) {
@@ -61,18 +61,25 @@ function generateRoutes(spec: Array<RoutableStrategy<InputPaths>>) {
     .join(',\n  ')}];\n`
 }
 
-function includeTemplate() {
+function includeTemplate(variables: string) {
   return fs.readFileSync(Path.join(__dirname, './serviceWorker.template.js'))
+    .toString()
+    .replace('// VARIABLES', variables)
 }
 
-function pathsToJS(paths: InputPaths) {
+export function pathsToJS(paths: InputPaths) {
   const asArray = Array.isArray(paths)
     ? paths : [paths]
   return `[${asArray.map(pathToJS).join(',')}]`
 }
 
-function pathToJS(path: string | RegExp) {
-  return typeof path === 'string'
-    ? `'${path}'`
-    : `${path}`
+export function pathToJS(path: string | RegExp | symbol) {
+  switch (typeof path) {
+    case 'string':
+      return `'${path}'`
+    case 'symbol':
+      return path == Origin ? 'ORIGIN_MATCHER' : 'SCOPE_MATCHER'
+    default:
+      return `${String(path)}`
+  }
 }

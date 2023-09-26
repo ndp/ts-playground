@@ -67,4 +67,5 @@ describe('extractAllPreloadPaths', () => {
     assert.deepEqual(actual,
       ['a.txt', 'b.txt'])
   })
+
 })

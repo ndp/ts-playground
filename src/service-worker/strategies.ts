@@ -68,8 +68,11 @@ export type CacheOnInstallStrategy = CachePathOnInstall
 export type InputCacheStrategy = RoutableStrategy<InputPaths> | CacheOnInstallStrategy
 export type InputCacheStrategyAsPaths = RoutableStrategy<InputPaths> | CachePathOnInstall
 
+export const Origin = Symbol.for('origin')
+export const Scope = Symbol.for('scope')
+
 export type InputPaths =
-  RegExp | string | OutputPaths
+  RegExp | string | OutputPaths | typeof Origin | typeof Scope
 
 // Convert to always be an array
 export type OutputPaths = Array<string | RegExp>

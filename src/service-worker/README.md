@@ -103,6 +103,9 @@ https://web.dev/learn/pwa/workbox/#offline-fallback
 https://github.com/veiss-com/sw-tools#limiting-the-cache-size
 offline SVG: https://github.com/veiss-com/sw-tools#offline
 
+origin/scope references for path matching
+
+filter/only to process only certain types, eg. only: /https?:.*/
 
 REFERENCE
 https://web.dev/learn/pwa/serving/
