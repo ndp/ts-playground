@@ -12,10 +12,10 @@ self.addEventListener('install', function (event) {
                     log(`Preloaded paths: ${PRELOAD_PATHS.length}`)
                     return x
                   })
+        .then(() => SKIP_WAITING && self.skipWaiting())
     }),
   )
 })
-
 
 self.addEventListener('activate', function (event) {
   event.waitUntil(
@@ -83,8 +83,9 @@ function cacheFirst (event) {
 
 function networkFirst(event) {
   logEvent(event, 'networkFirst')
-  return fetchRequest(event)
-    .then(response => response || fetchAndCache(event))
+  return fetchAndCache(event)
+    .then(response => response || fromCache(event))
+    .catch(() => fromCache(event))
 }
 
 function networkOnly (event) {
@@ -122,10 +123,9 @@ function toCache (event, response) {
 }
 
 function logEvent(event, action) {
-  if (DEBUG)
-    console.log(`[Service Worker] ${action} for ` + event.request.url)
+  log(`${action} for ` + event.request.url)
 }
 function log (s) {
   if (DEBUG)
-    console.log('[Service Worker]: ' + s)
+    console.log('[Service Worker] ' + s)
 }

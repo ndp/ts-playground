@@ -1,16 +1,28 @@
-// Preload and cache any number of files enumerated from disk
-// Implies 'cacheFirst'.
+// Copyright (c) 2023 Andrew J. Peterson, dba NDP Software
 import {fileSpecsToPaths, FilesSpec} from "./files-specs";
 
+
+// Preload and cache any number of files enumerated from disk using globs.
+// Implies 'cacheFirst'.
 export type CacheFileOnInstall = {
   strategy: 'cache-on-install',
   files: FilesSpec
 }
 
-// Preload and cache enumerated paths
-export type CachePathOnInstall<Paths> = {
+export function isCacheFileOnInstall(s: { strategy: string }): s is CacheFileOnInstall {
+  return s.strategy === 'cache-on-install' && 'files' in s
+}
+
+
+// Preload and cache enumerated paths (not files)
+// Implies 'cacheFirst'.
+export type CachePathOnInstall = {
   strategy: 'cache-on-install',
-  paths: Paths
+  paths: string | Array<string>
+}
+
+export function isCachePathOnInstall(s: { strategy: string }): s is CachePathOnInstall {
+  return s.strategy === 'cache-on-install' && 'paths' in s
 }
 
 
@@ -23,6 +35,7 @@ export type CacheFirstStrategy<Paths> = {
   readonly strategy: 'cacheFirst'
   readonly paths: Paths
 }
+
 // https://web.dev/learn/pwa/serving/#network-first
 export type NetworkFirstStrategy<Paths> = {
   strategy: 'networkFirst'
@@ -49,11 +62,11 @@ export type RoutableStrategy<Paths> = CacheFirstStrategy<Paths>
   | StaleWhileRevalidateStrategy<Paths>
   | NetworkOnlyStrategy<Paths>
 
-export type CacheOnInstallStrategy = CachePathOnInstall<InputPaths>
+export type CacheOnInstallStrategy = CachePathOnInstall
   | CacheFileOnInstall
 
 export type InputCacheStrategy = RoutableStrategy<InputPaths> | CacheOnInstallStrategy
-export type InputCacheStrategyAsPaths = RoutableStrategy<InputPaths> | CachePathOnInstall<InputPaths>
+export type InputCacheStrategyAsPaths = RoutableStrategy<InputPaths> | CachePathOnInstall
 
 export type InputPaths =
   RegExp | string | OutputPaths
@@ -68,17 +81,7 @@ export function isRoutableStrategy<Paths>(x: { strategy: string }): x is Routabl
     || x.strategy === 'networkOnly'
 }
 
-
-export function isPreloadFiles(s: { strategy: string }): s is CacheFileOnInstall {
-  return s.strategy === 'cache-on-install' && 'files' in s
-}
-
-export function isPreloadPaths(s: { strategy: string }): s is CachePathOnInstall<unknown> {
-  return s.strategy === 'cache-on-install' && 'paths' in s
-}
-
-
-export function convertPreloadFilesToPaths(strategy: CacheFileOnInstall): CachePathOnInstall<InputPaths> {
+export function convertPreloadFilesToPaths(strategy: CacheFileOnInstall): CachePathOnInstall {
   const paths = fileSpecsToPaths(strategy.files)
   return {
     strategy: 'cache-on-install',
@@ -87,7 +90,7 @@ export function convertPreloadFilesToPaths(strategy: CacheFileOnInstall): CacheP
 }
 
 export function convertPreloadFilesToPreloadPaths(strategy: InputCacheStrategy): InputCacheStrategyAsPaths {
-  if (isPreloadFiles(strategy))
+  if (isCacheFileOnInstall(strategy))
     return convertPreloadFilesToPaths(strategy)
   else
     return strategy
@@ -95,7 +98,7 @@ export function convertPreloadFilesToPreloadPaths(strategy: InputCacheStrategy):
 
 export function extractAllPreloadPaths(spec: Array<InputCacheStrategyAsPaths>): OutputPaths {
   return spec
-    .filter(isPreloadPaths)
+    .filter(isCachePathOnInstall)
     .map(s => s.paths)
     .flat()
     .sort()

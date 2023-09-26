@@ -1,3 +1,5 @@
+// Copyright (c) 2023 Andrew J. Peterson, dba NDP Software
+
 import {describe, test} from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -39,12 +41,14 @@ describe('convertPreloadPathsToCacheFirst', () => {
   })
 })
 
-describe('unifyPreloadPaths', () => {
+describe('extractAllPreloadPaths', () => {
+
   test('returns a single strategy', () => {
     const input = [
       {strategy: "cache-on-install", paths: ['c']},
       {strategy: "cache-on-install", paths: ['a', 'b']}
     ] satisfies Array<InputCacheStrategyAsPaths>
+
     const actual = extractAllPreloadPaths(input)
 
     assert.deepEqual(actual, ['a', 'b', 'c'])

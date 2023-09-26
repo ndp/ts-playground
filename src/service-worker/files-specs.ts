@@ -1,6 +1,5 @@
+// Copyright (c) 2023 Andrew J. Peterson, dba NDP Software
 import {globSync} from "glob";
-import {describe, test} from "node:test";
-import assert from "node:assert/strict";
 
 
 /*
