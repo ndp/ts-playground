@@ -1,0 +1,16 @@
+{
+  "name": "ts-sw",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --loader tsx --test *.spec.ts"
+  },
+  "keywords": [],
+  "author": "Andrew Peterson",
+  "license": "ISC",
+  "devDependencies": {
+    "tsx": "^3.13.0"
+  }
+}
