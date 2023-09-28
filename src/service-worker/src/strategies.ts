@@ -1,5 +1,5 @@
 // Copyright (c) 2023 Andrew J. Peterson, dba NDP Software
-import {fileSpecsToPaths, FilesSpec} from "./files-specs";
+import {fileSpecsToPaths, FilesSpec} from "./files-specs.js";
 
 
 // Preload and cache any number of files enumerated from disk using globs.

@@ -1,7 +1,7 @@
 import {describe, mock, test} from "node:test";
-import {pathToJS} from "./generate";
+import {pathToJS} from "../generate.js";
 import assert from "node:assert/strict";
-import {Origin, Scope} from "./strategies";
+import {Origin, Scope} from "../strategies.js";
 
 describe('pathToJS', () => {
 

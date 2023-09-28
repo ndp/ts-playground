@@ -1,11 +1,17 @@
 {
-  "name": "ts-sw",
+  "name": "ts-service-worker",
   "version": "1.0.0",
   "description": "",
   "type": "module",
-  "main": "index.js",
+  "exports": {
+    "import": {
+      "types": "dist/index.d.ts",
+      ".": "dist/index.js"
+    }
+  },
   "scripts": {
-    "test": "node --loader tsx --test *.spec.ts"
+    "build": "rimraf ./build && tsc",
+    "test": "node --loader tsx --test src/specs/*.spec.ts"
   },
   "keywords": [],
   "author": "Andrew Peterson",

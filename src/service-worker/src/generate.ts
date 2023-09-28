@@ -4,23 +4,26 @@ import {
   convertPreloadPathsToCacheFirst,
   extractAllPreloadPaths,
   InputCacheStrategy, InputPaths, Origin, OutputPaths, RoutableStrategy
-} from './strategies';
+} from './strategies.js';
 import fs from 'fs';
 import * as Path from 'path';
 
+const DirName = new URL('.', import.meta.url).pathname
+
 export type Plan = Array<InputCacheStrategy>
 type Version = string
-type Options = {
+export type Options = {
+  version?: Version
   debug?: boolean
   skipWaiting?: boolean
 }
 const defaultOptions: Required<Options> = {
+  version: '0.0',
   debug: false,
   skipWaiting: false
 }
 
 export function generateServiceWorker(
-  version: Version,
   inputSpec: Plan,
   optionsIn: Options = {}): string {
 
@@ -37,7 +40,7 @@ export function generateServiceWorker(
 
   const variables = generateFlag('DEBUG', options.debug) +
     generateFlag('SKIP_WAITING', options.skipWaiting) +
-    generateVersion(version) +
+    generateVersion(options.version) +
     generatePreloadCode(preloadPaths) +
     generateRoutes(routable);
   return includeTemplate(variables)
@@ -62,7 +65,7 @@ function generateRoutes(spec: Array<RoutableStrategy<InputPaths>>) {
 }
 
 function includeTemplate(variables: string) {
-  return fs.readFileSync(Path.join(__dirname, './serviceWorker.template.js'))
+  return fs.readFileSync(Path.join(DirName, './serviceWorker.template.js'))
     .toString()
     .replace('// VARIABLES', variables)
 }

@@ -1,10 +1,10 @@
-import {generateServiceWorker} from "../generate";
-import {Origin} from "../strategies";
+import {generateServiceWorker} from "../src/generate.js";
+import {Origin} from "../src/strategies.js";
 
-const js = generateServiceWorker('1.0',
+const js = generateServiceWorker(
   [
-    {strategy: "cache-on-install", paths: 'http://localhost:5000/' },
+    {strategy: "cache-on-install", paths: 'http://localhost:5000/'},
     {strategy: "networkFirst", paths: Origin}
-  ], { skipWaiting: true, debug: true});
+  ], {version: '1.0', skipWaiting: true, debug: true});
 
 console.log(js)

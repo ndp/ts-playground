@@ -1,6 +1,6 @@
 // Copyright (c) 2023 Andrew J. Peterson, dba NDP Software
 
-import {generateServiceWorker, Plan} from "../generate";
+import {generateServiceWorker, Plan} from "../src/generate.js";
 
 const plan: Plan = [
   {
@@ -27,7 +27,7 @@ const plan: Plan = [
   }
 ];
 
-const js = generateServiceWorker('1.0.4', plan, {debug: true, skipWaiting: true });
+const js = generateServiceWorker(plan, {debug: true, skipWaiting: true, version: '1.0.4'});
 
 console.log(js)
 
