@@ -8,7 +8,23 @@ import {
 import fs from 'fs';
 import * as Path from 'path';
 
-const DirName = new URL('.', import.meta.url).pathname
+/*
+What do I use instead of __dirname and __filename?
+import {fileURLToPath} from 'node:url';
+import path from 'node:path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+However, in most cases, this is better:
+
+import {fileURLToPath} from 'node:url';
+
+const foo = fileURLToPath(new URL('foo.js', import.meta.url));
+And many Node.js APIs accept URL directly, so you can just do this:
+
+const foo = new URL('foo.js', import.meta.url);
+ */
+// const __dirname = new URL('.', import.meta.url).pathname
 
 export type Plan = Array<InputCacheStrategy>
 type Version = string
@@ -65,7 +81,7 @@ function generateRoutes(spec: Array<RoutableStrategy<InputPaths>>) {
 }
 
 function includeTemplate(variables: string) {
-  return fs.readFileSync(Path.join(DirName, './serviceWorker.template.js'))
+  return fs.readFileSync(Path.join(__dirname, './serviceWorker.template.js'))
     .toString()
     .replace('// VARIABLES', variables)
 }

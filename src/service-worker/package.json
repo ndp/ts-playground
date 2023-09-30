@@ -1,22 +1,36 @@
 {
   "name": "ts-service-worker",
-  "version": "1.0.0",
+  "version": "1.0.9",
   "description": "",
-  "type": "module",
-  "exports": {
-    "import": {
-      "types": "dist/index.d.ts",
-      ".": "dist/index.js"
-    }
+  "engines": {
+    "node": ">=16"
   },
+  "type": "commonjs",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./types/index.d.ts",
+  "files": [
+    "README.md",
+    "dist",
+    "types"
+  ],
   "scripts": {
-    "build": "rimraf ./build && tsc",
-    "test": "node --loader tsx --test src/specs/*.spec.ts"
+    "example1": "node --loader tsc example/amp-what-sw.ts",
+    "example2": "node --loader tsc example/offline-backup.ts",
+    "test": "node --loader tsx --test src/specs/*.spec.ts",
+    "build": "yarn clean && yarn build-dist && yarn build-types",
+    "clean": "rm -f ./dist/* ./types/*",
+    "build-dist": "./node_modules/.bin/esbuild --format=esm  --target=esnext --outfile=./dist/index.js --bundle --sourcemap --platform=node --minify --format=cjs src/index.ts && cp ./src/serviceWorker.template.js ./dist/",
+    "build-types": "tsc -p src/tsconfig.json",
+    "prepublishOnly": "yarn build"
   },
   "keywords": [],
   "author": "Andrew Peterson",
   "license": "ISC",
   "devDependencies": {
+    "esbuild": "^0.19.4",
     "tsx": "^3.13.0"
   }
 }
