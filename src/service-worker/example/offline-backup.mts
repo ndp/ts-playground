@@ -1,5 +1,5 @@
-import {generateServiceWorker} from "../src/generate.js";
-import {Origin} from "../src/strategies.js";
+import {generateServiceWorker} from "../src/generate.mjs";
+import {Origin} from "../src/strategies.mjs";
 
 const js = generateServiceWorker(
   [

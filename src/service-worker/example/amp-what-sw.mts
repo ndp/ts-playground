@@ -1,6 +1,6 @@
 // Copyright (c) 2023 Andrew J. Peterson, dba NDP Software
 
-import {generateServiceWorker, Plan} from "../src/generate.js";
+import {generateServiceWorker, Plan} from "../src/generate.mjs";
 
 const plan: Plan = [
   {

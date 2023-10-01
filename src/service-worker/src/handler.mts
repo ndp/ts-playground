@@ -1,5 +1,5 @@
 import {IncomingMessage, ServerResponse} from "http";
-import {generateServiceWorker, Options, Plan} from "./generate.js";
+import {generateServiceWorker, Options, Plan} from "./generate.mjs";
 
 
 export const handler = ((plan: Plan, options: Options) => {

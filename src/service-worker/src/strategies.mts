@@ -1,5 +1,5 @@
 // Copyright (c) 2023 Andrew J. Peterson, dba NDP Software
-import {fileSpecsToPaths, FilesSpec} from "./files-specs.js";
+import {fileSpecsToPaths, FilesSpec} from "./fileSpecsToPaths.mjs";
 
 
 // Preload and cache any number of files enumerated from disk using globs.
@@ -104,7 +104,7 @@ export function extractAllPreloadPaths(spec: Array<InputCacheStrategyAsPaths>): 
     .filter(isCachePathOnInstall)
     .map(s => s.paths)
     .flat()
-    .sort()
+    .sort() as OutputPaths
 }
 
 export function convertPreloadPathsToCacheFirst(spec: Array<InputCacheStrategyAsPaths>): Array<RoutableStrategy<InputPaths>> {

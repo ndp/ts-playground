@@ -4,29 +4,28 @@
   "compilerOptions": {
     /* Visit https://aka.ms/tsconfig to read more about this file */
 
-    "target": "es2022",
+    "target": "es2020",
     "lib": [
       "es2020",
       "webworker"
     ],
     "module": "NodeNext",
-    "rootDir": ".",
     "moduleResolution": "NodeNext",
     "emitDeclarationOnly": true,
     "declaration": true,
     "sourceMap": true,
     "outDir": "./types",
-    "removeComments": true,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "rootDir": "."
   },
   "include": [
     "./src/**/*"
   ],
   "exclude": [
-    "./src/**/*.spec.ts"
+    "./src/specs"
   ]
 }

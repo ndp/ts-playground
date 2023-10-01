@@ -1,7 +1,7 @@
 // Copyright (c) 2023 Andrew J. Peterson, dba NDP Software
 import {describe, test} from "node:test";
 import assert from "node:assert/strict";
-import {fileSpecsToPaths} from "../files-specs.js";
+import {fileSpecsToPaths} from "../fileSpecsToPaths.mjs";
 
 describe('fileSpecsToPaths', () => {
 

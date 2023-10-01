@@ -7,7 +7,7 @@ import {
   extractAllPreloadPaths,
   InputCacheStrategy,
   InputCacheStrategyAsPaths
-} from "../strategies.js";
+} from "../strategies.mjs";
 
 describe('convertPreloadPathsToCacheFirst', () => {
 

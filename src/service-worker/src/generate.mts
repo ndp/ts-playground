@@ -4,7 +4,7 @@ import {
   convertPreloadPathsToCacheFirst,
   extractAllPreloadPaths,
   InputCacheStrategy, InputPaths, Origin, OutputPaths, RoutableStrategy
-} from './strategies.js';
+} from './strategies.mjs';
 import fs from 'fs';
 import * as Path from 'path';
 
@@ -24,7 +24,7 @@ And many Node.js APIs accept URL directly, so you can just do this:
 
 const foo = new URL('foo.js', import.meta.url);
  */
-// const __dirname = new URL('.', import.meta.url).pathname
+const __dirname = new URL('.', import.meta.url).pathname
 
 export type Plan = Array<InputCacheStrategy>
 type Version = string

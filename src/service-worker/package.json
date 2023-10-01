@@ -17,12 +17,12 @@
     "types"
   ],
   "scripts": {
-    "example1": "node --loader tsc example/amp-what-sw.ts",
-    "example2": "node --loader tsc example/offline-backup.ts",
-    "test": "node --loader tsx --test src/specs/*.spec.ts",
+    "example1": "node --loader tsc example/amp-what-sw.mts",
+    "example2": "node --loader tsc example/offline-backup.mts",
+    "test": "node --test --loader tsx src/specs/*.mts",
     "build": "yarn clean && yarn build-dist && yarn build-types",
-    "clean": "rm -f ./dist/* ./types/*",
-    "build-dist": "./node_modules/.bin/esbuild --format=esm  --target=esnext --outfile=./dist/index.js --bundle --sourcemap --platform=node --minify --format=cjs src/index.ts && cp ./src/serviceWorker.template.js ./dist/",
+    "clean": "rm -fr ./dist/* ./types/*",
+    "build-dist": "./node_modules/.bin/esbuild --format=esm  --target=esnext --outfile=./dist/index.js --bundle --sourcemap --platform=node --minify --format=cjs src/index.mts && cp ./src/serviceWorker.template.js ./dist/",
     "build-types": "tsc -p src/tsconfig.json",
     "prepublishOnly": "yarn build"
   },
