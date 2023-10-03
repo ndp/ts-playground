@@ -1,16 +1,14 @@
 {
   "name": "ts-service-worker",
-  "version": "1.0.9",
+  "version": "1.0.27",
   "description": "",
   "engines": {
     "node": ">=16"
   },
+  "sideEffects": false,
   "type": "commonjs",
-  "exports": {
-    ".": "./dist/index.js"
-  },
   "main": "./dist/index.js",
-  "types": "./types/index.d.ts",
+  "types": "./types/index.d.mts",
   "files": [
     "README.md",
     "dist",
@@ -22,15 +20,26 @@
     "test": "node --test --loader tsx src/specs/*.mts",
     "build": "yarn clean && yarn build-dist && yarn build-types",
     "clean": "rm -fr ./dist/* ./types/*",
-    "build-dist": "./node_modules/.bin/esbuild --format=esm  --target=esnext --outfile=./dist/index.js --bundle --sourcemap --platform=node --minify --format=cjs src/index.mts && cp ./src/serviceWorker.template.js ./dist/",
+    "build-dist": "./node_modules/.bin/esbuild --target=esnext --outfile=./dist/index.js --bundle --platform=node --sourcemap --format=cjs src/index.mts",
     "build-types": "tsc -p src/tsconfig.json",
     "prepublishOnly": "yarn build"
   },
-  "keywords": [],
-  "author": "Andrew Peterson",
+  "keywords": [
+    "service worker",
+    "sw",
+    "Typescript",
+    "ts",
+    "build",
+    "declarative configuration",
+    "offline",
+    "cache",
+    "pwa",
+    "progressive web apps"
+  ],
+  "author": "Andrew Peterson, NDP Software",
   "license": "ISC",
   "devDependencies": {
-    "esbuild": "^0.19.4",
-    "tsx": "^3.13.0"
+    "esbuild": "*",
+    "tsx": "*"
   }
 }

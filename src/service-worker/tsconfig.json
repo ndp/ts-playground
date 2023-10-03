@@ -4,16 +4,16 @@
   "compilerOptions": {
     /* Visit https://aka.ms/tsconfig to read more about this file */
 
-    "target": "es2020",
+    "target": "ES6",
+    "module": "node16",
+    "moduleResolution": "node16",
     "lib": [
-      "es2020",
+      "ES2019",
       "webworker"
     ],
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
     "emitDeclarationOnly": true,
     "declaration": true,
-    "sourceMap": true,
+    "declarationDir": "./types",
     "outDir": "./types",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
@@ -24,8 +24,5 @@
   },
   "include": [
     "./src/**/*"
-  ],
-  "exclude": [
-    "./src/specs"
   ]
 }
