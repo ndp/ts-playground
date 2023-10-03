@@ -31,7 +31,7 @@ self.addEventListener('fetch', function (event) {
     if (!url.startsWith('http'))
         return;
     // Find the first route that matches and emit the response.
-    ROUTES.reduce((done, [fn, paths]) => done || respondIfMatch(fn, paths), false);
+    ROUTES.reduce((done, [fn, paths, opts]) => done || respondIfMatch(fn, paths, opts), false);
     function respondIfMatch(fn, paths) {
         if (matches(paths)) {
             event.respondWith(fn(event));
@@ -59,6 +59,17 @@ function staleWhileRevalidate(event) {
         return response || fetchPromise;
     });
 }
+
+function staticOfflineBackup(event, opts) {
+    logEvent(event, 'staticOfflineBackup');
+    return fetchRequest(event)
+      .then(response => response || fromCache(opts))
+      .catch((e) => {
+          log(e)
+          return fromCache(opts)
+      })
+}
+
 function cacheFirst(event) {
     logEvent(event, 'cacheFirst');
     return fromCache(event)

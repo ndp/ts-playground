@@ -3,28 +3,9 @@ import {
   convertAllPreloadFilesToPreloadPaths,
   convertPreloadPathsToCacheFirst,
   extractAllPreloadPaths,
-  InputCacheStrategy, InputPaths, Origin, OutputPaths, RoutableStrategy
+  InputCacheStrategy, InputPaths, isStaticOfflineBackup, Origin, OutputPaths, RoutableStrategy
 } from './strategies.mjs';
-import fs from 'fs';
-import * as Path from 'path';
-
-/*
-What do I use instead of __dirname and __filename?
-import {fileURLToPath} from 'node:url';
-import path from 'node:path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-However, in most cases, this is better:
-
-import {fileURLToPath} from 'node:url';
-
-const foo = fileURLToPath(new URL('foo.js', import.meta.url));
-And many Node.js APIs accept URL directly, so you can just do this:
-
-const foo = new URL('foo.js', import.meta.url);
- */
-const __dirname = new URL('.', import.meta.url).pathname
+import { TEMPLATE } from './serviceWorkerTemplate.mjs'
 
 export type Plan = Array<InputCacheStrategy>
 type Version = string
@@ -76,13 +57,12 @@ function generatePreloadCode(paths: OutputPaths) {
 
 function generateRoutes(spec: Array<RoutableStrategy<InputPaths>>) {
   return `const ROUTES = [\n  ${spec
-    .map((s) => `[${s.strategy}, ${pathsToJS(s.paths)}]`)
+    .map((s) => `[${s.strategy}, ${pathsToJS(s.paths)}${isStaticOfflineBackup(s) ? `, '${s.backup}'` : ''}]`)
     .join(',\n  ')}];\n`
 }
 
 function includeTemplate(variables: string) {
-  return fs.readFileSync(Path.join(__dirname, './serviceWorker.template.js'))
-    .toString()
+  return TEMPLATE
     .replace('// VARIABLES', variables)
 }
 

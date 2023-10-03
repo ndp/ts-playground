@@ -68,4 +68,17 @@ describe('extractAllPreloadPaths', () => {
       ['a.txt', 'b.txt'])
   })
 
+  test('adds in back of staticOfflineBackup', () => {
+    const input = [
+      {strategy: "cache-on-install", paths: 'a.txt'},
+      {strategy: "staticOfflineBackup", paths: '/b', backup: 'backup.txt'},
+      {strategy: "cache-on-install", paths: 'b.txt'},
+    ] satisfies Array<InputCacheStrategyAsPaths>
+
+    const actual = extractAllPreloadPaths(input)
+
+    assert.deepEqual(actual,
+      ['a.txt', 'b.txt', 'backup.txt'])
+  })
+
 })

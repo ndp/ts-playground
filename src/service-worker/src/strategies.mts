@@ -25,7 +25,6 @@ export function isCachePathOnInstall(s: { strategy: string }): s is CachePathOnI
   return s.strategy === 'cache-on-install' && 'paths' in s
 }
 
-
 // https://web.dev/learn/pwa/serving/#cache-first
 // Ideal for: CSS, images, fonts, JS, templates… basically anything you'd consider static to that "version" of your site.
 // needs expiration
@@ -48,6 +47,16 @@ export type StaleWhileRevalidateStrategy<Paths> = {
   paths: Paths
 }
 
+export type StaticOfflineBackupStrategy<Paths> = {
+  strategy: 'staticOfflineBackup',
+  paths: Paths
+  backup: string
+}
+
+export function isStaticOfflineBackup(s: {strategy: string}): s is StaticOfflineBackupStrategy<unknown> {
+  return s.strategy === 'staticOfflineBackup'
+}
+
 // https://web.dev/learn/pwa/serving/#network-only
 export type NetworkOnlyStrategy<Paths> = {
   strategy: 'networkOnly'
@@ -61,6 +70,7 @@ export type RoutableStrategy<Paths> = CacheFirstStrategy<Paths>
   | NetworkFirstStrategy<Paths>
   | StaleWhileRevalidateStrategy<Paths>
   | NetworkOnlyStrategy<Paths>
+  | StaticOfflineBackupStrategy<Paths>
 
 export type CacheOnInstallStrategy = CachePathOnInstall
   | CacheFileOnInstall
@@ -68,20 +78,38 @@ export type CacheOnInstallStrategy = CachePathOnInstall
 export type InputCacheStrategy = RoutableStrategy<InputPaths> | CacheOnInstallStrategy
 export type InputCacheStrategyAsPaths = RoutableStrategy<InputPaths> | CachePathOnInstall
 
+/**
+ * Indicator for all file paths routed from the same origin
+ * as the service worker is served from.
+ */
 export const Origin = Symbol.for('origin')
+
+/**
+ * Indicator for all files served within the service worker's
+ * scope. Usually you will want `Origin`, but this is included
+ * for completeness.
+ */
 export const Scope = Symbol.for('scope')
 
+/*
+Users may specify paths to be cached in a variety of ways.
+ */
 export type InputPaths =
   RegExp | string | OutputPaths | typeof Origin | typeof Scope
 
-// Convert to always be an array
+/*
+`OutputPaths` are the paths included in the service worker. All
+the variety of expression included in `InputPaths` has been converted
+to a simple array that can be iterated.
+ */
 export type OutputPaths = Array<string | RegExp>
 
 export function isRoutableStrategy<Paths>(x: { strategy: string }): x is RoutableStrategy<Paths> {
   return x.strategy === 'cacheFirst'
     || x.strategy === 'networkFirst'
-    || x.strategy === 'staleWhileRevalidate'
     || x.strategy === 'networkOnly'
+    || x.strategy === 'staleWhileRevalidate'
+    || x.strategy === 'staticOfflineBackup'
 }
 
 export function convertPreloadFilesToPaths(strategy: CacheFileOnInstall): CachePathOnInstall {
@@ -92,19 +120,48 @@ export function convertPreloadFilesToPaths(strategy: CacheFileOnInstall): CacheP
   }
 }
 
-export function convertPreloadFilesToPreloadPaths(strategy: InputCacheStrategy): InputCacheStrategyAsPaths {
+/**
+ * Converts paths specified by scanning the disk to the paths
+ * that are the result of that scan.
+ * Users may specific some paths as "files", which are
+ * then determined by scanning the disk (with glob patterns.)
+ * Obviously this is useful for certain static resources,
+ * where it might be tedious to keep the service worker spec
+ * up-to-date with resources in a folder.
+ * The downside of this are that it can pick up extra files
+ * without the developer being aware, so it's important to
+ * review either the generated service worker code, or the
+ * cache created in the browser.
+ * @param strategy
+ */
+export function convertPreloadFiles(strategy: InputCacheStrategy): InputCacheStrategyAsPaths {
   if (isCacheFileOnInstall(strategy))
     return convertPreloadFilesToPaths(strategy)
   else
     return strategy
 }
 
-export function extractAllPreloadPaths(spec: Array<InputCacheStrategyAsPaths>): OutputPaths {
-  return spec
+/**
+ * Run through all the strategies in a plan and extract all
+ * the paths that should be "preloaded" on service worker
+ * installation. This includes explicit preload paths,
+ * preload-files (which have been converted to paths before
+ * this call), and offline backup paths.
+ */
+export function extractAllPreloadPaths(plan: Array<{ strategy: string; }>): OutputPaths {
+
+  const cacheOnInstallPaths = plan
     .filter(isCachePathOnInstall)
     .map(s => s.paths)
-    .flat()
-    .sort() as OutputPaths
+    .flat();
+
+  const backupPaths = plan
+    .filter(isStaticOfflineBackup)
+    .map((s: StaticOfflineBackupStrategy<unknown>) => s.backup)
+
+  cacheOnInstallPaths.push(...backupPaths)
+
+  return cacheOnInstallPaths.sort() as OutputPaths
 }
 
 export function convertPreloadPathsToCacheFirst(spec: Array<InputCacheStrategyAsPaths>): Array<RoutableStrategy<InputPaths>> {
@@ -118,5 +175,5 @@ export function convertPreloadPathsToCacheFirst(spec: Array<InputCacheStrategyAs
 }
 
 export function convertAllPreloadFilesToPreloadPaths(spec: Array<InputCacheStrategy>): Array<InputCacheStrategyAsPaths> {
-  return spec.map(convertPreloadFilesToPreloadPaths);
+  return spec.map(convertPreloadFiles);
 }
