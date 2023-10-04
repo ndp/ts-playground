@@ -3,7 +3,7 @@ import {globSync} from "glob";
 
 
 /*
- * An enumeration of files found on disk
+ * A somewhat messy enumeration of files found on disk
  */
 export type FilesSpec =
   string
@@ -14,6 +14,9 @@ export type FilesSpec =
   prefix?: string // prefix of URL path, default /
 }
 
+/**
+ * Convert a messy file spec into an array of paths.
+ */
 export function fileSpecsToPaths(files: FilesSpec): Array<string> {
   let prefix = ''
   let dir = ''

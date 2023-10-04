@@ -2,7 +2,7 @@ import {IncomingMessage, ServerResponse} from "http";
 import {generateServiceWorker, Options, Plan} from "./generate.mjs";
 
 
-export const handler = ((plan: Plan, options: Options) => {
+export const requestHandler = ((plan: Plan, options: Options) => {
 
   const renderedServiceWorker = generateServiceWorker(
     plan,

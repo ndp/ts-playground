@@ -2,43 +2,67 @@
 
 ## Why
 
-Service workers are a powerful tool for developers to improve the user experience, providing for fine-grained caching and offline usage. It replaced the coarse-grained _AppCache_ that proved quite hard to use effectively. Unfortunately, the service worker API is too fine-grained: it requires always nested promise chains and grows complicated quickly. Most examples describe a single specific strategy you might use. These are readable, but real-world examples require integrating several of these strategies at the same time. This can be error-prone and hard to follow. It can also be tricky to test. To make it work, service workers run in a specific environment, and often require their own or parallel build configuration.
+Service workers are a powerful tool for developers to improve the user experience, providing for fine-grained caching, offline usage and progressive web apps (PWAs). It replaced the coarse-grained _AppCache_, which proved quite hard to effectively use. 
 
-There are a [other libraries](#other-libraries) designed to help, but they often solve only one narrow use cases. This library is ambitious. It:
+Unfortunately, the service worker API is so low-level it can be hard to use. It requires series of nested promise chains, and quickly grows complicated. In the documentation there are good examples describing single specific strategies. While these are readable, they are minimally useful because real-world usage requires integrating several of these strategies at the same time. This can be error-prone and hard to follow. And as anyone who has developed service workers knows, they are tedious to test because of their more complex lifecycle.
 
-- provides a declarative API to _describe_ your webapp caching
-- is fully typed in Typescript
-- provides easy integration of multiple caching strategies
-- built-in debugging
-- clear versioning rules of cache
+And since service workers run in the browser, they must be written in the browser's version Javascript. If this likely involves transpilation, which will requiring additional complexity in the build process to produce a separate artifact.
 
-## Example
+There are a [other libraries](#other-libraries) designed to help, which may be useful to you. **TS-Service-worker** aims to solve specific challenges. It:
+
+- is written in Typescript and fully typed
+- avoids nesting and promise chains
+- has a declarative API to _describe_ your webapp caching
+- supports easy integration of multiple caching strategies
+- build a compatible service-worker.js that requires no additional transpilation
+- can scan your disk for resources to cache
+- provides built-in debug logging
+- provides simple a simple cache clearing rule
+
+## Examples
 
 The very simplest service worker might provide an offline backup of the whole site:
 ```ts
-import {Plan} from "../generate";
+import {requestHandler, Origin} from "ts-service-worker";
 
 export const plan: Plan = [
-  {paths: Origin, strategy: "networkFirst"}
+  {paths: Origin, strategy: "networkFirst"} 
 ]
+app.get('/service-worker.js', requestHandler(plan))
 ```
-This plan says, "intercept all the requests from the origin and below (usually everything under `/`), and serve if from the network if available, otherwise, serve from the cache." This is a crude way to provide offline access to your app, and parallels one of the multiple-line building blocks. 
+This plan says, "intercept all the requests from the origin and below (usually everything under `/`), and serve if from the network if available, otherwise, serve from the cache." This is just one of the example caching strategies, and demonstrates:
 
-But it lacks several key components:
-- only caches paths that have been visited
+-  declarative configuration
+- conveniences like `Origin` that make doing simple things simple
+- how a simple caching strategy is insufficent.
+
+Some of the deficiences of this strategy:
+- it only caches paths that have been visited
 - provides no way to update cached files
+- caches everything fetched, even unimportant resources
 
-To cache files that may not be visited, you will need to precache them by name:
-
+A real caching plan requires more nuance. Here's a slightly more realistic plan:
 ```ts
-import type {Plan} from "../generate";
-
 export const plan: Plan = 
   [
-    {paths: ['/about.html', '/help.html'], strategy: 'cache-on-install'},
-    {paths: Origin, strategy: "networkFirst"}
+    {strategy: 'networkOnly', paths: ['/open-search.xml']},
+    {strategy: 'staleWhileRevalidate', ['/my-data.json']}
+    {strategy: 'staticOfflineBackup', [/.*\.html/], backup: '/networkDown.html'}
   ]
 ```
+Here, we see multiple strategies in action. Each request is evaluated (sequentially) against the paths, and the first matching strategy is applied. 
+  - The path `open-search.xml` will never be cached, 
+  - `/my-data.json` will be served from the cache and re-fetched in the background, available for a later access. 
+  - Finally, the file `/networkDown.html` will be cached, and served as a replacement for other HTML pages when the network is down.
+
+Another common strategy is to pre-cache some resources on disk. These can be explicitly listed, or dynamically determined from glob matches of files on disk:
+```ts
+  {
+    strategy: 'cache-on-install',
+    files: { glob: '*.png', dir: 'src/assets/images', prefix: '/img'}
+  }
+```
+These are just some examples. Each app is different and requires careful consideration and crafting. **TS-service-worker** makes developing a custom caching service worker easy and error-free.
 
 ## Usage
 
@@ -51,19 +75,15 @@ There are a few ways to use this:
 3. Serve the resultant file as your service worker, editing the Typescript file and regenerating as needed.
 
 ### Within Express
-
 ```ts
-app.get('/service-worker.js', (req: IncomingMessage,
-                               res: ServerResponse) => {
-  res.setHeader('Content-Type', 'application/javascript')
-  res.setHeader('Cache-Control', 'max-age=0')
-  res.end(renderServiceWorker([
+import { requestHandler } from 'ts-service-worker'
+app.get('/service-worker.js', requestHandler([
     { strategy: 'networkFirst', paths: Origin }
   ]))
 })
 ```
 ### Other
-There are other ways to incorporate this into your build cycle. Let me know how you do it! One thing you see repeatedly-- and one of the challenges of service workers-- is that the packager settings for a service worker are different than what would be used for the rest of the app. There are lots of "work-arounds" for this. 
+There are other ways to incorporate this into your build cycle. The library exposes a method `generateServiceWorker` which accepts a plan and options and generates the necessary Javascript (text). Let me know how you do it! 
 
 Note that the output of this tool needs no post-processing, so it's best to avoid these tools for the service worker if possible. If the code output isn't compatible, let me know and I'll fix it right away.
 
@@ -85,6 +105,8 @@ Paths can be:
 - the symbol `Symbol.for('scope')`, which matches everything under the service worker's scope, which is the level that a service worker is installed at.
 
 ## Strategies
+
+**ts-service-worker**
 
 ### cache-on-install
 
@@ -139,6 +161,16 @@ See https://web.dev/learn/pwa/serving/#stale-while-revalidate
 > 
 See https://web.dev/learn/pwa/serving/#network-only
 
+### staticOfflineBackup
+
+Use this strategy to provide a backup for a resource only to be applied when a site is offline. This may be a "sorry" page, or could provide some reasonable alternative. This is commonly used for placeholder images or other content.
+
+The backup resource is loaded on service worker installation and served as needed.
+
+Note: this currently doesn't support inline SVGs that you see in some examples, but requires using a separate file.
+
+Note: this does **not** serve the "backup" file from cache by default. If you want to do that, use another strategy in combination. This likely is `networkFirst`, but it's up to you.
+
 
 ## Rebuild Cache
 
@@ -165,24 +197,23 @@ network-first
 cache-first
 offline backup  
 
-TODO
-
-Command line
-
-filter/only to process only certain types, eg. only: /https?:.*/
-
-allowOnly: /
-https://web.dev/learn/pwa/workbox/#offline-fallback
-https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API/Using_Service_Workers#recovering_failed_requests
-https://github.com/veiss-com/sw-tools#limiting-the-cache-size
-offline SVG: https://github.com/veiss-com/sw-tools#offline
-
-expiring cache
-
+## TODO
+1. Fix backup to ONLY serve backup if network fails.
+2. Command line
+   https://web.dev/learn/pwa/serving/#cache-only
+3. filter/only to process only certain types, eg. only: /https?:.*/
+4. allowOnly: /
+5. https://web.dev/learn/pwa/workbox/#offline-fallback
+   https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API/Using_Service_Workers#recovering_failed_requests  ALSO offline SVG: https://github.com/veiss-com/sw-tools#offline
+6. https://github.com/veiss-com/sw-tools#limiting-the-cache-size
+7. expiring cache
+8. change name of service worker request handler. requesthandler?
 
 REFERENCE
 https://web.dev/learn/pwa/serving/
 https://web.dev/offline-cookbook/#on-network-response
+
+Interesting reference showing the complexities: https://adactio.com/serviceworker.js and https://adactio.medium.com/cache-limiting-in-service-workers-d6741361ca19
 
 
 ## Other Libraries
@@ -191,5 +222,8 @@ https://web.dev/offline-cookbook/#on-network-response
 - https://github.com/veiss-com/sw-tools#offline -- very specific features
 - https://github.com/TalAter/UpUp/ -- single use case: provides a "backup" of your site if it's offline
 
+## License
 
-// Copyright (c) 2023 Andrew J. Peterson, dba NDP Software
+Copyright (c) 2023 Andrew J. Peterson, dba NDP Software
+
+Available for licensing at reasonable rate. Please contact NDP Software.

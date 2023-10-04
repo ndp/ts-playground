@@ -2,8 +2,10 @@
 import {fileSpecsToPaths, FilesSpec} from "./fileSpecsToPaths.mjs";
 
 
-// Preload and cache any number of files enumerated from disk using globs.
-// Implies 'cacheFirst'.
+/**
+ * Preload and cache any number of files enumerated from disk using globs.
+ *  Implies 'cacheFirst'.
+  */
 export type CacheFileOnInstall = {
   strategy: 'cache-on-install',
   files: FilesSpec
@@ -14,8 +16,10 @@ export function isCacheFileOnInstall(s: { strategy: string }): s is CacheFileOnI
 }
 
 
-// Preload and cache enumerated paths (not files)
-// Implies 'cacheFirst'.
+/**
+ *  Preload and cache enumerated paths (not files)
+ *  Implies 'cacheFirst'.
+ */
 export type CachePathOnInstall = {
   strategy: 'cache-on-install',
   paths: string | Array<string>
@@ -25,28 +29,47 @@ export function isCachePathOnInstall(s: { strategy: string }): s is CachePathOnI
   return s.strategy === 'cache-on-install' && 'paths' in s
 }
 
-// https://web.dev/learn/pwa/serving/#cache-first
-// Ideal for: CSS, images, fonts, JS, templates… basically anything you'd consider static to that "version" of your site.
-// needs expiration
-// https://web.dev/offline-cookbook/#on-network-response
-// if retrieved via network, gets cached
+/**
+ Serve from the cache if available, otherwise go to the network.
+ Ideal for: CSS, images, fonts, JS, templates… basically anything you'd consider static to that "version" of your site.
+ @see https://web.dev/learn/pwa/serving/#cache-first
+ On its own implies no update to the cache file, so only useful
+ for immutable resources.
+ https://web.dev/offline-cookbook/#on-network-response
+ if retrieved via network, gets cached
+ */
 export type CacheFirstStrategy<Paths> = {
   readonly strategy: 'cacheFirst'
   readonly paths: Paths
 }
 
-// https://web.dev/learn/pwa/serving/#network-first
+/**
+ * If the network connection is not available, use
+ * the cached version.
+ * Files are cached in the background as they are fetched.
+ * @see https://web.dev/learn/pwa/serving/#network-first
+ */
 export type NetworkFirstStrategy<Paths> = {
   strategy: 'networkFirst'
   paths: Paths
 }
 
-// https://web.dev/learn/pwa/serving/#stale-while-revalidate
+/**
+ * Serve files from the cache, and then in the background update
+ * with a fresh version.
+ * Useful for potentially slow and non-time-sensitive resources.
+ * @see https://web.dev/learn/pwa/serving/#stale-while-revalidate
+ */
 export type StaleWhileRevalidateStrategy<Paths> = {
   strategy: 'staleWhileRevalidate'
   paths: Paths
 }
 
+/**
+ * Serve normally (from network) unless not available. If
+ * network is down, use the response from the backup path.
+ * The backup path is cached on service worker installation.
+ */
 export type StaticOfflineBackupStrategy<Paths> = {
   strategy: 'staticOfflineBackup',
   paths: Paths
@@ -57,14 +80,14 @@ export function isStaticOfflineBackup(s: {strategy: string}): s is StaticOffline
   return s.strategy === 'staticOfflineBackup'
 }
 
-// https://web.dev/learn/pwa/serving/#network-only
+/**
+ * Serve from the network only. No caching.
+ * https://web.dev/learn/pwa/serving/#network-only
+ */
 export type NetworkOnlyStrategy<Paths> = {
   strategy: 'networkOnly'
   paths: Paths
 }
-
-// TODO
-// https://web.dev/learn/pwa/serving/#cache-only
 
 export type RoutableStrategy<Paths> = CacheFirstStrategy<Paths>
   | NetworkFirstStrategy<Paths>
@@ -99,7 +122,7 @@ export type InputPaths =
 
 /*
 `OutputPaths` are the paths included in the service worker. All
-the variety of expression included in `InputPaths` has been converted
+the variety of expression included in `InputPaths` have been converted
 to a simple array that can be iterated.
  */
 export type OutputPaths = Array<string | RegExp>
@@ -132,7 +155,6 @@ export function convertPreloadFilesToPaths(strategy: CacheFileOnInstall): CacheP
  * without the developer being aware, so it's important to
  * review either the generated service worker code, or the
  * cache created in the browser.
- * @param strategy
  */
 export function convertPreloadFiles(strategy: InputCacheStrategy): InputCacheStrategyAsPaths {
   if (isCacheFileOnInstall(strategy))
@@ -174,6 +196,7 @@ export function convertPreloadPathsToCacheFirst(spec: Array<InputCacheStrategyAs
       } satisfies CacheFirstStrategy<InputPaths>)
 }
 
-export function convertAllPreloadFilesToPreloadPaths(spec: Array<InputCacheStrategy>): Array<InputCacheStrategyAsPaths> {
+
+export function convertAllFilesToPaths(spec: Array<InputCacheStrategy>): Array<InputCacheStrategyAsPaths> {
   return spec.map(convertPreloadFiles);
 }

@@ -1,11 +1,26 @@
 {
   "name": "ts-service-worker",
-  "version": "1.0.27",
-  "description": "",
-  "engines": {
-    "node": ">=16"
+  "version": "1.0.30",
+  "description": "Generate caching service-worker.js using declarative Typescript.",
+  "author": {
+    "name": "Andrew Peterson, NDP Software",
+    "email": "andy@ndpsoftware.com"
   },
+  "keywords": [
+    "build",
+    "cache",
+    "declarative configuration",
+    "offline",
+    "progressive web apps",
+    "pwa",
+    "service worker",
+    "sw",
+    "ts",
+    "typescript"
+  ],
+  "license": "Copyright (c) 2023 Andrew J. Peterson, NDP Software",
   "sideEffects": false,
+
   "type": "commonjs",
   "main": "./dist/index.js",
   "types": "./types/index.d.mts",
@@ -14,6 +29,7 @@
     "dist",
     "types"
   ],
+
   "scripts": {
     "example1": "node --loader tsc example/amp-what-sw.mts",
     "example2": "node --loader tsc example/offline-backup.mts",
@@ -24,20 +40,10 @@
     "build-types": "tsc -p src/tsconfig.json",
     "prepublishOnly": "yarn build"
   },
-  "keywords": [
-    "service worker",
-    "sw",
-    "Typescript",
-    "ts",
-    "build",
-    "declarative configuration",
-    "offline",
-    "cache",
-    "pwa",
-    "progressive web apps"
-  ],
-  "author": "Andrew Peterson, NDP Software",
-  "license": "ISC",
+
+  "engines": {
+    "node": ">=16"
+  },
   "devDependencies": {
     "esbuild": "*",
     "tsx": "*"

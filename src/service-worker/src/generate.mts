@@ -1,6 +1,6 @@
 // Copyright (c) 2023 Andrew J. Peterson, dba NDP Software
 import {
-  convertAllPreloadFilesToPreloadPaths,
+  convertAllFilesToPaths,
   convertPreloadPathsToCacheFirst,
   extractAllPreloadPaths,
   InputCacheStrategy, InputPaths, isStaticOfflineBackup, Origin, OutputPaths, RoutableStrategy
@@ -20,6 +20,19 @@ const defaultOptions: Required<Options> = {
   skipWaiting: false
 }
 
+/**
+ * Produce a string that contains Javascript code to implement
+ * the given caching `Plan`, taking into account options.
+ *
+ * Options:
+ * - `version`: a semvar version for the cache in the user's browser. This
+ *    is largely ignored, but importantly a major version bump
+ *    will cause the cache to be rebuilt.
+ * - `debug`: true will generate `console.log` notices for
+ *    all activity in the service worker. It should be turned off in production.
+ * - `skipWaiting`: setting to `true` has the same effect as
+ *    calling the method as described in the service worker documention (but simpler!).
+ */
 export function generateServiceWorker(
   inputSpec: Plan,
   optionsIn: Options = {}): string {
@@ -29,18 +42,27 @@ export function generateServiceWorker(
     ...optionsIn
   }
 
-  const spec = convertAllPreloadFilesToPreloadPaths(inputSpec)
+  // The user may specify some paths as file paths, but these
+  // will make no sense in a service worker. Convert all those
+  // glob matches to URL matchable paths.
+  const spec = convertAllFilesToPaths(inputSpec)
 
+  // Search through all strategies and extract any paths that need
+  // pre-loading.
   const preloadPaths = extractAllPreloadPaths(spec)
 
+  // Preloaded paths are not only preloaded, but they are also
+  // served from the cache.
   const routable = convertPreloadPathsToCacheFirst(spec)
 
-  const variables = generateFlag('DEBUG', options.debug) +
+  const varsBlock =
+    generateFlag('DEBUG', options.debug) +
     generateFlag('SKIP_WAITING', options.skipWaiting) +
     generateVersion(options.version) +
     generatePreloadCode(preloadPaths) +
     generateRoutes(routable);
-  return includeTemplate(variables)
+
+  return evalTemplate(varsBlock)
 }
 
 export function generateVersion(version: Version) {
@@ -61,7 +83,8 @@ function generateRoutes(spec: Array<RoutableStrategy<InputPaths>>) {
     .join(',\n  ')}];\n`
 }
 
-function includeTemplate(variables: string) {
+function evalTemplate(variables: string) {
+  // Very simple template evaluation...
   return TEMPLATE
     .replace('// VARIABLES', variables)
 }

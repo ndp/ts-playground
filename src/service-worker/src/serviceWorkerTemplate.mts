@@ -56,7 +56,7 @@ function staleWhileRevalidate(event) {
             logEvent(event, 'staleWhileRevalidate revalidated ', event);
             return r;
         });
-        logEvent(event, \`staleWhileRevalidate returning \${response ? '[stale]' : '[fresh]'}\`);
+        logEvent(event, \`staleWhileRevalidate returning \${response ? '[stale?]' : '[fresh]'}\`);
         return response || fetchPromise;
     });
 }
@@ -64,11 +64,10 @@ function staleWhileRevalidate(event) {
 function staticOfflineBackup(event, opts) {
     logEvent(event, 'staticOfflineBackup');
     return fetchRequest(event)
-      .then(response => response || fileFromCache(opts))
-      .catch((e) => {
-          log(e)
-          return fileFromCache(opts)
-      })
+      .then(response => response)
+      .catch((e) => fileFromCache(opts))
+      /* "A fetch() promise only rejects when a network error is encountered" 
+       https://developer.mozilla.org/en-US/docs/Web/API/fetch */
 }
 
 function cacheFirst(event) {
@@ -92,7 +91,12 @@ function fetchRequest(event) {
 }
 function fetchAndCache(event) {
     return fetchRequest(event)
-        .then(response => toCache(event, response));
+        .then(response => {
+          return toCache(event, response).catch(e => {
+            log(\`  - unable to cache \${event.request.url}  \${e}\`);
+            return response;
+          })
+        });
 }
 function fromCache(event) {
     return caches.open(CACHE_NAME).then(cache => cache.match(event.request));
