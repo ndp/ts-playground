@@ -1,3 +1,15 @@
-export * from './requestHandler.mjs'
-export {Origin, Scope} from './strategies.mjs'
-export {generateServiceWorker} from 'generate.mjs'
+
+export {
+  Origin,
+  Scope
+} from './strategies.mjs'
+
+export {
+  requestHandler
+} from './requestHandler.mjs'
+
+export {
+  generateServiceWorker,
+  type Plan
+} from './generate.mjs'
+

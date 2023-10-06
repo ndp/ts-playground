@@ -24,6 +24,9 @@
   "type": "commonjs",
   "main": "./dist/index.js",
   "types": "./types/index.d.mts",
+  "bin": {
+    "ts-service-worker": "./dist/cli.mjs"
+  },
   "files": [
     "README.md",
     "dist",
@@ -31,12 +34,13 @@
   ],
 
   "scripts": {
-    "example1": "node --loader tsc example/amp-what-sw.mts",
-    "example2": "node --loader tsc example/offline-backup.mts",
+    "example1": "node --loader tsx example/amp-what-sw.mts",
+    "example2": "./dist/cli.mjs example/offline-backup.json",
     "test": "node --test --loader tsx src/specs/*.mts",
-    "build": "yarn clean && yarn build-dist && yarn build-types",
+    "build": "yarn clean && yarn build-dist && yarn build-bin && yarn build-types",
     "clean": "rm -fr ./dist/* ./types/*",
     "build-dist": "./node_modules/.bin/esbuild --target=esnext --outfile=./dist/index.js --bundle --platform=node --sourcemap --format=cjs src/index.mts",
+    "build-bin": "esbuild --banner:js=\"#!/usr/bin/env node\" --bundle --platform=node --format=esm --target=es2022 src/cli.mts --outfile=dist/cli.mjs && chmod u+x dist/cli.mjs",
     "build-types": "tsc -p src/tsconfig.json",
     "prepublishOnly": "yarn build"
   },
