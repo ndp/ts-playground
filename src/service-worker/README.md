@@ -51,7 +51,7 @@ export const plan: Plan =
 Here, we see multiple strategies in action. Each request is evaluated (sequentially) against the paths, and the first matching strategy is applied. (If not strategy matches, the resource is fetched as normal.)
   - The path `open-search.xml` will never be cached, 
   - `/my-data.json` will be served from the cache and re-fetched in the background, available for a later access. 
-  - Finally, the file `/networkDown.html` will be cached, and served as a replacement for other HTML pages when their fetching fails.
+  - Finally, the file `/networkDown.html` will be cached, and served as a replacement for other HTML pages when fetching fails.
 
 Another common strategy is to pre-cache some resources on disk. These can be explicitly listed, or dynamically determined from glob matches of files on disk:
 ```ts
@@ -191,7 +191,7 @@ Unfortunately, the service worker API is also hard to use, as it is quite low-le
 
 And since service workers run in the browser, they must be written in the browser's version Javascript. This likely involves transpilation, which will requiring additional complexity in the build process to produce a separate artifact. It can be quite challenging in a Typescript project.
 
-There are a [other libraries](#other-libraries) designed to help, which may be useful to you. **TS-Service-Worker** aims to solve specific challenges.
+There are [other libraries](#other-libraries) designed to help, which may be useful to you. **TS-Service-Worker** aims to solve specific challenges.
 
 ## TODO
 2. https://web.dev/learn/pwa/serving/#cache-only
