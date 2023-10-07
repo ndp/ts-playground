@@ -1,37 +1,42 @@
 import { strict as assert } from 'assert'
-import { Duration, Happ } from './Happ'
+import {Happ, Interval} from './Happ'
 
-export function areUniform (happs: Happ[]): boolean {
-  return new Set(happs.map(h => h.duration.unit)).size === 1
-}
+// export function areUniform<T extends Duration[]> (durations: T):
+//   durations is (T['length'] extends 0 ? Duration[] : T extends GeologicDuration[0] ? GeologicDuration[] : YearDuration[]) {
+//   return new Set(durations.map(d => d.unit)).size === 1
+// }
+//
+// function testAreUniform () {
+//   assert.equal(areUniform([]), false)
+//   assert.equal(areUniform([{ from: 1, to: 2, unit: 'Mya' }]), true)
+//   assert.equal(areUniform(
+//     [
+//       { from: 1, to: 2, unit: 'Mya' },
+//       { from: 1, to: 2, unit: 'A.D.' }
+//     ]), false)
+// }
 
-function testAreUniform () {
-  assert.equal(areUniform([]), false)
-  assert.equal(areUniform([new Happ({ from: 1, to: 2, unit: 'Mya' }, { name: 'foo' })]), true)
-  // assert.equal(areUniform(
-  //   [
-  //     new Happ({ from: 1, to: 2, unit: 'Mya' }, { name: 'foo' }),
-  //     new Happ({ from: 1, to: 2, unit: 'year' }, { name: 'bar' })
-  //   ]), true)
-}
+// testAreUniform()
 
-testAreUniform()
-
-export function range (happs: Happ[]): Duration {
-  assert(areUniform(happs))
+export function range<D extends Interval> (durations: D[]): D {
+  // assert(areUniform(durations))
+  const from = Math.max(...durations.map(h => h.moment));
+  const too = Math.min(...durations.map(h => h.moment2));
+  const scale: D['scale'] = durations[0].scale;
   return {
-    from: Math.max(...happs
-      .map(h => h.duration.from)),
-    to:   Math.min(...happs.map(h => h.duration.to)),
-    unit: happs[0].duration.unit
-  }
+    moment: from,
+    moment2: too,
+    scale: scale
+  } as D
 }
 
-export function sort (by: 'begin' | 'middle' | 'end', happs: Happ[]): Happ[] {
-  return happs.sort((a, b) => {
-    const start = b.duration.from - a.duration.from
+export function sort<T extends Interval[]> (
+  by: 'begin' | 'middle' | 'end',
+  intervals: T): T {
+  return intervals.sort((a, b) => {
+    const start = b.moment - a.moment
     if (start) return start
     // they both start the same time, return the longer one first
-    return a.duration.to - b.duration.to
+    return a.moment2 - b.moment2
   })
 }

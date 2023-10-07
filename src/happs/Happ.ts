@@ -1,3 +1,5 @@
+import {maxHeaderSize} from "http";
+
 export type Granularity =
   'geological eon' |
   'geological era' |
@@ -13,49 +15,87 @@ export type Granularity =
   'second'
 
 /*
-eon = The largest unit of time.
-era = A unit of time shorter than an eon but longer than a period.
-period = A unit of time shorter than an era but longer than epoch.
-epoch = A unit of time shorter than a period but longer than an age.
-Archean = “Ancient” eon from 4,500 Mya – 2,500 Ma.
-Proterozoic = “Early life” eon from 2,500 Ma – 540 Ma.
-Paleozoic = “Ancient life” eon from 540 Mya – 248 Ma.
-Mesozoic = “Middle life” eon from 248 Mya – 65 Ma.
-Cenozoic = “Recent life” eon from 65 Mya to Present.
-Holocene = “All recent” epoch from 10 Ka to Present
-Ma = Mega annum, i.e. million years ago before present.
-Ka = Thousand years ago before present.
+  Unit: Myears, Kyears, years, months, weeks, days, hours, minutes, seconds
+  Reference: BCE, CE, Unix Epoch, Now, None
+  UnitReference: mya, Unix timestamp, years BCE, CE YEAR
  */
-export interface GeologicDuration {
-  unit: 'Mya'
-  from: number,
-  to: number
+
+type Unit =
+  'Ma'
+  | 'ka'
+  | 'years'
+  | 'months'
+  | 'weeks'
+  | 'days'
+  | 'hours'
+  | 'minutes'
+  | 'seconds'
+  | 'ms'
+  | 'µs'
+
+type Reference =
+  'BCE'
+  | 'CE'
+  | 'Unix' // Epoch
+  // | 'Now'
+  // | 'none'
+
+type Scale =
+  'Mya' // "ago" assumed
+
+/*
+vector
+  magnitude
+  direction
+  tail
+  head
+ */
+
+
+export interface Interval {
+  moment: number,
+  scale: Scale,
+  moment2: number,
 }
 
-export type Duration = GeologicDuration
 
-export type Description = {
+export interface GeologicPeriod extends Interval {
+  scale: 'Mya'
+}
+
+
+export interface Description {
   name: string
-  nickname?: string
+  description?: string
 }
 
+export interface Event extends GeologicPeriod, Description {
+}
 
-export class Happ {
-  constructor (
-    public readonly duration: Duration,
-    public readonly description: Description) {
+export class Happ  implements GeologicPeriod, Description {
+  private moment: number;
+  private moment2: number;
+  private scale: 'Mya';
+  public name: string;
+  public description: string;
+  constructor(v: {from:number,to:number,name:string, description:string, scale: 'Mya'}) {
+    this.moment=v.from
+    this.moment2=v.to
+    this.scale='Mya'
+    this.name = v.name
+    this.description = v.description
   }
 
   /*
  Things that really happened in a short, non-quantifiable period
   */
-  isIncident (): boolean {
-    return this.duration.from == this.duration.to
+  isIncident(): boolean {
+    return !this.moment2
   }
 
-  toString () {
+  toString() {
     return this.isIncident() ?
-       `${this.description.name} ${this.duration.from} ${this.duration.unit}`
-       : `${this.description.name} ${this.duration.from} — ${this.duration.to} ${this.duration.unit}`
+      `${this.name} ${this.moment} ${this.scale}`
+      : `${this.name} ${this.moment} — ${this.moment2} ${this.scale}`
   }
 }

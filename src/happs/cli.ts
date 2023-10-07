@@ -20,11 +20,11 @@ function filter (by: 'within' | 'intersecting', ...haps: Happ[]): Happ[] {
   return haps
 }
 
-new Happ({ from: 4_500, to: 2_500, unit: 'Mya' }, { name: 'Archean', nickname: '“Ancient” eon' })
-new Happ({ from: 2_500, to: 540, unit: 'Mya' }, { name: 'Proterozoic', nickname: '“Early life” eon' })
-new Happ({ from: 540, to: 248, unit: 'Mya' }, { name: 'Paleozoic', nickname: '“Ancient life” eon' })
-new Happ({ from: 248, to: 65, unit: 'Mya' }, { name: 'Mesozoic', nickname: '“Middle life” eon' })
-const a = new Happ({ from: 208, to: 146, unit: 'Mya' }, { name: 'Jurassic', nickname: 'dinosaurs rule the land' })
+new Happ({ from: 4_500, to: 2_500, scale: 'Mya', name: 'Archean', description: '“Ancient” eon' })
+new Happ({ from: 2_500, to: 540, scale: 'Mya', name: 'Proterozoic', description: '“Early life” eon' })
+new Happ({ from: 540, to: 248, scale: 'Mya', name: 'Paleozoic', description: '“Ancient life” eon' })
+new Happ({ from: 248, to: 65, scale: 'Mya', name: 'Mesozoic', description: '“Middle life” eon' })
+const a = new Happ({ from: 208, to: 146, scale: 'Mya', name: 'Jurassic', description: 'dinosaurs rule the land' })
 console.log(a)
 
 interface Processor {
