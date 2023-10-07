@@ -81,20 +81,38 @@ type MajorSeventh<Root extends ZNote> = AddM7<MajorTriad<Root>>
 
 type Letter = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G'
 
-
-type ha1 = MajorSixth<'C'>
+type ha0 = MajorTriad<'AB'>
+type ha1 = MajorSixth<'D'>
 type ha2 = MajorSeventh<'F'>
 type ha3 = Major69<'B'>
 type Foo = AddM6<['C', 'E', 'G']>
 
-type Present<Chord extends ZNote[]> =
+type Present<
+  Chord extends ZNote[],
+  Dir = NaturalDir<ZNote[0]>
+> =
   Chord extends [infer Root extends ZNote, ...infer Rest extends ZNote[]]
     ? Rest extends []
-      ? [PresentZNote<Root>]
-      : [PresentZNote<Root>,
-        ...Present<Rest>] : never
+      ? [PresentZNote<Root, Dir>]
+      : [PresentZNote<Root, Dir>,
+        ...Present<Rest, Dir>] : never
 
-type PresentZNote<Note extends ZNote, Dir extends 'sharps' | 'flats' = 'sharps'> =
+type NaturalDir<Note extends ZNote, Hint extends 'sharps' | 'flats' = 'sharp'> =
+  Note extends 'C' ? Hint :
+    Note extends 'CD' ? 'flats' :
+      Note extends 'D' ? 'sharps' :
+        Note extends 'DE' ? 'flats' :
+          Note extends 'E' ? 'sharps' :
+            Note extends 'F' ? 'flats' :
+              Note extends 'FG' ? 'flats' :
+                Note extends 'G' ? 'sharps' :
+                  Note extends 'GA' ? 'flats' :
+                    Note extends 'A' ? 'sharps' :
+                      Note extends 'AB' ? 'flats' :
+                        Note extends 'B' ? 'sharps' : 'flats'
+
+
+type PresentZNote<Note extends ZNote, Dir extends 'sharps' | 'flats' = NaturalDir<Note>> =
   Note extends 'AB' ?
     Dir extends 'sharps' ? 'A#' : 'Bb'
     : Note extends 'CD' ?
@@ -108,6 +126,9 @@ type PresentZNote<Note extends ZNote, Dir extends 'sharps' | 'flats' = 'sharps'>
 
 
 type A1 = Present<MajorSixth<'C'>>
-type A2 = Present<MajorSixth<'D'>>
+type A2 = Present<MajorSixth<'D'>> // bug
 type A3 = Present<MajorSixth<'E'>>
 type A4 = Present<MajorSixth<'F'>>
+type A5 = Present<MajorSixth<'Bb'>>
+
+type d1 = NaturalDir<MajorSixth<'D'>[0]>
