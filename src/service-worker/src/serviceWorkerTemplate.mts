@@ -1,11 +1,8 @@
 export const TEMPLATE: string = `
 "use strict";
-// Files generated from serviceWorker.template.js
 const ORIGIN_MATCHER = new RegExp(\`^\${regexEscape(self.origin)}.*\`, "i");
 const SCOPE_MATCHER = new RegExp(\`^\${regexEscape(self.registration.scope)}.*\`, "i");
 // VARIABLES
-// Cache name is the major portion of the version.
-// To start a new cache, increment the major version.
 const CACHE_NAME = VERSION.split('.')[0];
 self.addEventListener('install', function (event) {
     event.waitUntil(caches.open(CACHE_NAME).then(function (cache) {

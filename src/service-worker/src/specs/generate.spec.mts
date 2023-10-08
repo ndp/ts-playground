@@ -1,7 +1,7 @@
 import {describe, mock, test} from "node:test";
 import {pathToJS} from "../generate.mjs";
 import assert from "node:assert/strict";
-import {Origin, Scope} from "../strategies.mjs";
+import {OriginAndBelow, ScopeAndBelow} from "../strategies.mjs";
 
 describe('pathToJS', () => {
 
@@ -19,14 +19,14 @@ describe('pathToJS', () => {
 
 
   test('replaces Symbol.for("origin") with origin matcher', (t) => {
-    const actual = pathToJS(Origin)
+    const actual = pathToJS(OriginAndBelow)
 
     assert.equal(actual, 'ORIGIN_MATCHER')
   })
 
   test('replaces Symbol.for("scope") with scope matcher', (t) => {
 
-    const actual = pathToJS(Scope)
+    const actual = pathToJS(ScopeAndBelow)
 
     assert.equal(actual, 'SCOPE_MATCHER')
   })

@@ -105,20 +105,20 @@ export type InputCacheStrategyAsPaths = RoutableStrategy<InputPaths> | CachePath
  * Indicator for all file paths routed from the same origin
  * as the service worker is served from.
  */
-export const Origin = Symbol.for('origin')
+export const OriginAndBelow = Symbol.for('origin-and-below')
 
 /**
  * Indicator for all files served within the service worker's
  * scope. Usually you will want `Origin`, but this is included
  * for completeness.
  */
-export const Scope = Symbol.for('scope')
+export const ScopeAndBelow = Symbol.for('scope-and-below')
 
 /*
 Users may specify paths to be cached in a variety of ways.
  */
 export type InputPaths =
-  RegExp | string | OutputPaths | typeof Origin | typeof Scope
+  RegExp | string | OutputPaths | typeof OriginAndBelow | typeof ScopeAndBelow
 
 /*
 `OutputPaths` are the paths included in the service worker. All

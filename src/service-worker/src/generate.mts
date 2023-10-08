@@ -3,7 +3,7 @@ import {
   convertAllFilesToPaths,
   convertPreloadPathsToCacheFirst,
   extractAllPreloadPaths,
-  InputCacheStrategy, InputPaths, isStaticOfflineBackup, Origin, OutputPaths, RoutableStrategy
+  InputCacheStrategy, InputPaths, isStaticOfflineBackup, OriginAndBelow, OutputPaths, RoutableStrategy
 } from './strategies.mjs';
 import { TEMPLATE } from './serviceWorkerTemplate.mjs'
 
@@ -100,7 +100,7 @@ export function pathToJS(path: string | RegExp | symbol) {
     case 'string':
       return `'${path}'`
     case 'symbol':
-      return path == Origin ? 'ORIGIN_MATCHER' : 'SCOPE_MATCHER'
+      return path == OriginAndBelow ? 'ORIGIN_MATCHER' : 'SCOPE_MATCHER'
     default:
       return `${String(path)}`
   }

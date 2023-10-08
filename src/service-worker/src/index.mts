@@ -1,7 +1,7 @@
 
 export {
-  Origin,
-  Scope
+  OriginAndBelow,
+  ScopeAndBelow
 } from './strategies.mjs'
 
 export {
