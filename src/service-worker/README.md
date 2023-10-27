@@ -215,11 +215,10 @@ There are [other libraries](#other-libraries) designed to help, which may be use
 These are the basics of how service workers function:
 - https://web.dev/learn/pwa/serving/
 - https://web.dev/offline-cookbook/
-
-Interesting reference showing the complexities: https://adactio.com/serviceworker.js and https://adactio.medium.com/cache-limiting-in-service-workers-d6741361ca19
-
-See the service workers generated with this tool:
-- [https://amp-what.com/service-worker.js]
+- Interesting reference showing the complexities: https://adactio.com/serviceworker.js and https://adactio.medium.com/cache-limiting-in-service-workers-d6741361ca19
+- The complexities of testing service workers: [https://medium.com/dev-channel/testing-service-workers-318d7b016b19]
+- Service worker mocking library: [https://github.com/zackargyle/service-workers/tree/master/packages/service-worker-mock]
+- See the service workers generated with this tool: [https://amp-what.com/service-worker.js]
 
 ## Other Libraries
 - https://web.dev/learn/pwa/workbox/ -- popular and very cool tool. This will work for many projects, but I was looking for something where I had a little more control.
