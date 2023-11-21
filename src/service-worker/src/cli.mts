@@ -5,7 +5,6 @@ import {generateServiceWorker, Options, Plan} from "./generate.mjs";
 import * as fs from "fs";
 
 const filePath = process.argv[process.argv.length - 1];
-console.log(`${filePath}`)
 
 const rawJson = fs.readFileSync(path.join(process.cwd(), filePath))
 

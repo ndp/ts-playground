@@ -20,7 +20,6 @@
   ],
   "license": "Copyright (c) 2023 Andrew J. Peterson, NDP Software",
   "sideEffects": false,
-
   "type": "commonjs",
   "main": "./dist/index.js",
   "types": "./types/index.d.mts",
@@ -32,7 +31,6 @@
     "dist",
     "types"
   ],
-
   "scripts": {
     "example1": "node --loader tsx example/amp-what-sw.mts",
     "example2": "./dist/cli.mjs example/offline-backup.json",
@@ -44,11 +42,11 @@
     "build-types": "tsc -p src/tsconfig.json",
     "prepublishOnly": "yarn build"
   },
-
   "engines": {
     "node": ">=16"
   },
   "devDependencies": {
+    "@types/node": "*",
     "esbuild": "*",
     "tsx": "*"
   }
