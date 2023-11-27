@@ -17,7 +17,7 @@ export type FilesSpec =
 /**
  * Convert a messy file spec into an array of paths.
  */
-export function fileSpecsToPaths(files: FilesSpec): Array<string> {
+export function filesSpecToPaths(files: FilesSpec): Array<string> {
   let prefix = ''
   let dir = ''
   let globs: Array<string>

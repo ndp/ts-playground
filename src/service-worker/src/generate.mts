@@ -1,11 +1,15 @@
 // Copyright (c) 2023 Andrew J. Peterson, dba NDP Software
 import {
-  convertAllFilesToPaths,
-  convertPreloadPathsToCacheFirst,
-  extractAllPreloadPaths,
-  InputCacheStrategy, InputPaths, isStaticOfflineBackup, OriginAndBelow, OutputPaths, RoutableStrategy
+  InputCacheStrategy,
+  InputPaths,
+  isStaticOfflineBackup,
+  OriginAndBelow,
+  OutputPaths,
+  RoutableStrategy
 } from './strategies.mjs';
-import { TEMPLATE } from './serviceWorkerTemplate.mjs'
+import {TEMPLATE} from './serviceWorkerTemplate.mjs'
+import {deDup} from "./utils.mjs";
+import {organizeStrategies} from "./organizeStrategies.mjs";
 
 export type Plan = Array<InputCacheStrategy>
 type Version = string
@@ -41,19 +45,7 @@ export function generateServiceWorker(
     ...defaultOptions,
     ...optionsIn
   }
-
-  // The user may specify some paths as file paths, but these
-  // will make no sense in a service worker. Convert all those
-  // glob matches to URL matchable paths.
-  const spec = convertAllFilesToPaths(inputSpec)
-
-  // Search through all strategies and extract any paths that need
-  // pre-loading.
-  const preloadPaths = extractAllPreloadPaths(spec)
-
-  // Preloaded paths are not only preloaded, but they are also
-  // served from the cache.
-  const routable = convertPreloadPathsToCacheFirst(spec)
+  const {preloadPaths, routable} = organizeStrategies(inputSpec);
 
   const varsBlock =
     generateFlag('DEBUG', options.debug) +
@@ -105,3 +97,5 @@ export function pathToJS(path: string | RegExp | symbol) {
       return `${String(path)}`
   }
 }
+
+

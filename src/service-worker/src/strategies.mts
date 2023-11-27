@@ -1,5 +1,5 @@
 // Copyright (c) 2023 Andrew J. Peterson, dba NDP Software
-import {fileSpecsToPaths, FilesSpec} from "./fileSpecsToPaths.mjs";
+import {filesSpecToPaths, FilesSpec} from "./filesSpecToPaths.mjs";
 
 
 /**
@@ -76,8 +76,11 @@ export type StaticOfflineBackupStrategy<Paths> = {
   backup: string
 }
 
-export function isStaticOfflineBackup(s: {strategy: string}): s is StaticOfflineBackupStrategy<unknown> {
-  return s.strategy === 'staticOfflineBackup'
+export function isStaticOfflineBackup(s: {
+  strategy: string,
+  paths?: unknown,
+  backup?: string}): s is StaticOfflineBackupStrategy<unknown> {
+  return s.strategy === 'staticOfflineBackup' && !!s.paths && !!s.backup
 }
 
 /**
@@ -136,7 +139,7 @@ export function isRoutableStrategy<Paths>(x: { strategy: string }): x is Routabl
 }
 
 export function convertPreloadFilesToPaths(strategy: CacheFileOnInstall): CachePathOnInstall {
-  const paths = fileSpecsToPaths(strategy.files)
+  const paths = filesSpecToPaths(strategy.files)
   return {
     strategy: 'cache-on-install',
     paths
@@ -186,7 +189,8 @@ export function extractAllPreloadPaths(plan: Array<{ strategy: string; }>): Outp
   return cacheOnInstallPaths.sort() as OutputPaths
 }
 
-export function convertPreloadPathsToCacheFirst(spec: Array<InputCacheStrategyAsPaths>): Array<RoutableStrategy<InputPaths>> {
+export function convertPreloadPathsToCacheFirst(spec: Array<InputCacheStrategyAsPaths>):
+    Array<RoutableStrategy<InputPaths>> {
   return spec.map(s =>
     isRoutableStrategy<InputPaths>(s)
       ? s
