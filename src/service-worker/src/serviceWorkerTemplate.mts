@@ -24,7 +24,9 @@ self.addEventListener('activate', function (event) {
     }))));
 });
 self.addEventListener('fetch', function (event) {
-    const url = event.request.url;
+    
+    const url = event.request.url.replace(/#.*$/, '');
+    
     // Cache http and https only, skip unsupported chrome-extension:// and file://...
     if (!url.startsWith('http'))
         return;
@@ -41,7 +43,7 @@ self.addEventListener('fetch', function (event) {
     function matches(paths) {
         return paths &&
             paths.some(path => path instanceof RegExp ?
-                path.exec(url) : url.endsWith(path));
+                path.exec(url) : url === path);
     }
 });
 // Caching strategies
@@ -89,11 +91,12 @@ function fetchRequest(event) {
 function fetchAndCache(event) {
     return fetchRequest(event)
         .then(response => {
-          return toCache(event, response).catch(e => {
-            log(\`  - unable to cache \${event.request.url}  \${e}\`);
-            return response;
-          })
-        });
+          return toCache(event, response)
+        })
+        .catch(e => {
+          log(\`  - unable to fetch \${event.request.url}  \${e}\`);
+          throw e
+       });
 }
 function fromCache(event) {
     return caches.open(CACHE_NAME).then(cache => cache.match(event.request));
@@ -103,7 +106,7 @@ function fileFromCache(name) {
 }
 function toCache(event, response) {
     if (!response.ok) {
-        log(\`request for \${event.request.url} failed with status \${response.statusText}\`);
+        log(\`skipping cache of failed request \${event.request.url} with status \${response.status} \${response.statusText}\`);
         return response;
     }
     return caches.open(CACHE_NAME)
@@ -121,5 +124,11 @@ function log(s) {
 }
 function regexEscape(s) {
     return s.replace(/([/.])/g, '\\\\$&');
+}
+
+function withOrigin(path) {
+    if (path.match(/https?:\\/\\//)) return path
+    if (path.startsWith('/')) return self.origin + path
+    return self.origin + '/' + path
 }
 `

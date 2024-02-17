@@ -84,7 +84,7 @@ function evalTemplate(variables: string) {
 export function pathsToJS(paths: InputPaths) {
   const asArray = Array.isArray(paths)
     ? paths : [paths]
-  return `[${asArray.map(pathToJS).join(',')}]`
+  return `[${asArray.map(pathToJS).join(',')}].map(withOrigin)`
 }
 
 export function pathToJS(path: string | RegExp | symbol) {

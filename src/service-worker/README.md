@@ -2,7 +2,7 @@
 
 - provide declarative support for the most common caching strategies
 - supports easy integration of multiple caching strategies
-- produces a `service-worker.js` that requires no additional transpilation
+- produces a `service-worker.js` that requires no additional transcompilation
 - avoids nesting and promise chains
 - is written in Typescript and fully typed
 - can scan your disk for resources to cache
