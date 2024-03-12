@@ -2,8 +2,9 @@ export const TEMPLATE: string = `
 "use strict";
 const ORIGIN_MATCHER = new RegExp(\`^\${regexEscape(self.origin)}.*\`, "i");
 const SCOPE_MATCHER = new RegExp(\`^\${regexEscape(self.registration.scope)}.*\`, "i");
+
 // VARIABLES
-const CACHE_NAME = VERSION.split('.')[0];
+
 self.addEventListener('install', function (event) {
     event.waitUntil(caches.open(CACHE_NAME).then(function (cache) {
         return cache.addAll(PRELOAD_PATHS)
@@ -91,7 +92,10 @@ function fetchRequest(event) {
 function fetchAndCache(event) {
     return fetchRequest(event)
         .then(response => {
-          return toCache(event, response)
+          return toCache(event, response).catch(e => {
+            log(\`  - unable to cache \${event.request.url}  \${e}\`);
+            return response;
+          })
         })
         .catch(e => {
           log(\`  - unable to fetch \${event.request.url}  \${e}\`);

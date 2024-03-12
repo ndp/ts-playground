@@ -51,6 +51,7 @@ export function generateServiceWorker(
     generateFlag('DEBUG', options.debug) +
     generateFlag('SKIP_WAITING', options.skipWaiting) +
     generateVersion(options.version) +
+    generateCacheName(options.version) +
     generatePreloadCode(preloadPaths) +
     generateRoutes(routable);
 
@@ -59,6 +60,15 @@ export function generateServiceWorker(
 
 export function generateVersion(version: Version) {
   return `const VERSION = '${version}';\n`
+}
+
+export function cacheName(version: Version) {
+  const parts = version.split('.');
+  return (parts[0] || '0') + '.' + (parts[1] || '0');
+}
+
+export function generateCacheName(version: Version) {
+  return `const CACHE_NAME = '${cacheName(version)}';`
 }
 
 export function generateFlag(name: string, bool: boolean) {
