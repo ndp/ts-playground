@@ -19,7 +19,7 @@ const SuitMap = {
   'H': ['♥️', '♥'],
   '♦️': ['D', '♦'],
   '♣️': ['C', '♣']
-}
+} as const
 
 const SuitArray = Object.keys(SuitMap) as Array<keyof typeof SuitMap>
 
@@ -80,3 +80,5 @@ console.log(RankOf('5♦️'))
 ] as HandOf5[]).forEach(hand => {
   console.log('HighCard: ', HighCard(hand), hand)
 })
+
+
