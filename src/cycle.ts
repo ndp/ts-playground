@@ -1,16 +1,16 @@
-type BuiltInActionTypes = 'observed-attribute-changed'
+type BuiltInActionTypes = 'attribute-changed'
 
 export interface State {
 }
 
-type StandardComponent<Els extends string = string> = HTMLElement | {
-  attr(name: string): string
+type StandardComponent<SubElementNames extends string = string> = HTMLElement | {
+  attr(name: string): string;
 
   // Root of HTML, depending on whether shadowDOM is used
   get root(): ShadowRoot | HTMLElement
 
   // Utility for remembering elements between renders, ie. `renderState`
-  get els(): { [K in Els]: HTMLElement }
+  get subElements(): { [K in SubElementNames]: HTMLElement }
 
   render(): void
 }
@@ -50,6 +50,7 @@ type ComponentOptions<SubElementNames extends string, ActionTypes extends string
     * @see https://web.dev/articles/css-module-scripts
    */
   cssPath: string,
+
   renderDOM: (this: StandardComponent<SubElementNames>, state: State) => View,
   subElements?: Array<SubElement>
   detectIntent?: ActionFromEvent<ActionTypes, SubElementNames>,
@@ -75,6 +76,7 @@ export function defineComponent<
 
   const elementClass = class extends HTMLElement {
     private root: ShadowRoot | HTMLElement;
+
     static get observedAttributes() {
       return options.observedAttributes
     }
@@ -167,3 +169,30 @@ export function defineComponent<
 
   window.customElements.define(name, elementClass)
 }
+
+
+type RenderContext<
+  SubElementNames extends string,
+  AttributeNames extends string,
+  State extends unknown> = {
+  readonly root: HTMLElement,
+  readonly state: State,
+  readonly attrs: { [k in AttributeNames]: string }
+  subEls: { [k in SubElementNames]: HTMLElement }
+}
+type Renderer<
+  AttributeNames extends string,
+  SubElementNames extends string,
+  State = unknown,
+  Context = RenderContext<SubElementNames, AttributeNames, State>
+> = {
+  renderDOM: (this: Context) => {
+    html: string,
+  }
+  // Returns true if the DOM could be patched, or was "handled".
+  // Returns false if the DOM needs to be re-rendered completely.
+  patchDOM: (this: Context, changes: any) => boolean
+}
+
+// and actions are event listeners
+// maybe patchDOM is just an event listener

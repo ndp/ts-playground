@@ -30,7 +30,7 @@ console.log(
       _id!: string
       type!: 'foo' | 'bar'
 
-      static generate(properties) {
+      static generate(properties: any) {
         return {
           _id: properties.test.id as number,
           type: properties.test._type_ as string

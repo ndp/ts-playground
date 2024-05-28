@@ -43,7 +43,7 @@ class EventDB<EventT extends BaseEventRequest<ObjectTypes>, ObjectTypes extends 
     this.version = version
   }
 
-  create<T extends {type: string ? Type : never}>(t: T,
+  create<T extends {type: string}>(t: T,
             payload: (EventT extends { verb: 'create', subjectType: T } ? EventT['payload'] : never)
   ): Promise<T>{
     const objectId = `${t}-${this.eventId()}`
