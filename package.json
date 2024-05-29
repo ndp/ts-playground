@@ -9,20 +9,27 @@
     "lint-and-fix": "eslint . --ext .ts --fix",
     "start:dev": "nodemon",
     "start": "npm run build && node build/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha -r ts-node/register  --require ./test/setup.ts 'src/cycle2-test.ts'"
   },
   "keywords": [],
   "author": "Andrew Peterson",
   "license": "ISC",
   "devDependencies": {
     "@type-challenges/utils": "^0.1.1",
+    "@types/jsdom": "^21.1.6",
+    "@types/mocha": "^10.0.6",
     "@types/node": "^20.2.1",
+    "@types/sinon": "^17.0.3",
     "@typescript-eslint/eslint-plugin": "^5.59.6",
     "@typescript-eslint/parser": "^5.59.6",
+    "chai": "^5.1.1",
     "eslint": "^8.40.0",
+    "jsdom": "^24.1.0",
+    "mocha": "^10.4.0",
     "nodemon": "^2.0.22",
     "rimraf": "^5",
-    "ts-node": "^10.9.1",
+    "sinon": "^18.0.0",
+    "ts-node": "^10.9.2",
     "typescript": "^5"
   },
   "dependencies": {
