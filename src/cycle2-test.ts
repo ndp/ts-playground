@@ -1,7 +1,7 @@
 import {defineComponent} from "./cycle2";
-import sinon from 'sinon';
 import assert from "node:assert/strict";
 import {describe, test} from "mocha";
+import path from "node:path";
 
 
 describe('attrs', () => {
@@ -47,6 +47,26 @@ describe('attrs', () => {
   test('creates observedAttribute for required and dynamic', () => {
     const C = defineComponent('dynamic-attrs-reqd', {shadowDOM: 'none', attrs: ['cardId*🗱']})
     assert.deepStrictEqual((C as unknown as {observedAttributes: string[]}).observedAttributes, ['cardId'])
+  })
+
+})
+
+
+describe('css', () => {
+  test('no css and no shadow DOM', () => {
+    const C = defineComponent('no-css', {shadowDOM: 'none'})
+    const c = new C()
+    assert.equal(c.shadowRoot!.innerHTML, '')
+  })
+
+  test('css with no shadowDOM', () => {
+    const C = defineComponent(
+      'local-css', {
+        shadowDOM: 'none',
+        cssPath: path.join(__dirname, './cycle2-test.css')
+      })
+    const c = new C()
+    assert.equal(c.shadowRoot!.innerHTML, 'my-component.css')
   })
 
 })
