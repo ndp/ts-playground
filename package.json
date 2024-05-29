@@ -3,13 +3,15 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "build": "rimraf ./build && tsc",
     "lint": "eslint . --ext .ts",
     "lint-and-fix": "eslint . --ext .ts --fix",
     "start:dev": "nodemon",
     "start": "npm run build && node build/index.js",
-    "test": "mocha -r ts-node/register  --require ./test/setup.ts 'src/cycle2-test.ts'"
+    "test-doc": "https://medium.com/@s4y.solutions/es-modules-typescript-and-mocha-9e6138883e57",
+    "test": "mocha   -n=loader=ts-node/esm -n=es-module-specifier-resolution=node -r test/setup-jsdom.js  'src/cycle2-test.ts'"
   },
   "keywords": [],
   "author": "Andrew Peterson",
@@ -22,6 +24,7 @@
     "@types/sinon": "^17.0.3",
     "chai": "^5.1.1",
     "eslint": "^9.3",
+    "esm": "^3.2.25",
     "jsdom": "^24.1.0",
     "mocha": "^10.4.0",
     "nodemon": "*",

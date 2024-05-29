@@ -45,16 +45,16 @@ export function defineComponent<Attr extends string, Options extends ComponentOp
         this.root = this
     }
 
-    connectedCallback() {
+    async connectedCallback() {
       this.validateRequiredAttributes();
-      this.addCss()
+      await this.addCss()
     }
 
     // Begin Attributes
     private validateRequiredAttributes() {
-      requiredAttrs(options.attrs).forEach(attr => {
+      for (const attr of requiredAttrs(options.attrs)) {
         if (!this.hasAttribute(attr)) throw `Missing required attribute ${attr}`
-      })
+      }
     }
 
     private async addCss() {
@@ -110,10 +110,14 @@ export function defineComponent<Attr extends string, Options extends ComponentOp
   customElements.define(name, elementClass)
 
   return elementClass as unknown as {
-    prototype: HTMLElement & AttrMethods<Options['attrs']>;
-    new(): HTMLElement & AttrMethods<Options['attrs']>;
+    prototype: HTMLElement & AttrMethods<Options['attrs']> & TestMethods;
+    new(): HTMLElement & AttrMethods<Options['attrs']> & TestMethods;
   };
 
+}
+
+interface TestMethods {
+  connectedCallback(): Promise<void>
 }
 
 
