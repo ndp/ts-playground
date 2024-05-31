@@ -1,11 +1,3 @@
-// ********************************************************************************************************************
-
-type ComponentOptions<Attr extends string> = {
-  shadowDOM: 'open' | 'closed' | 'none',
-  css?: string,
-  cssPath?: string,
-  attrs?: Array<Attr>
-}
 
 type AttrMethods<Attrs extends Array<string> | undefined> = Attrs extends Array<string> ? Readonly<{
   [K in StripAnnotations<Attrs[number]>]: string
@@ -23,6 +15,15 @@ type AttrMethods<Attrs extends Array<string> | undefined> = Attrs extends Array<
 // type F3aa = AssertEqual<F3a, {deckId: string}>
 // type F4a = AttrMethods<['deckId🗱']> // required
 // type F4aa = AssertEqual<F4a, {deckId: string}>
+
+// ********************************************************************************************************************
+
+type ComponentOptions<Attr extends string> = {
+  shadowDOM: 'open' | 'closed' | 'none',
+  css?: string,
+  cssPath?: string,
+  attrs?: Array<Attr>
+}
 
 export function defineComponent<Attr extends string, Options extends ComponentOptions<Attr>>(
   name: string,
@@ -95,7 +96,7 @@ export function defineComponent<Attr extends string, Options extends ComponentOp
   // Add accessors for attributes
   if (options.attrs) {
     for (const attr of options.attrs) {
-      const sanitized = sanitizeAttr(attr)
+      const sanitized = stripAnnotations(attr)
       Object.defineProperty(elementClass.prototype, sanitized, {
         get() {
           return this.getAttribute(sanitized) || ''
@@ -121,18 +122,21 @@ interface TestMethods {
 }
 
 
-function sanitizeAttr(attr: string) {
-  return attr.replace(/[*`🗱]/g, '');
+function stripAnnotations<S extends string, T = StripAnnotations<S>>(attr: S) {
+  return attr.replace(/[*`🗱]/g, '') as T;
 }
 
-function requiredAttrs(attrs?: Array<string>): Array<string> {
-  return attrs?.filter(a => a.includes('*')).map(a => sanitizeAttr(a)) || []
+function requiredAttrs<S extends string, T = StripAnnotations<S>>(attrs?: Array<S>): Array<T> {
+  return attrs
+    ? attrs.filter(a => a.includes('*')).map(a => stripAnnotations(a))
+    : []
 }
 
-function dynamicAttrs(attrs?: Array<string>): Array<string> {
-  return attrs?.filter(a => a.includes('🗱')).map(a => sanitizeAttr(a)) || []
+function dynamicAttrs<S extends string, T = StripAnnotations<S>>(attrs?: Array<S>): Array<T> {
+  return attrs
+    ? attrs.filter(a => a.includes('🗱')).map(a => stripAnnotations(a))
+    : []
 }
-
 
 export type AssertEqual<T, Expected> = [T] extends [Expected]
   ? [Expected] extends [T]
@@ -152,3 +156,11 @@ type StripAnnotations<T> = T extends `${infer U}*${infer Ignore}`
 // type StripAnnotationsD = AssertEqual<StripAnnotations<'a🗱*'>, 'a'>
 // type StripAnnotationsE = AssertEqual<StripAnnotations<'a*🗱'>, 'a'>
 // type TestStripAnnotations = StripAnnotationsA & StripAnnotationsB & StripAnnotationsC & StripAnnotationsD & StripAnnotationsE
+
+
+/*
+
+Rendering
+
+
+ */

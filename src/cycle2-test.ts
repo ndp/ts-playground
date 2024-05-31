@@ -4,29 +4,8 @@ import {describe, test} from "mocha";
 import path from "node:path";
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import { JSDOM } from 'jsdom';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-
-
-let jsdom: JSDOM
-
-beforeEach(() => {
-  //
-  // const jsdom = new JSDOM();
-  // global.document = jsdom.window.document;
-  // global.customElements = jsdom.window.customElements;
-  // global.HTMLElement = jsdom.window.HTMLElement
-
-  // Object.defineProperty(document, 'adoptedStyleSheets', {
-  //   get() {
-  //     return global.stylesheets
-  //   },
-  //   set(ss) {
-  //     global.stylesheets = ss
-  //   }
-  // })
-})
 
 
 describe('plain component', () => {
@@ -37,11 +16,11 @@ describe('plain component', () => {
 describe('attrs', () => {
 
   test('creates getter for required', () => {
-    const C2 = defineComponent('reqd-attrs', {shadowDOM: 'none', attrs: ['deckId*']})
+    const C = defineComponent('reqd-attrs', {shadowDOM: 'none', attrs: ['deckId*']})
 
-    const c2 = new C2()
-    c2.setAttribute('deckId', '32k432')
-    assert.equal(c2.deckId, '32k432')
+    const c = new C()
+    c.setAttribute('deckId', '32k432')
+    assert.equal(c.deckId, '32k432')
   })
 
   test('complains if required is missing', async() => {
