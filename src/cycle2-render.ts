@@ -18,8 +18,11 @@ rerender on specified events
 
  */
 
-interface RenderContext {
+export interface BaseRenderContext {
   root: HTMLElement
+}
+
+export interface RenderContext extends BaseRenderContext {
 }
 
 /*
@@ -27,9 +30,10 @@ RenderFromString
 ================
 Given a string of HTML, return a render state object that contains the elements
  */
-type MapSubElementSelectors<SubElementKey extends string> = Record<SubElementKey, string>
-type MapSubElements<SubElementKey extends string = string>
-  = { [K in SubElementKey]: HTMLElement }
+export type SubElementSelectorsMap<K extends string>
+  = { [k in K]: string }
+export type SubElementsMap<K extends string = string>
+  = { [k in K]: HTMLElement }
 
 /**
  * A function that manually (or however) builds the component DOM
@@ -37,57 +41,64 @@ type MapSubElements<SubElementKey extends string = string>
  *
  * Returns a map of subElements (if desired).
  */
-export type ComponentRenderer<SubElsMap extends MapSubElements = {}>
-  = (root: HTMLElement) => SubElsMap
+export type ComponentRenderer<SubElsMap extends SubElementsMap = {}>
+  = (this: RenderContext) => SubElsMap
 
 /**
- * Given a map of subElements, return a render state object that contains the elements
+ * Given a map of subElements names to selectors, return a map of subElements.
  * @param root
  * @param subElements
  */
-function mapSubElements<SubElementKey>(root: HTMLElement,
-                                       subElements: MapSubElementSelectors<SubElementKey>) {
-  const subEls = {} as MapSubElements<SubElementKey>
+function mapSubElements<
+  SelectorsMap = SubElementSelectorsMap<unknown>,
+  Keys =  [keyof SelectorsMap][number],
+  ElementsMap = SubElementsMap<Keys>
+>(root: HTMLElement,
+  subElements: SelectorsMap) {
+  const subEls = {}
   for (const [k, v] of Object.entries(subElements)) {
-    subEls[k] = root.querySelector(v)
+    subEls[k] = root.querySelector(v as string)
   }
-  return subEls;
+  return subEls as ElementsMap;
 }
+
+const foo = mapSubElements(myRoot, {div: 'div', span: 'span'})  // $ExpectType { div: HTMLElement; span: HTMLElement; }
 
 function renderIntoRootFromString<SubElementKey extends string>(
-  root: HTMLElement,
+  this: RenderContext,
   html: string,
-  subElements?: MapSubElementSelectors<SubElementKey>)
-  : MapSubElements<SubElementKey> {
+  subElements?: SubElementSelectorsMap<SubElementKey>)
+  : SubElementsMap<SubElementKey> {
 
-  // root is temp... should be part of the object
-  root.innerHTML = html
+  this.root.innerHTML = html
 
-  return subElements ? mapSubElements(root, subElements) : {}
+  return mapSubElements(this.root, subElements || {})
 }
 
-export function makeStringBuilder<SubElementKey extends string>(
-  html: string,
-  subElements?: MapSubElementSelectors<SubElementKey>)
-   {
+export const renderFromString = renderIntoRootFromString.bind({root: myRoot})
 
-  return (root: HTMLElement) => {
-    root.innerHTML = html
-    return subElements ? mapSubElements(root, subElements) : {}
+
+export function makeStringBuilder<
+  SelectorsMap = SubElementSelectorsMap<unknown>,
+  K =  [keyof SelectorsMap][number],
+  RetVal = ComponentRenderer<SubElementsMap<K>>>(
+  html: string | ((this: RenderContext) => string),
+  subElements?: SelectorsMap) {
+
+  const renderer = function (this: RenderContext) {
+    this.root.innerHTML = typeof html === 'string' ? html : html.call(this)
+    return subElements ? mapSubElements(this.root, subElements) : null
   }
+  return renderer as RetVal
 }
 
-const root = document.createElement('div')
-
-export const renderFromString= renderIntoRootFromString.bind(this, root)
+const myRoot = document.createElement('div')
 
 
-// Library method to provide a function that renders manually.
-export function buildDOM<SubElsMap extends MapSubElements>(
-  renderFn: ComponentRenderer<SubElsMap>
-): SubElsMap {
-
-  // renderDOM from string
-  // buildDOM from root
-  return renderFn(root)
-}
+export const buildDOM =
+  function <SubElsMap extends SubElementsMap = {}>(
+    this: RenderContext,
+    renderer: ComponentRenderer<SubElsMap>) {
+    const map = renderer.call(this) as SubElsMap
+    return map
+  }

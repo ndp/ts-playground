@@ -1,5 +1,11 @@
 import {defineComponent} from "./cycle2.js";
-import {buildDOM, renderDOMFromString, ComponentRenderer, renderFromString, makeStringBuilder} from "./cycle2-render";
+import {
+  ComponentRenderer,
+  renderFromString,
+  makeStringBuilder,
+  buildDOM,
+  SubElementSelectorsMap, RenderContext
+} from "./cycle2-render";
 
 
 const C = defineComponent<'change'>('my-component',
@@ -30,35 +36,48 @@ const C = defineComponent<'change'>('my-component',
 
 
 // Example of how you might write a renderer
-const exampleBuildRenderer = function (root) {
+const exampleBuildRenderer = function () {
   const div = document.createElement('div')
-  root.appendChild(div)
+ this. root.appendChild(div)
   return {}
 } satisfies ComponentRenderer
 // Example of how you might write a renderer with subelements
-const exampleBuildRendererWithSubElements = function (root) {
+const exampleBuildRendererWithSubElements = function () {
   const div = document.createElement('div')
-  root.appendChild(div)
+  this.root.appendChild(div)
 
   return {div}
 } satisfies ComponentRenderer
-function exampleRendererWithEventHandlersAttached(root) {
+function exampleRendererWithEventHandlersAttached() {
   const span = document.createElement('span')
   span.addEventListener('click', function () {
 
   })
-  root.appendChild(span)
+  this.root.appendChild(span)
 
   return {span}
 } /// satisfies RootRenderer
 
 // Examples using a STRING to render from
 const exampleRenderFromHTML =
-  makeStringBuilder(`<div>Hello World</div>`)
+  makeStringBuilder(`<div>Hello World</div>`, {}) satisfies ComponentRenderer
 const exampleRenderFromHTMLWithSubElement =
   makeStringBuilder(`<div>Hello World</div>`,
-    {div: 'div'});
+    {div: 'div'}) satisfies ComponentRenderer;
 
+const exampleRenderMultipleSubElements =
+  makeStringBuilder(`<sldfd class="zipcode"></sldfd><button>+</button><button>-</button>`,
+    {
+      zipcode: '.zipcode',
+      inc: 'button:nth-child(2)',
+      dec: 'button:nth-child(3)'
+    }) satisfies ComponentRenderer
+
+const exampleRenderFromDynamicHTML =
+  makeStringBuilder(() => `<div>Hello World</div>`, {})
+
+const exampleRenderFromDynamicHTMLWithSubElement =
+  makeStringBuilder(function (this: RenderContext) { return `<div>Hello <span>World</span></div>`}, {span: 'span'})
 
 // Possible usage of the library method
 const root = document.createElement('div')
@@ -67,40 +86,7 @@ const rs1 = buildDOM(exampleBuildRendererWithSubElements)
 const rs2 = buildDOM(exampleRendererWithEventHandlersAttached)
 const rs3 = buildDOM(exampleRenderFromHTML)
 const rs4 = buildDOM(exampleRenderFromHTMLWithSubElement)
-
-
-const rs5 =
-  renderFromString(
-    `<sldfd class="zipcode"></sldfd><button>+</button><button>-</button>`,
-    {
-      zipcode: '.zipcode',
-      inc: 'button:nth-child(2)/click',
-      dec: 'button:nth-child(3)/click'
-    })
-
-renderFromString(`<sldfd class="zipcode"></sldfd><button>+</button><button>-</button>`)
-
-const zipcode = this.root.querySelector('.zipcode', 'change')
-}
-
-
-const renderState =
-  renderFromString(
-    `<sldfd class="zipcode"></sldfd><button>+</button><button>-</button>`,
-    {
-      zipcode: '.zipcode',
-      inc: 'button:nth-child(2)/click',
-      dec: 'button:nth-child(3)/click'
-    })
-
-  //
-  // onAction('change', function () {
-  //   zipcode.textContent = 'hello'
-  // }
-  // onAction('inc', function () {
-  //   zipcode.textContent = zipcode.textContent + 1
-  // }
-  // onAction('dec', function () {
-  //   zipcode.textContent = zipcode.textContent - 1
-  // }
+const rs5 = buildDOM(exampleRenderMultipleSubElements)
+const rs6 = buildDOM(exampleRenderFromDynamicHTML)
+const rs7 = buildDOM(exampleRenderFromDynamicHTMLWithSubElement)
 
