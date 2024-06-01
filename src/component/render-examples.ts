@@ -1,16 +1,15 @@
-import {defineComponent} from "./cycle2.js";
 import {
   ComponentRenderer,
   makeStringBuilder,
   buildDOM,
   RenderContext
-} from "./cycle2-render";
+} from "./render";
 
 /*
 const C = defineComponent<'change'>('my-component',
   {
     shadowDOM: 'open',
-    cssPath: './cycle2-test.css',
+    cssPath: './component-test.css',
     // renderDOM(state: State) {
     //   return `<div>Hello World</div>`
     // },

@@ -1,4 +1,4 @@
-import {defineComponent} from "./cycle2";
+import {defineComponent} from "./component";
 import assert from "node:assert/strict";
 import {describe, test} from "mocha";
 import path from "node:path";
@@ -64,7 +64,7 @@ xdescribe('cssPath', () => {
     const C = defineComponent(
       'local-css', {
         shadowDOM: 'none',
-        cssPath: path.join(__dirname, './cycle2-test.css')
+        cssPath: path.join(__dirname, './component-test.css')
       })
 
     const c = new C();
@@ -81,7 +81,7 @@ xdescribe('cssPath', () => {
     const C = defineComponent(
       'local-css-shadow', {
         shadowDOM: 'open',
-        cssPath: path.join(__dirname, './cycle2-test.css')
+        cssPath: path.join(__dirname, './component-test.css')
       })
     const c = new C()
     assert.equal(c.shadowRoot!.innerHTML, 'my-component.css')
