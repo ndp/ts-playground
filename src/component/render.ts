@@ -18,9 +18,9 @@ rerender on specified events
 
  */
 
-export interface RenderContext {
+export type RenderContext<Attrs extends {} = {}> = {
   root: HTMLElement
-}
+} & { [k in keyof Attrs]: Attrs[k] }
 
 // export interface XRenderContext extends BaseRenderContext {
 // }
@@ -51,7 +51,7 @@ export type ComponentRenderer<RetVal extends SubElementsMap = {}>
  */
 function mapSubElements<
   SelectorsMap extends Record<string, string>,
-  Keys  = [keyof SelectorsMap][number],
+  Keys = [keyof SelectorsMap][number],
   RetVal = Keys extends string ? SubElementsMap<Keys> : {}
 >(root: HTMLElement,
   subElements: SelectorsMap) {
@@ -65,12 +65,13 @@ function mapSubElements<
 
 export function makeStringBuilder<
   SelectorsMap extends SubElementSelectorsMap,
-  K =  [keyof SelectorsMap][number],
-  RetVal = K extends string ? ComponentRenderer<SubElementsMap<K>> : ComponentRenderer>(
-  html: string | ((this: RenderContext) => string),
+  K = [keyof SelectorsMap][number],
+  RetVal = K extends string ? ComponentRenderer<SubElementsMap<K>> : ComponentRenderer,
+  MyRenderContext extends RenderContext = RenderContext>(
+  html: string | ((this: MyRenderContext) => string),
   subElements?: SelectorsMap) {
 
-  const renderer = function (this: RenderContext) {
+  const renderer = function (this: MyRenderContext) {
     this.root.innerHTML = typeof html === 'string' ? html : html.call(this)
     return subElements ? mapSubElements(this.root, subElements) : null
   }
@@ -78,9 +79,8 @@ export function makeStringBuilder<
 }
 
 
-
-  type BuildDOM<SubElsMap extends SubElementsMap = {}> = (
-    renderer: ComponentRenderer<SubElsMap>) => SubElsMap;
+type BuildDOM<SubElsMap extends SubElementsMap = {}> = (
+  renderer: ComponentRenderer<SubElsMap>) => SubElsMap;
 
 export const buildDOM: BuildDOM =
   function (

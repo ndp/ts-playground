@@ -1,7 +1,4 @@
-
-type AttrMethods<Attrs extends Array<string> | undefined> = Attrs extends Array<string> ? Readonly<{
-  [K in StripAnnotations<Attrs[number]>]: string
-}> : {}
+import {AttrMethods, dynamicAttrs, requiredAttrs, stripAnnotations} from "./attr";
 
 // type F0a = AttrMethods<['deckId']>
 // type F0aa = AssertEqual<F0a, {deckId: string}>
@@ -122,32 +119,11 @@ interface TestMethods {
 }
 
 
-function stripAnnotations<S extends string, T = StripAnnotations<S>>(attr: S) {
-  return attr.replace(/[*`🗱]/g, '') as T;
-}
-
-function requiredAttrs<S extends string, T = StripAnnotations<S>>(attrs?: Array<S>): Array<T> {
-  return attrs
-    ? attrs.filter(a => a.includes('*')).map(a => stripAnnotations(a))
-    : []
-}
-
-function dynamicAttrs<S extends string, T = StripAnnotations<S>>(attrs?: Array<S>): Array<T> {
-  return attrs
-    ? attrs.filter(a => a.includes('🗱')).map(a => stripAnnotations(a))
-    : []
-}
-
 export type AssertEqual<T, Expected> = [T] extends [Expected]
   ? [Expected] extends [T]
     ? true
     : false
   : false;
-
-
-type StripAnnotations<T> = T extends `${infer U}*${infer Ignore}`
-  ? U extends `${infer F}🗱` ? F : U
-  : T extends `${infer F}🗱` ? F : T
 
 
 // type StripAnnotationsA = AssertEqual<StripAnnotations<'a'>, 'a'>
