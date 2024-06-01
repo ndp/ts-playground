@@ -1,13 +1,12 @@
 import {defineComponent} from "./cycle2.js";
 import {
   ComponentRenderer,
-  renderFromString,
   makeStringBuilder,
   buildDOM,
-  SubElementSelectorsMap, RenderContext
+  RenderContext
 } from "./cycle2-render";
 
-
+/*
 const C = defineComponent<'change'>('my-component',
   {
     shadowDOM: 'open',
@@ -33,22 +32,23 @@ const C = defineComponent<'change'>('my-component',
     // observedAttributes: ['foo', 'bar']
   })
 
-
+*/
 
 // Example of how you might write a renderer
-const exampleBuildRenderer = function () {
+const exampleBuildRenderer = function (this: RenderContext) {
   const div = document.createElement('div')
- this. root.appendChild(div)
+  this.root.appendChild(div)
   return {}
 } satisfies ComponentRenderer
 // Example of how you might write a renderer with subelements
-const exampleBuildRendererWithSubElements = function () {
+const exampleBuildRendererWithSubElements = function (this: RenderContext) {
   const div = document.createElement('div')
   this.root.appendChild(div)
 
   return {div}
-} satisfies ComponentRenderer
-function exampleRendererWithEventHandlersAttached() {
+} satisfies ComponentRenderer<{ div: HTMLDivElement }>
+
+function exampleRendererWithEventHandlersAttached(this: RenderContext) {
   const span = document.createElement('span')
   span.addEventListener('click', function () {
 
@@ -77,10 +77,13 @@ const exampleRenderFromDynamicHTML =
   makeStringBuilder(() => `<div>Hello World</div>`, {})
 
 const exampleRenderFromDynamicHTMLWithSubElement =
-  makeStringBuilder(function (this: RenderContext) { return `<div>Hello <span>World</span></div>`}, {span: 'span'})
+  makeStringBuilder(function (this: RenderContext) {
+    return `<div>Hello <span>World</span></div>`
+  }, {span: 'span'})
 
 // Possible usage of the library method
 const root = document.createElement('div')
+
 const rs0 = buildDOM(exampleBuildRenderer)
 const rs1 = buildDOM(exampleBuildRendererWithSubElements)
 const rs2 = buildDOM(exampleRendererWithEventHandlersAttached)
