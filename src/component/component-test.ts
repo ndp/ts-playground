@@ -88,7 +88,14 @@ xdescribe('cssPath', () => {
   })
 
 })
+/*
 
+const imgSrc = new URL('./asset.webp', import.meta.url);
+const image = document.createElement('img');
+image.src = imgSrc.href;
+document.body.appendChild(image);
+
+ */
 
 
 describe('css', () => {
