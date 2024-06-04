@@ -18,7 +18,7 @@ const exampleBuildRendererWithSubElements = function (this: RenderContext) {
 
   // Returning the subelements makes them generally available in the component.
   return {div}
-} satisfies ComponentRenderer<{}, { div: HTMLDivElement }>
+} satisfies ComponentRenderer<RenderContext, { div: HTMLDivElement }>
 
 function exampleRendererWithEventHandlersAttached(this: RenderContext) {
   const span = document.createElement('span')
@@ -56,13 +56,14 @@ const exampleRenderFromDynamicHTMLWithSubElement =
 
 // Possible usage of the library method
 const root = document.createElement('div')
+const context = {root}
 
-const rs0 = buildDOM(exampleBuildRenderer)
-const rs1 = buildDOM(exampleBuildRendererWithSubElements)
-const rs2 = buildDOM(exampleRendererWithEventHandlersAttached)
-const rs3 = buildDOM(exampleRenderFromHTML)
-const rs4 = buildDOM(exampleRenderFromHTMLWithSubElement)
-const rs5 = buildDOM(exampleRenderMultipleSubElements)
-const rs6 = buildDOM(exampleRenderFromDynamicHTML)
-const rs7 = buildDOM(exampleRenderFromDynamicHTMLWithSubElement)
+const rs0 = buildDOM(context, exampleBuildRenderer)
+const rs1 = buildDOM(context, exampleBuildRendererWithSubElements)
+const rs2 = buildDOM(context, exampleRendererWithEventHandlersAttached)
+const rs3 = buildDOM(context, exampleRenderFromHTML)
+const rs4 = buildDOM(context, exampleRenderFromHTMLWithSubElement)
+const rs5 = buildDOM(context, exampleRenderMultipleSubElements)
+const rs6 = buildDOM(context, exampleRenderFromDynamicHTML)
+const rs7 = buildDOM(context, exampleRenderFromDynamicHTMLWithSubElement)
 

@@ -1,6 +1,9 @@
 import {strict as assert} from 'assert';
 import sinon from 'sinon';
-import {makeComponentRendererFromString, buildDOM, ComponentRenderer, SubElementsMap, RenderContext} from './render';
+import {
+  makeComponentRendererFromString,
+  buildDOM,
+} from './render';
 
 describe('makeComponentRendererFromString', () => {
   it('should return a function that sets root innerHTML to the provided string', () => {
@@ -35,7 +38,7 @@ describe('buildDOM', () => {
     const renderer = sinon.stub();
     const context = {root: document.createElement('div')};
 
-    buildDOM.call(context, renderer);
+    buildDOM(context, renderer);
 
     assert.ok(renderer.called);
     assert.ok('root' in renderer.firstCall.thisValue);
@@ -48,7 +51,7 @@ describe('buildDOM', () => {
     };
 
     const context = {root: document.createElement('div')};
-    const result = buildDOM.call(context, renderer) as ReturnType<typeof renderer>;
+    const result = buildDOM(context, renderer) as ReturnType<typeof renderer>;
 
     assert.ok(result.hasOwnProperty('span'));
     assert.equal(result.span!.innerHTML, 'world');
@@ -65,7 +68,7 @@ describe('buildDOM', () => {
 
     const context = {root: document.createElement('div'), name: 'Earth'};
     // const result = buildDOM.call(context, renderer) as ReturnType<typeof renderer>;
-    const result = buildDOM.call(context, renderer as any) as any
+    const result = buildDOM(context, renderer)
 
     assert.ok(result.hasOwnProperty('span'));
     assert.equal(result.span!.innerHTML, 'Earth');

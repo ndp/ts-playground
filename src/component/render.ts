@@ -84,20 +84,19 @@ export function makeComponentRendererFromString<
  * Given a renderer, build the DOM and return the subElements.
  * @param renderer
  */
-export const buildDOM =
+export const xbuildDOM =
   function<
-    F extends ComponentRenderer<Context>,
-    Context extends RenderContext = RenderContext<{}>
+    F extends ComponentRenderer,
+    Context extends RenderContext = ThisParameterType<F>
     > (
     this: Context,
     renderer: F): ReturnType<F> {
     return renderer.call(this) as ReturnType<F>
   }
 
-  /*
-  export type ComponentRenderer<
-  Context extends RenderContext = RenderContext<{}>,
-  RetVal extends SubElementsMap = {}>
-  = (this: Context) => RetVal
-
-   */
+  export function buildDOM<
+  Context extends RenderContext,
+  F extends ComponentRenderer<Context>
+  >(context: Context, renderer: F): ReturnType<F> {
+    return renderer.call(context) as ReturnType<F>
+  }
