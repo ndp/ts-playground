@@ -33,7 +33,7 @@ Given a string of HTML, return a render state object that contains the elements
 export type SubElementSelectorsMap<K extends string = string>
   = { [k in K]: string }
 export type SubElementsMap<K extends string = string>
-  = { [k in K]: HTMLElement }
+  = { [k in K]: HTMLElement | null}
 
 /**
  * A function that manually (or however) builds the component DOM
@@ -41,8 +41,10 @@ export type SubElementsMap<K extends string = string>
  *
  * Returns a map of subElements (if desired).
  */
-export type ComponentRenderer<RetVal extends SubElementsMap = {}>
-  = (this: RenderContext) => RetVal
+export type ComponentRenderer<
+  Context extends RenderContext = RenderContext<{}>,
+  RetVal extends SubElementsMap = {}>
+  = (this: Context) => RetVal
 
 /**
  * Given a map of subElements names to selectors, return a map of subElements.
@@ -63,11 +65,11 @@ function mapSubElements<
 }
 
 
-export function makeStringBuilder<
+export function makeComponentRendererFromString<
   SelectorsMap extends SubElementSelectorsMap,
   K = [keyof SelectorsMap][number],
-  RetVal = K extends string ? ComponentRenderer<SubElementsMap<K>> : ComponentRenderer,
-  MyRenderContext extends RenderContext = RenderContext>(
+  MyRenderContext extends RenderContext = RenderContext,
+  RetVal = K extends string ? ComponentRenderer<MyRenderContext, SubElementsMap<K>> : ComponentRenderer>(
   html: string | ((this: MyRenderContext) => string),
   subElements?: SelectorsMap) {
 
@@ -78,12 +80,24 @@ export function makeStringBuilder<
   return renderer as RetVal
 }
 
-
-type BuildDOM<SubElsMap extends SubElementsMap = {}> = (
-  renderer: ComponentRenderer<SubElsMap>) => SubElsMap;
-
-export const buildDOM: BuildDOM =
-  function (
-    renderer) {
-    return renderer.call({root: document.createElement('div')})
+/**
+ * Given a renderer, build the DOM and return the subElements.
+ * @param renderer
+ */
+export const buildDOM =
+  function<
+    F extends ComponentRenderer<Context>,
+    Context extends RenderContext = RenderContext<{}>
+    > (
+    this: Context,
+    renderer: F): ReturnType<F> {
+    return renderer.call(this) as ReturnType<F>
   }
+
+  /*
+  export type ComponentRenderer<
+  Context extends RenderContext = RenderContext<{}>,
+  RetVal extends SubElementsMap = {}>
+  = (this: Context) => RetVal
+
+   */

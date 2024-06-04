@@ -1,6 +1,6 @@
 import {
   ComponentRenderer,
-  makeStringBuilder,
+  makeComponentRendererFromString,
   buildDOM,
   RenderContext
 } from "./render";
@@ -18,7 +18,7 @@ const exampleBuildRendererWithSubElements = function (this: RenderContext) {
 
   // Returning the subelements makes them generally available in the component.
   return {div}
-} satisfies ComponentRenderer<{ div: HTMLDivElement }>
+} satisfies ComponentRenderer<{}, { div: HTMLDivElement }>
 
 function exampleRendererWithEventHandlersAttached(this: RenderContext) {
   const span = document.createElement('span')
@@ -32,14 +32,14 @@ function exampleRendererWithEventHandlersAttached(this: RenderContext) {
 
 // Examples using a STRING to render from
 const exampleRenderFromHTML =
-  makeStringBuilder(`<div>Hello World</div>`, {}) satisfies ComponentRenderer
+  makeComponentRendererFromString(`<div>Hello World</div>`, {}) satisfies ComponentRenderer
 
 const exampleRenderFromHTMLWithSubElement =
-  makeStringBuilder(`<div>Hello <span>World</span></div>`,
+  makeComponentRendererFromString(`<div>Hello <span>World</span></div>`,
     {span: 'span'}) satisfies ComponentRenderer;
 
 const exampleRenderMultipleSubElements =
-  makeStringBuilder(`<sldfd class="zipcode"></sldfd><button>+</button><button>-</button>`,
+  makeComponentRendererFromString(`<sldfd class="zipcode"></sldfd><button>+</button><button>-</button>`,
     {
       zipcode: '.zipcode',
       inc: 'button:nth-child(2)',
@@ -47,10 +47,10 @@ const exampleRenderMultipleSubElements =
     }) satisfies ComponentRenderer
 
 const exampleRenderFromDynamicHTML =
-  makeStringBuilder(() => `<div>Hello World</div>`, {})
+  makeComponentRendererFromString(() => `<div>Hello World</div>`, {})
 
 const exampleRenderFromDynamicHTMLWithSubElement =
-  makeStringBuilder(function (this: RenderContext<{name?: string}>) {
+  makeComponentRendererFromString(function (this: RenderContext<{name?: string}>) {
     return `<div>Hello <span>${this.name || 'World'}</span></div>`
   }, {span: 'span'})
 
