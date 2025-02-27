@@ -1,29 +1,36 @@
 import assert from 'node:assert/strict'
 import {it as spec, describe, mock} from 'node:test'
 
-import {inMemoryLens, observeableLens, transformLens, cascadingLens, ReadOnlyLens} from './lens'
+import {
+  inMemoryLens,
+  observeableLens,
+  transformLens,
+  readOnlyLens,
+  withFallbackLens
+} from './lens'
 import type { Lens } from './lens'
 
 
-describe('cascadingLens', () => {
+
+describe('withFallbackLens', () => {
   spec('uses a base value', () => {
     const b = inMemoryLens<string>('foo')
     const o = inMemoryLens('bar')
-    const lens = cascadingLens(o, b)
+    const lens = withFallbackLens(o, b)
 
     assert.equal(lens.value, 'bar')
   })
   spec('uses an override value', () => {
     const b = inMemoryLens<string>('foo')
     const o = inMemoryLens(undefined)
-    const lens = cascadingLens(o, b)
+    const lens = withFallbackLens(o, b)
 
     assert.equal(lens.value, 'foo')
   })
   spec('updates just the base', () => {
     const b = inMemoryLens<string>('foo')
     const o = inMemoryLens(undefined as unknown as string)
-    const lens = cascadingLens(o.readOnly, b)
+    const lens = withFallbackLens(o.readOnly, b)
 
     lens.set('bar')
 
@@ -35,7 +42,7 @@ describe('cascadingLens', () => {
   spec('updates just the override', () => {
     const b = inMemoryLens<string>('foo')
     const o = inMemoryLens(undefined as unknown as string)
-    const lens = cascadingLens(o, b.readOnly)
+    const lens = withFallbackLens(o, b.readOnly)
 
     lens.set('bar')
 
@@ -46,7 +53,7 @@ describe('cascadingLens', () => {
   spec('updates both lenses', () => {
     const b = inMemoryLens<string>('foo')
     const o = inMemoryLens(undefined as unknown as string)
-    const lens = cascadingLens(o,b)
+    const lens = withFallbackLens(o,b)
 
     lens.set('bar')
 
@@ -140,7 +147,73 @@ describe('observeableLens', () => {
   })
 })
 
-describe('convertingLens', () => {
+
+describe('observable', () => {
+  spec('can observe a change', async () => {
+    const myLens = inMemoryLens<string>('foo').observable
+
+    const onChangeSpy = mock.fn()
+
+    myLens.addObserver(onChangeSpy, {observeInitialValue: true})
+
+    await new Promise(r => setTimeout(r, 5))
+
+    assert.equal(onChangeSpy.mock.calls.length, 1)
+    assert.equal(myLens.value, 'foo')
+  })
+
+  spec('can observe initial value', () => {
+    const myLens = inMemoryLens<string>('foo').observable
+
+    const onChangeSpy = mock.fn()
+
+    myLens.addObserver(onChangeSpy)
+    myLens.set('bar')
+
+    assert.equal(onChangeSpy.mock.calls.length, 1)
+    assert.equal(myLens.value, 'bar')
+  })
+  spec('can remove an observer', () => {
+    const myLens = inMemoryLens<string>('foo').observable
+
+    const onChangeSpy = mock.fn()
+
+    const remover = myLens.addObserver(onChangeSpy)
+    remover()
+
+    myLens.set('bar')
+
+    assert.equal(onChangeSpy.mock.calls.length, 0)
+  })
+  spec('can observe multiple changes', () => {
+    const myLens = inMemoryLens<string>('foo').observable
+
+    const onChangeSpy = mock.fn()
+    myLens.addObserver(onChangeSpy)
+
+    myLens.set('bar')
+    myLens.set('baz')
+    myLens.set('buzz')
+
+    assert.equal(onChangeSpy.mock.calls.length, 3)
+  })
+  spec('multiple observers', () => {
+    const myLens = inMemoryLens<string>('foo').observable
+
+    const onChangeSpy1 = mock.fn()
+    const onChangeSpy2 = mock.fn()
+
+    myLens.addObserver(onChangeSpy1)
+    myLens.addObserver(onChangeSpy2)
+
+    myLens.set('bar')
+
+    assert.equal(onChangeSpy1.mock.calls.length, 1)
+    assert.equal(onChangeSpy2.mock.calls.length, 1)
+  })
+})
+
+describe('transformLens', () => {
   spec('can convert from String to Int', () => {
     const lens1 = inMemoryLens('a')
     const lens2 = transformLens(lens1, {
@@ -183,10 +256,11 @@ describe('convertingLens', () => {
   })
 })
 
+
 describe('readOnlyLens', () => {
   spec('prevents modification to underlying lens', () => {
     const lens1 = inMemoryLens(7)
-    const wrap = new ReadOnlyLens(lens1)
+    const wrap = readOnlyLens(lens1)
 
     assert.equal(wrap.value, 7)
 
