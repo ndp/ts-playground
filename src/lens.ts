@@ -1,7 +1,3 @@
-import assert from 'node:assert/strict'
-import {it as spec, describe, mock} from 'node:test'
-
-
 /**
  The "lens" design pattern is used to abstract away the process of
  accessing and modifying nested data structures in a functional
@@ -12,267 +8,212 @@ import {it as spec, describe, mock} from 'node:test'
  @see https://github.com/hatashiro/lens.ts/blob/master/test/test_proxy.ts
  @see https://github.com/atomicobject/lenses
  */
-export type Lens<T> = {
-  get value(): T;
-  set(newValue: T): void
+type Features<T> = {
+  get readOnly(): Lens<T>
 }
 
-function inMemoryLens<T>(val: T): Lens<T> {
-  return {
-    set(newValue: T): void {
-      val = newValue
-    },
-    get value(): T {
-      return val;
+export abstract class Lens<T> {
+  abstract get value(): T;
+  abstract set(newValue: T): void;
+
+  get readOnly(): Lens<T> {
+    return new ReadOnlyLens(this)
+  }
+}
+// export type Lens<T> = {
+//   get value(): T;
+//   set(newValue: T): void
+// }
+//
+// export type OptionalLens<T> = {
+//   get value(): T | undefined;
+//   set(newValue: T): void
+// }
+
+class InMemoryLens<T> extends Lens<T> {
+
+  private val: T
+  constructor(value: T) {
+    super()
+    this.val = value
+  }
+  set(newValue: T) {
+    this.val = newValue
+  }
+  get value() {
+    return this.val
+  }
+
+}
+
+export function inMemoryLens<T>(initialValue: T): Lens<T> {
+  return new InMemoryLens(initialValue)
+}
+
+//export function into<T>(Lens<T>,prop: string|number): Lens<U> {
+
+// composition, failure, multiplicity, transformation, and representation
+
+class ObservableLens<T> extends Lens<T> {
+  private lens: Lens<T>;
+  private observers: Array<Observer<T>> = [];
+
+  constructor(lens: Lens<T>) {
+    super()
+    this.lens = lens;
+  }
+
+  get value(): T {
+    return this.lens.value;
+  }
+
+  set(newValue: T) {
+    const oldValue = this.lens.value;
+    this.lens.set(newValue);
+    this.onChange(newValue, oldValue);
+  }
+
+  onChange(next: T, prev: T | undefined) {
+    this.observers.forEach(observer => observer(next, prev));
+  }
+
+  addObserver(handler: Observer<T>, { observeInitialValue }: ObserverOptions = { observeInitialValue: false }): () => void {
+    this.observers.push(handler);
+    if (observeInitialValue) setTimeout(() => handler(this.lens.value, undefined), 0);
+    return () => this.removeObserver(handler);
+  }
+
+  private removeObserver(handler: Observer<T>) {
+    const index = this.observers.indexOf(handler);
+    if (index > -1) {
+      this.observers.splice(index, 1);
     }
   }
 }
 
 type Observer<T> = (next: T, prev: T | undefined) => void
 type ObserverOptions = { observeInitialValue: boolean }
-export type ObservableLens<T> = Lens<T> & {
-  // Add a change handler for the lens.
-  // Returns a function to remove the observer
-  onChange: (observer: Observer<T>, opts?: ObserverOptions) => () => void
-}
+// export type ObservableLens<T> = Lens<T> & {
+//   // Add a change handler for the lens.
+//   // Returns a function to remove the observer
+//   onChange: (observer: Observer<T>, opts?: ObserverOptions) => () => void
+// }
 
 export function observeableLens<T extends string>(lens: Lens<T>): ObservableLens<T> {
-  const observers: Array<Observer<T>> = []
-  const onChange = (next: T, prev: T | undefined) =>
-    observers.forEach(observer => observer(next, prev))
-  return {
-    get value () { return lens.value },
-    set: (newValue: T) => {
-      const oldValue = lens.value
-      lens.set(newValue)
-      onChange(newValue, oldValue)
-    },
-    onChange: (handler: Observer<T>, {observeInitialValue}: ObserverOptions = {observeInitialValue: false}) => {
-      observers.push(handler)
-      if (observeInitialValue) setTimeout(() => handler(lens.value, undefined), 0)
-      return () => removeItem(observers, handler)
-    }
-  }
+  return new ObservableLens<T>(lens)
 }
 
-function castingLens<A, B>(
-  subject: Lens<A>,
+
+class TransformLens<A, B> extends Lens<B> {
+  private target: Lens<A>;
+  private casts: {
+    in: (b: B) => A;
+    out: (a: A) => B;
+  };
+
+  constructor(target: Lens<A>, casts: { in: (b: B) => A; out: (a: A) => B }) {
+    super()
+    this.target = target;
+    this.casts = casts;
+  }
+
+  get value(): B {
+    return this.casts.out(this.target.value);
+  }
+
+  set(newValue: B) {
+    this.target.set(this.casts.in(newValue));
+  }
+}
+export function transformLens<A, B>(
+  target: Lens<A>,
   casts: {
     in: (b: B) => A,
     out: (a: A) => B
   }): Lens<B> {
-  return {
-    get value() {
-      return casts.out(subject.value)
-    },
-    set(val) {
-      subject.set(casts.in(val))
-    }
+ return new TransformLens<A,B>(target, casts)
+  // return {
+  //   get value() {
+  //     return casts.out(target.value)
+  //   },
+  //   set(val) {
+  //     target.set(casts.in(val))
+  //   }
+  // }
+}
+
+/**
+  * Creates a lens that cascades through a series of lenses to find the first lens
+  * with a non-undefined value.
+  *
+  * @param lenses - An array of lenses to cascade through.
+  * @returns A lens that exposes the value of the first lens with a non-undefined value.
+  */
+class CascadingLens<T> extends Lens<T> {
+  private lenses: Array<Lens<T>>;
+  private last: Lens<T>;
+
+  constructor(lens1: Lens<T>, ...rest: Array<Lens<T>>) {
+    super()
+    this.lenses = [lens1, ...rest];
+    this.last = this.lenses.pop()!;
+  }
+
+  get value(): T {
+    const lens = this.lenses.find(lens => lens.value !== undefined);
+    return lens === undefined ? this.last.value : lens.value;
+  }
+
+  set(newValue: T): void {
+    this.lenses.forEach(lens => lens.set(newValue));
+    this.last.set(newValue);
   }
 }
-
-type OverridingLensOptions<T> = {
-  base: Lens<T>,
-  override: Lens<T|undefined>
-  update: 'base' | 'override' | 'both'
+export function cascadingLens<T>(lens1: Lens<T>, ...rest: Array<Lens<T>>): Lens<T> {
+  return new CascadingLens(lens1, ...rest)
+  // const lenses = [lens1, ...rest]
+  // const last = lenses.pop()!
+  // return {
+  //   get value() {
+  //     const lens = lenses.find(lens => lens.value !== undefined)
+  //     return lens === undefined ? last.value : lens.value
+  //   },
+  //   set: (value) => {
+  //     lenses.forEach(lens => lens.set(value))
+  //     last.set(value)
+  //   }
+  // }
 }
-function overridingLens<T>({base, override, update }: OverridingLensOptions<T>) {
-  return {
-    get value() {
-      return override.value === undefined ?
-        base.value : override.value
-    },
-    set(value: T) {
-      if (update === 'override' || update === 'both')
-        override.set(value)
-      if (update === 'base' || update === 'both')
-        base.set(value)
-    }
+
+/**
+  * Creates a read-only lens that prevents modification of the underlying lens value.
+  *
+  * @param lens - The lens to be wrapped in a read-only lens.
+  * @returns A read-only lens that exposes the value of the original lens but does not allow setting a new value.
+  */
+// export function readOnlyLens<T>(lens: Lens<T>) {
+//   return new ReadOnlyLens(lens)
+// }
+
+export class ReadOnlyLens<T> extends Lens<T> {
+  private target: Lens<T>;
+
+  constructor(lens: Lens<T>) {
+    super()
+    this.target = lens;
+  }
+
+  get value(): T {
+    return this.target.value;
+  }
+
+  set(_value: T): void {
+    // Do nothing to prevent modification
   }
 }
-
-
-describe('overridingLens', () => {
-  spec('uses a base value', () => {
-    const b = inMemoryLens<string>('foo')
-    const o = inMemoryLens('bar')
-    const lens = overridingLens({base: b, override: o, update: 'both'})
-
-    assert.equal(lens.value, 'bar')
-  })
-  spec('uses an override value', () => {
-    const b = inMemoryLens<string>('foo')
-    const o = inMemoryLens(undefined)
-    const lens = overridingLens({base: b, override: o, update: 'both'})
-
-    assert.equal(lens.value, 'foo')
-  })
-  spec('updates just the base', () => {
-    const b = inMemoryLens<string>('foo')
-    const o = inMemoryLens(undefined)
-    const lens = overridingLens({base: b, override: o, update: 'base'})
-
-    lens.set('bar')
-
-    assert.equal(b.value, 'bar')
-    assert.equal(o.value, undefined)
-
-    assert.equal(lens.value, 'bar')
-  })
-  spec('updates just the override', () => {
-    const b = inMemoryLens<string>('foo')
-    const o = inMemoryLens(undefined)
-    const lens = overridingLens({base: b, override: o, update: 'override'})
-
-    lens.set('bar')
-
-    assert.equal(lens.value, 'bar')
-    assert.equal(b.value, 'foo')
-    assert.equal(o.value, 'bar')
-  })
-  spec('updates both lenses', () => {
-    const b = inMemoryLens<string>('foo')
-    const o = inMemoryLens(undefined)
-    const lens = overridingLens({base: b, override: o, update: 'both'})
-
-    lens.set('bar')
-
-    assert.equal(lens.value, 'bar')
-    assert.equal(b.value, 'bar')
-    assert.equal(o.value, 'bar')
-  })
-})
-
-
-describe('inMemoryLens', () => {
-  spec('can store numbers', () => {
-    assert.equal(inMemoryLens(1).value, 1)
-    assert.equal(inMemoryLens(2).value, 2)
-  })
-  spec('can store objects', () => {
-    assert.deepEqual(inMemoryLens({one: 1, two: [1, 2, 3], 3: 'tree'}).value, {one: 1, two: [1, 2, 3], 3: 'tree'})
-  })
-  spec('can change values', () => {
-    const a = inMemoryLens('foo')
-    assert.equal(a.value, 'foo')
-    a.set('bar')
-    assert.equal(a.value, 'bar')
-    a.set('baz')
-    assert.equal(a.value, 'baz')
-  })
-})
-
-describe('observeableLens', () => {
-  spec('can observe a change', async () => {
-    const myLens = observeableLens(inMemoryLens<string>('foo'))
-
-    const onChangeSpy = mock.fn()
-
-    myLens.onChange(onChangeSpy, {observeInitialValue: true})
-
-    await new Promise(r => setTimeout(r, 5))
-
-    assert.equal(onChangeSpy.mock.calls.length, 1)
-    assert.equal(myLens.value, 'foo')
-  })
-
-  spec('can observe initial value', () => {
-    const myLens = observeableLens(inMemoryLens<string>('foo'))
-
-    const onChangeSpy = mock.fn()
-
-    myLens.onChange(onChangeSpy)
-    myLens.set('bar')
-
-    assert.equal(onChangeSpy.mock.calls.length, 1)
-    assert.equal(myLens.value, 'bar')
-  })
-  spec('can remove an observer', () => {
-    const myLens = observeableLens(inMemoryLens<string>('foo'))
-
-    const onChangeSpy = mock.fn()
-
-    const remover = myLens.onChange(onChangeSpy)
-    remover()
-
-    myLens.set('bar')
-
-    assert.equal(onChangeSpy.mock.calls.length, 0)
-  })
-  spec('can observe multiple changes', () => {
-    const myLens = observeableLens(inMemoryLens<string>('foo'))
-
-    const onChangeSpy = mock.fn()
-    myLens.onChange(onChangeSpy)
-
-    myLens.set('bar')
-    myLens.set('baz')
-    myLens.set('buzz')
-
-    assert.equal(onChangeSpy.mock.calls.length, 3)
-  })
-  spec('multiple observers', () => {
-    const myLens = observeableLens(inMemoryLens<string>('foo'))
-
-    const onChangeSpy1 = mock.fn()
-    const onChangeSpy2 = mock.fn()
-
-    myLens.onChange(onChangeSpy1)
-    myLens.onChange(onChangeSpy2)
-
-    myLens.set('bar')
-
-    assert.equal(onChangeSpy1.mock.calls.length, 1)
-    assert.equal(onChangeSpy2.mock.calls.length, 1)
-  })
-})
-
-describe('convertingLens', () => {
-  spec('can convert from String to Int', () => {
-    const lens1 = inMemoryLens('a')
-    const lens2 = castingLens(lens1, {
-      in: (v: number) => v.toString(16),
-      out: (v: string) => parseInt(v, 16)
-    })
-
-    assert.equal(lens2.value, 10)
-    assert.equal(lens1.value, 'a')
-  })
-  spec('can change outer lens', () => {
-    const lens1 = inMemoryLens('a')
-    const lens2 = castingLens(lens1, {
-      in: (v: number) => v.toString(16),
-      out: (v: string) => parseInt(v, 16)
-    })
-
-    lens2.set(15)
-    assert.equal(lens2.value, 15)
-    assert.equal(lens1.value, 'f')
-
-    lens2.set(1965)
-    assert.equal(lens2.value, 1965)
-    assert.equal(lens1.value, '7ad')
-  })
-  spec('can change inner lens', () => {
-    const lens1 = inMemoryLens('a')
-    const lens2 = castingLens(lens1, {
-      in: (v: number) => v.toString(16),
-      out: (v: string) => parseInt(v, 16)
-    })
-
-    lens1.set('f')
-    assert.equal(lens2.value, 15)
-    assert.equal(lens1.value, 'f')
-
-    lens1.set('7ad')
-    assert.equal(lens2.value, 1965)
-    assert.equal(lens1.value, '7ad')
-  })
-})
-
 
 // Array util
-export function removeItem<T>(arr: Array<T>, value: T): Array<T> {
+function removeItem<T>(arr: Array<T>, value: T): Array<T> {
   const index = arr.indexOf(value)
   if (index > -1) {
     arr.splice(index, 1)
