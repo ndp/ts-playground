@@ -394,7 +394,8 @@ class ObjectPropLens<
 }
 
 function objPropLens<
-  Target extends Record<P, unknown>,
+T,
+  Target = T extends Lens<infer X> ? X : T, //Record<P, unknown>
   P extends keyof Target = keyof Target
 >(prop: P): (target: Target) => Lens<Target[P]> {
   return (target: Target) =>
@@ -428,9 +429,9 @@ describe('objPropLens', () => {
         baz: 'aha'
       }
     }
-    //
-    // const barLens = objPropLens<typeof target>('bar')
-    // const bazLens = objPropLens<typeof barLens>(barLens, 'baz')
+
+    const barLens = objPropLens<typeof target>('bar')
+    const bazLens = objPropLens<typeof barLens>(barLens, 'baz')
 
 
   })
