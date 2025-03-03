@@ -6,10 +6,10 @@ import {
   observeableLens,
   transformLens,
   readOnlyLens,
-  withFallbackLens
+  withFallbackLens,
+  propLens,
+  cookieLens, Lens
 } from './lens'
-import type { Lens } from './lens'
-
 
 
 describe('withFallbackLens', () => {
@@ -53,7 +53,7 @@ describe('withFallbackLens', () => {
   spec('updates both lenses', () => {
     const b = inMemoryLens<string>('foo')
     const o = inMemoryLens(undefined as unknown as string)
-    const lens = withFallbackLens(o,b)
+    const lens = withFallbackLens(o, b)
 
     lens.set('bar')
 
@@ -282,3 +282,220 @@ describe('readOnly', () => {
     assert.equal(wrap.value, 7)
   })
 })
+
+
+describe('cookieLens', () => {
+
+  let mockDoc: Partial<Document>
+
+  spec('should return the default value if no cookie is set', () => {
+    const lens = cookieLens('testCookie', 'defaultValue');
+    lens.setDocument({
+      cookie: ''
+    });
+
+    assert.equal(lens.value, 'defaultValue');
+  });
+
+  spec('should return the cookie value if it is set', () => {
+    const lens = cookieLens('testCookie', 'defaultValue');
+    lens.setDocument({
+      cookie: 'testCookie=cookieValue'
+    });
+    assert.equal(lens.value, 'cookieValue');
+  });
+
+  spec('should set the cookie value', () => {
+    const lens = cookieLens('testCookie', 'defaultValue');
+    mockDoc = {
+      cookie: ''
+    }
+    lens.setDocument(mockDoc);
+    lens.set('newValue');
+    assert(mockDoc.cookie!.includes('testCookie=newValue'));
+  });
+
+  spec('should update the cookie value', () => {
+
+    const lens = cookieLens('testCookie', 'defaultValue');
+    mockDoc = {
+      cookie: 'testCookie=oldValue'
+    }
+    lens.setDocument(mockDoc);
+    lens.set('newValue');
+    assert(mockDoc.cookie!.includes('testCookie=newValue'))
+  });
+
+  spec('should handle multiple cookies', () => {
+    const lens1 = cookieLens('cookie1', 'default1');
+    const lens2 = cookieLens('cookie2', 'default2');
+    mockDoc = {
+      cookie: 'cookie1=value1; cookie2=value2'
+    }
+    lens1.setDocument(mockDoc);
+    lens2.setDocument(mockDoc);
+
+    assert.equal(lens1.value, 'value1');
+    assert.equal(lens2.value, 'value2');
+  });
+});
+//
+// function pLens0<
+//   L extends Lens<unknown>,
+//   S = L extends Lens<infer U> ? U : never,
+//   T = keyof S
+// >(prop: T): (lens: L) => Lens<S[T]> {
+//   return (lens: L) => propLens<L, T, S>(lens, prop)
+// }
+type ObjectWithProperty<P extends PropertyKey, V> = {
+  [K in P]: V;
+};
+//
+// function pLens<
+//   V,
+//   P extends string = string,
+//   Outer = ObjectWithProperty<P, V>
+// >(prop: P) {
+//   return (lens: Lens<Outer>) => (propLens(lens, prop) as Lens<V>)
+// }
+//
+// // maybe propLens needs to go the other way: it infers the lens type from the property given
+//
+// describe('pLens', () => {
+//   spec('', () => {
+//     const obj = {a: 1, b: 2};
+//     const lens = inMemoryLens(obj)
+//     const unbound = pLens<number>('a')
+//
+//     assert.equal(unbound(lens).value, 1)
+//     assert.equal(unbound({a: 7}).value, 7)
+//
+//   })
+// })
+
+class ObjectPropLens<
+  Target extends Record<P, V>,
+  P extends keyof Target = keyof Target,
+  V = Target[P]//Target extends Record<K, infer k> ? k : never
+> extends Lens<V> {
+
+  constructor(private readonly prop: P,
+              private readonly target: Target) {
+    super()
+  }
+
+  get value(): V {
+    return this.target[this.prop]
+  }
+
+  set(val: V) {
+    (this.target as { [k in P]: V })[this.prop] = val
+  }
+}
+
+function objPropLens<
+  Target extends Record<P, unknown>,
+  P extends keyof Target = keyof Target
+>(prop: P): (target: Target) => Lens<Target[P]> {
+  return (target: Target) =>
+    new ObjectPropLens<Target, P>(prop, target)
+}
+
+describe('objPropLens', () => {
+  spec('basic get and set', () => {
+
+    const target = {
+      foo: 1,
+      bar: {
+        buzz: [10, 11, 12]
+      }
+    }
+
+    const fooLens = objPropLens<{ foo: number }>('foo')
+    assert.equal(fooLens(target).value, 1)
+
+    fooLens(target).set(2)
+
+    assert.equal(target.foo, 2)
+  })
+
+  spec('nesting', () => {
+
+    const target = {
+      foo: 1,
+      bar: {
+        buzz: [10, 11, 12],
+        baz: 'aha'
+      }
+    }
+    //
+    // const barLens = objPropLens<typeof target>('bar')
+    // const bazLens = objPropLens<typeof barLens>(barLens, 'baz')
+
+
+  })
+
+  spec('works with arrays', () => {
+    const ar = [10,11,12]
+
+    const secondLens = objPropLens<Array<number>>(1)
+
+    const val = secondLens(ar).value
+
+    assert.equal(val, 11)
+  })
+})
+
+
+describe('propLens', () => {
+  spec('gets the value of the specified property', () => {
+    const obj = {a: 1, b: 2};
+    const lens = inMemoryLens(obj);
+    const propLensA = propLens(lens, 'a');
+
+    assert.equal(propLensA.value, 1);
+  });
+
+  spec('sets the value of the specified property', () => {
+    const obj = {a: 1, b: 2};
+    const lens = inMemoryLens(obj);
+    const propLensA = propLens(lens, 'a');
+
+    propLensA.set(10);
+    assert.equal(propLensA.value, 10);
+    assert.equal(lens.value.a, 10);
+  });
+
+  spec('works on arrays', () => {
+    const obj = ['a', 'b', 'c'];
+    const alens = inMemoryLens(obj);
+    const lens = propLens(alens, 1);
+    assert.equal(lens.value, 'b');
+
+    lens.set('d');
+    assert.equal(lens.value, 'd');
+    assert.deepEqual(obj, ['a', 'b', 'c']) // immutable
+    assert.notEqual(alens.value, obj); // new reference
+    assert.deepEqual(alens.value, ['a', 'd', 'c']);
+  });
+
+  spec('should not affect other properties', () => {
+    const obj = {a: 1, b: 2};
+    const lens = inMemoryLens(obj);
+    const propLensA = propLens(lens, 'a');
+
+    propLensA.set(10);
+    assert.equal(lens.value.b, 2);
+  });
+
+  spec('should work with nested objects', () => {
+    const obj = {a: {x: 1, y: 2}, b: 2};
+    const lens = inMemoryLens(obj);
+    const propLensA = propLens(lens, 'a');
+    const nestedPropLensX = propLens(propLensA, 'x');
+
+    nestedPropLensX.set(10);
+    assert.equal(nestedPropLensX.value, 10);
+    assert.equal(lens.value.a.x, 10);
+  });
+});
