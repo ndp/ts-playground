@@ -431,13 +431,13 @@ describe('objPropLens', () => {
     }
 
     const barLens = objPropLens<typeof target>('bar')
-    const bazLens = objPropLens<typeof barLens>(barLens, 'baz')
+    // const bazLens = objPropLens<typeof barLens>(barLens, 'baz')
 
 
   })
 
   spec('works with arrays', () => {
-    const ar = [10,11,12]
+    const ar = [10, 11, 12]
 
     const secondLens = objPropLens<Array<number>>(1)
 
