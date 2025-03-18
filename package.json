@@ -12,7 +12,7 @@
     "start": "npm run build && node build/index.js",
     "test-doc": "https://medium.com/@s4y.solutions/es-modules-typescript-and-mocha-9e6138883e57",
     "test": "mocha -n=loader=ts-node/esm -n=es-module-specifier-resolution=node -r test/setup-jsdom.js  'src/component/*-test.ts'",
-    "test2": "mocha -n=loader=ts-node/esm -n=es-module-specifier-resolution=node -r test/setup-jsdom.js src/lens-spec.ts"
+    "test2": "mocha -n=loader=ts-node/esm -n=es-module-specifier-resolution=node -r test/setup-jsdom.js src/grip-spec.ts"
   },
   "keywords": [],
   "author": "Andrew Peterson",

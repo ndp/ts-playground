@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import {describe, it as spec, mock} from 'node:test'
 
 import {
+  cachingGrip,
   cookieGrip,
   varGrip,
   manualGrip,
@@ -40,7 +41,91 @@ describe('manualGrip', () => {
     grip.set(8)
     assert.equal(grip.value, 8)
   })
+
+
+  spec('can apply async getters and setters', async () => {
+    let val = 7
+    const grip = manualGrip(
+      () => Promise.resolve(val),
+      (v: number) => {
+        val = v
+        return Promise.resolve()
+      }
+    )
+
+    assert.equal(await grip.value, 7)
+
+    await grip.set(8)
+
+    assert.equal(await grip.value, 8)
+    assert.equal(val, 8)
+  })
+
+  spec('can apply async getters and setters with context object', async () => {
+    const grip = manualGrip(
+      (context) => Promise.resolve(context.value),
+      (v: number, context) => {
+        context.value = v
+        return Promise.resolve()
+      },
+      { value: 7 }
+    )
+
+    assert.equal(await grip.value, 7)
+
+    await grip.set(8)
+
+    assert.equal(await grip.value, 8)
+  })
+
 })
+
+
+describe('cachingGrip', () => {
+
+  spec('should cache the value after the first retrieval (sync)', () => {
+    const grip = varGrip(0);
+    const caching = cachingGrip(grip);
+
+    assert.equal(caching.value, 0);
+
+    grip.set(1);
+    assert.equal(caching.value, 0); // Should still return cached value
+
+    caching.expire()
+    assert.equal(caching.value, 1)
+
+    caching.set(2);
+    assert.equal(caching.value, 2); // Should update and return new value
+    assert.equal(grip.value, 2) // Should update target
+  });
+
+  spec('should cache the value after the first retrieval (async)', async () => {
+    let value = 0;
+    const grip = manualGrip(
+      () => Promise.resolve(value),
+      (v: number) => {
+        value = v;
+        return Promise.resolve();
+      }
+    );
+    const caching = cachingGrip(grip);
+
+    assert.equal(await caching.value, 0);
+
+    value = 1;
+    assert.equal(await caching.value, 0); // Should still return cached value
+    caching.expire()
+    assert.equal(await caching.value, 1)
+
+    await caching.set(2);
+    assert.equal(await caching.value, 2); // Should update and return new value
+    assert.equal(await grip.value, 2);
+  });
+
+});
+
+
 describe('withFallbackGrip', () => {
   spec('uses a base value', () => {
     const b = varGrip<string>('foo')

@@ -149,7 +149,9 @@ export function withFallbackGrip<
  * @returns A new instance of a `Grip`.
  */
 export function manualGrip<T>(getter: () => T, setter: (value: T) => void): Grip<T>;
+export function manualGrip<T>(getter: () => Promise<T>, setter: (value: T) => Promise<void>): Grip<T>;
 export function manualGrip<T, C>(getter: (context: C) => T, setter: (value: T, context: C) => void, context: C): Grip<T>;
+export function manualGrip<T, C>(getter: (context: C) => Promise<T>, setter: (value: T, context: C) => Promise<void>, context: C): Grip<T>;
 export function manualGrip<T, C>(
   getter: C extends undefined ? () => T : (context: C) => T,
   setter: C extends undefined ? (value: T) => void : (value: T, context: C) => void,
@@ -202,7 +204,7 @@ export function propGrip<
           newObject[property] = newValue;
           grip.set(newObject);
         } else {
-          const newObject = { ...value, [property]: newValue };
+          const newObject = {...value, [property]: newValue};
           grip.set(newObject);
         }
       }
@@ -271,6 +273,31 @@ class VarGrip<T> extends Grip<T> {
 
 }
 
+
+export function cachingGrip<T>(subject: Grip<T>) {
+
+  // T may be anything, even Promise
+
+  const context = {cache: undefined as T, stale: true}
+  const grip = manualGrip<T, {cache: T, stale: boolean}>(
+    (context) => {
+      if (context.stale) {
+        context.cache = subject.value
+        context.stale = false
+      }
+      return context.cache
+    },
+    (newValue, context) => {
+      context.stale = true
+      return subject.set(newValue)
+    },
+    context
+  ) as ManualGrip<T> & { expire: () => void }
+  grip.expire = () => context.stale = true
+  return grip
+}
+
+
 /*
 The CookieGrip class extends Grip and provides an implementation
 of a grip backed by browser cookies. Assumes all values are strings.
@@ -317,7 +344,24 @@ export class CookieGrip extends Grip<string> {
 }
 
 
-
+/**
+ * Exposes access and mutation of (JSON-)serializable value
+ * in local storage.
+ * @param key string used as key in local storage
+ * @param defaultValue
+ */
+export function localStorageGrip<T>(key: string, defaultValue: T) {
+  return manualGrip<T>(
+    () => {
+      const val = window.localStorage.getItem(key);
+      return val === null ? defaultValue : JSON.parse(val);
+    },
+    (serializable) => {
+      const value = JSON.stringify(serializable);
+      window.localStorage.setItem(key, value)
+    }
+  )
+}
 
 class ManualGrip<T, C = undefined> extends Grip<T> {
   constructor(
@@ -329,19 +373,11 @@ class ManualGrip<T, C = undefined> extends Grip<T> {
   }
 
   get value(): T {
-    if (this.context === undefined) {
-      return (this.getter as () => T)();
-    } else {
-      return (this.getter as (context: C) => T)(this.context as C);
-    }
+    return (this.getter as (context: C) => T)(this.context as C);
   }
 
   set(newValue: T): void {
-    if (this.context === undefined) {
-      (this.setter as (value: T) => void)(newValue);
-    } else {
-      (this.setter as (value: T, context: C) => void)(newValue, this.context as C);
-    }
+    (this.setter as (value: T, context: C) => void)(newValue, this.context as C);
   }
 }
 
