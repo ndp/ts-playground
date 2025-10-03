@@ -5,7 +5,8 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "build": "rimraf ./build && tsc",
+    "build": "npm run clean && tsc",
+    "clean": "rimraf ./build",
     "lint": "eslint . --ext .ts",
     "lint-and-fix": "eslint . --ext .ts --fix",
     "start:dev": "nodemon",
