@@ -1,10 +1,10 @@
 /*
 The Grip class is an abstract class that represents a grip,
-which is used to access and modify nested data structures
-in an encapsulated way. It's inspired from the
-Lens design pattern, and might just be the same thing.
+which is used to access and modify some data. It's a limited
+"facade", with just `get` and `set` capabilities, similar to
+a Lens.
 
-The "lens" design pattern is used to abstract away the process of
+It's inspired from the Lens design pattern. The "lens" design pattern is used to abstract away the process of
 accessing and modifying nested data structures in a functional
 and immutable way. It provides a way to focus on a specific
 part of a data structure, allowing you to view and update
@@ -13,8 +13,7 @@ that part without directly manipulating the entire structure.
 This "Grip" differs mainly in that it's more of a wrapper
 around a specific "thing", and abstracting away the
 access to its contents, rather than being a "lens", or
-"view into" some type of thing. This is more what I
-needed for my implementation, so I'm using it (for now).
+"view into" some type of thing.
 
 You likely will not use the Grip class itself, but rather the
 few constructor functions: inMemoryGrid, cookieGrip, manualGrid,
@@ -36,7 +35,7 @@ get observable(): Returns an observable version of the grip.
 export abstract class Grip<T> {
   abstract get value(): T;
 
-  abstract set(newValue: T): void;
+  abstract set(newValue: T): T;
 
   /**
    * Returns a new grip whose `set` method does nothing.
@@ -70,7 +69,7 @@ export abstract class Grip<T> {
  * @returns A new instance of `Grip` with the provided initial value.
  */
 export function varGrip<T>(initialValue: T): Grip<T> {
-  return new VarGrip(initialValue);
+  return new ValueGrip(initialValue);
 }
 
 /**
@@ -107,7 +106,7 @@ export function transformGrip<A, B, L extends Grip<A>>(
     },
     set: {
       value(newValue: B) {
-        grip.set(casts.in(newValue));
+        return grip.set(casts.in(newValue));
       }
     }
   });
@@ -135,7 +134,7 @@ export function withFallbackGrip<
     set: {
       value(newValue: T1Req | T2) {
         fallback.set(newValue as T2);
-        target.set(newValue as T1);
+        return target.set(newValue as T1);
       }
     }
   });
@@ -148,13 +147,16 @@ export function withFallbackGrip<
  * @param context - Optional context to be passed to the getter and setter functions.
  * @returns A new instance of a `Grip`.
  */
-export function manualGrip<T>(getter: () => T, setter: (value: T) => void): Grip<T>;
-export function manualGrip<T>(getter: () => Promise<T>, setter: (value: T) => Promise<void>): Grip<T>;
-export function manualGrip<T, C>(getter: (context: C) => T, setter: (value: T, context: C) => void, context: C): Grip<T>;
-export function manualGrip<T, C>(getter: (context: C) => Promise<T>, setter: (value: T, context: C) => Promise<void>, context: C): Grip<T>;
+// Sync
+export function manualGrip<T>(getter: () => T, setter: (value: T) => T): Grip<T>;
+// Asyncs
+export function manualGrip<T>(getter: () => Promise<T>, setter: (value: Promise<T>) => Promise<T>): Grip<T>;
+// Same, with "context"
+export function manualGrip<T, C>(getter: (context: C) => T, setter: (value: T, context: C) => T, context: C): Grip<T>;
+export function manualGrip<T, C>(getter: (context: C) => Promise<T>, setter: (value: Promise<T>, context: C) => Promise<void>, context: C): Grip<T>;
 export function manualGrip<T, C>(
   getter: C extends undefined ? () => T : (context: C) => T,
-  setter: C extends undefined ? (value: T) => void : (value: T, context: C) => void,
+  setter: C extends undefined ? (value: T) => T : (value: T, context: C) => T,
   context?: C
 ): Grip<T> {
   return new ManualGrip(getter, setter, context as C);
@@ -207,6 +209,7 @@ export function propGrip<
           const newObject = {...value, [property]: newValue};
           grip.set(newObject);
         }
+        return newValue
       }
     }
   });
@@ -222,6 +225,7 @@ export function observeableGrip<T, L extends Grip<T>>(grip: L):
         const oldValue = grip.value;
         grip.set(newValue);
         observers.forEach(observer => observer(newValue, oldValue));
+        return newValue
       }
     },
     addObserver: {
@@ -242,8 +246,9 @@ export function observeableGrip<T, L extends Grip<T>>(grip: L):
 export function readOnlyGrip<T, L extends Grip<T>>(grip: L): L {
   return Object.create(grip, {
     set: {
-      value: (_value: T) => {
+      value: (value: T) => {
         // Do nothing to prevent modification
+        return value
       }
     }
   });
@@ -251,29 +256,39 @@ export function readOnlyGrip<T, L extends Grip<T>>(grip: L): L {
 
 
 /*
-The VarGrip class extends Grip and provides an in-memory implementation of a grip.
+The ValueGrip class extends Grip and provides an in-memory implementation of a grip.
 It's a lot like a plain old variable, with a few more features (observability, readonly).
+Be careful of passing by value semantics.
  */
-class VarGrip<T> extends Grip<T> {
+class ValueGrip<T> extends Grip<T> {
 
-  private val: T
+  private _val: T
 
-  constructor(value: T) {
+  constructor(initialValue: T) {
     super()
-    this.val = value
+    this._val = initialValue
   }
 
   set(newValue: T) {
-    this.val = newValue
+    this._val = newValue
+    return newValue
   }
 
   get value() {
-    return this.val
+    return this._val
   }
 
 }
 
-
+/**
+ * Creates a grip that caches the value of the subject grip.
+ * The cache is marked as stale whenever the value is set.
+ * The grip also has an `expire` method, that may be called
+ * to mark the data as invalid.
+ *
+ * @param subject - The grip whose value is to be cached.
+ * @returns A new grip with caching capabilities.
+ */
 export function cachingGrip<T>(subject: Grip<T>) {
 
   // T may be anything, even Promise
@@ -298,6 +313,21 @@ export function cachingGrip<T>(subject: Grip<T>) {
 }
 
 
+export function guardedGrip<T>(srcGrip: Grip<T>, guardFn: () => boolean, guarded: Grip<T>) {
+  const grip = manualGrip(
+    () => guardFn() ? guarded.value : srcGrip.value,
+    (newValue) => {
+      if (guardFn()) {
+        srcGrip.set(newValue)
+        return guarded.set(newValue)
+      }
+      return srcGrip.set(newValue)
+    }
+  )
+  return grip
+}
+
+
 /*
 The CookieGrip class extends Grip and provides an implementation
 of a grip backed by browser cookies. Assumes all values are strings.
@@ -317,6 +347,7 @@ export class CookieGrip extends Grip<string> {
 
   set(newValue: string) {
     this.document().cookie = this.name + '=' + newValue + ';path=/;SameSite=Strict'
+    return newValue
   }
 
   setDocument(d: Partial<Document>) {
@@ -349,24 +380,44 @@ export class CookieGrip extends Grip<string> {
  * in local storage.
  * @param key string used as key in local storage
  * @param defaultValue
+ * @param localStorage implementation of localStorage API used
+ * for unit tests only. Defaults to `window.localStorage`.
  */
-export function localStorageGrip<T>(key: string, defaultValue: T) {
-  return manualGrip<T>(
+export function localStorageStringGrip<T>(key: string,
+                                    defaultValue: string,
+                                    localStorage?: Storage) {
+  if (!localStorage && typeof window != 'undefined')
+    localStorage = window.localStorage
+  return manualGrip<string>(
     () => {
-      const val = window.localStorage.getItem(key);
-      return val === null ? defaultValue : JSON.parse(val);
+      const val = localStorage!.getItem(key);
+      return val === null ? defaultValue : val;
     },
-    (serializable) => {
-      const value = JSON.stringify(serializable);
-      window.localStorage.setItem(key, value)
+    (value) => {
+      localStorage!.setItem(key, value)
+      return value
     }
   )
+}
+
+export function localStorageJSONGrip<T>(key: string,
+                                    defaultValue: T,
+                                    localStorage?: Storage) {
+  if (!localStorage && typeof window != 'undefined')
+    localStorage = window.localStorage
+
+  const lsGrip = localStorageStringGrip(key, JSON.stringify(defaultValue), localStorage)
+
+  return transformGrip(lsGrip, {
+    in: (v: T) => JSON.stringify(v),
+    out: (s: string) => JSON.parse(s) as T
+  })
 }
 
 class ManualGrip<T, C = undefined> extends Grip<T> {
   constructor(
     private readonly getter: C extends undefined ? () => T : (context: C) => T,
-    private readonly setter: C extends undefined ? (value: T) => void : (value: T, context: C) => void,
+    private readonly setter: C extends undefined ? (value: T) => T : (value: T, context: C) => T,
     private readonly context?: C
   ) {
     super();
@@ -376,8 +427,8 @@ class ManualGrip<T, C = undefined> extends Grip<T> {
     return (this.getter as (context: C) => T)(this.context as C);
   }
 
-  set(newValue: T): void {
-    (this.setter as (value: T, context: C) => void)(newValue, this.context as C);
+  set(newValue: T): T {
+    return (this.setter as (value: T, context: C) => T)(newValue, this.context as C);
   }
 }
 
@@ -398,6 +449,7 @@ export class ObjectPropGrip<
 
   set(val: V) {
     (this.target as { [k in P]: V })[this.prop] = val
+    return val
   }
 }
 

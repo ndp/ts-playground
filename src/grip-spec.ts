@@ -1,9 +1,12 @@
 import assert from 'node:assert/strict'
-import {describe, it as spec, mock} from 'node:test'
+import {describe, it as spec, mock, beforeEach } from 'node:test'
 
 import {
   cachingGrip,
   cookieGrip,
+  guardedGrip,
+  localStorageStringGrip,
+  localStorageJSONGrip,
   varGrip,
   manualGrip,
   objectPropGrip,
@@ -47,15 +50,14 @@ describe('manualGrip', () => {
     let val = 7
     const grip = manualGrip(
       () => Promise.resolve(val),
-      (v: number) => {
-        val = v
-        return Promise.resolve()
+      (v: Promise<number>) => {
+        return v.then(value => val = value)
       }
     )
 
     assert.equal(await grip.value, 7)
 
-    await grip.set(8)
+    await grip.set(Promise.resolve(8))
 
     assert.equal(await grip.value, 8)
     assert.equal(val, 8)
@@ -64,16 +66,15 @@ describe('manualGrip', () => {
   spec('can apply async getters and setters with context object', async () => {
     const grip = manualGrip(
       (context) => Promise.resolve(context.value),
-      (v: number, context) => {
-        context.value = v
-        return Promise.resolve()
+      (v: Promise<number>, context) => {
+        return v.then(value => context.value = value)
       },
       { value: 7 }
     )
 
     assert.equal(await grip.value, 7)
 
-    await grip.set(8)
+    await grip.set(Promise.resolve(8))
 
     assert.equal(await grip.value, 8)
   })
@@ -89,12 +90,6 @@ describe('cachingGrip', () => {
 
     assert.equal(caching.value, 0);
 
-    grip.set(1);
-    assert.equal(caching.value, 0); // Should still return cached value
-
-    caching.expire()
-    assert.equal(caching.value, 1)
-
     caching.set(2);
     assert.equal(caching.value, 2); // Should update and return new value
     assert.equal(grip.value, 2) // Should update target
@@ -104,9 +99,8 @@ describe('cachingGrip', () => {
     let value = 0;
     const grip = manualGrip(
       () => Promise.resolve(value),
-      (v: number) => {
-        value = v;
-        return Promise.resolve();
+      (v: Promise<number>) => {
+        return v.then(val => value = val);
       }
     );
     const caching = cachingGrip(grip);
@@ -118,10 +112,23 @@ describe('cachingGrip', () => {
     caching.expire()
     assert.equal(await caching.value, 1)
 
-    await caching.set(2);
+    await caching.set(Promise.resolve(2));
     assert.equal(await caching.value, 2); // Should update and return new value
     assert.equal(await grip.value, 2);
   });
+
+  spec('should expire explicitly', () => {
+    const grip = varGrip(0);
+    const caching = cachingGrip(grip);
+
+    assert.equal(caching.value, 0);
+
+    grip.set(1);
+    assert.equal(caching.value, 0); // Should still return cached value
+
+    caching.expire()
+    assert.equal(caching.value, 1)
+  })
 
 });
 
@@ -539,5 +546,241 @@ describe('propGrip', () => {
     nestedPropGripX.set(10);
     assert.equal(nestedPropGripX.value, 10);
     assert.equal(grip.value.a.x, 10);
+  });
+});
+
+
+describe('guardedGrip', () => {
+  spec('should use source grip value when guard function returns false', () => {
+    const srcGrip = varGrip(0);
+    const guarded = varGrip(1);
+    const guardFn = () => false;
+    const grip = guardedGrip(srcGrip, guardFn, guarded);
+
+    assert.equal(grip.value, 0);
+  });
+
+  spec('should use guarded grip value when guard function returns true', () => {
+    const srcGrip = varGrip(0);
+    const guarded = varGrip(1);
+    const guardFn = () => true;
+    const grip = guardedGrip(srcGrip, guardFn, guarded);
+
+    assert.equal(grip.value, 1);
+  });
+
+  spec('should set value on source grip when guard function returns false', () => {
+    const srcGrip = varGrip(0);
+    const guarded = varGrip(1);
+    const guardFn = () => false;
+    const grip = guardedGrip(srcGrip, guardFn, guarded);
+
+    grip.set(2);
+    assert.equal(srcGrip.value, 2);
+    assert.equal(guarded.value, 1);
+  });
+
+  spec('should set value both grips when guard function returns true', () => {
+    const srcGrip = varGrip(0);
+    const guarded = varGrip(1);
+    const guardFn = () => true;
+    const grip = guardedGrip(srcGrip, guardFn, guarded);
+
+    grip.set(2);
+    assert.equal(srcGrip.value, 2);
+    assert.equal(guarded.value, 2);
+  });
+  //
+  // spec('should handle async guard function', async () => {
+  //   const srcGrip = varGrip(0);
+  //   const guarded = varGrip(1);
+  //   const guardFn = async () => true;
+  //   const grip = guardedGrip(srcGrip, guardFn, guarded);
+  //
+  //   assert.equal(await grip.value, 1);
+  // });
+
+  spec('should handle async getter and setter with guard on', async () => {
+    const srcGrip = varGrip(Promise.resolve(0));
+    const guarded = varGrip(Promise.resolve(1));
+    const guardFn = () => true;
+
+    const grip = guardedGrip(srcGrip, guardFn, guarded);
+
+    assert.equal(await grip.value, 1);
+    assert.equal(await srcGrip.value, 0);
+    assert.equal(await guarded.value, 1);
+
+    await grip.set(Promise.resolve(2))
+
+    assert.equal(await grip.value, 2)
+    assert.equal(await srcGrip.value, 2);
+    assert.equal(await guarded.value, 2);
+  });
+  spec('should handle async getter and setter with guard off', async () => {
+
+    const srcGrip = varGrip(Promise.resolve(0));
+    const guarded = varGrip(Promise.resolve(1));
+    const guardFn = () => false;
+
+    const grip = guardedGrip(srcGrip, guardFn, guarded);
+
+    assert.equal(await guarded.value, 1); // ignored
+    assert.equal(await grip.value, 0)
+    assert.equal(await srcGrip.value, 0);
+
+    await grip.set(Promise.resolve(2))
+    assert.equal(await grip.value, 2)
+    assert.equal(await srcGrip.value, 2);
+    assert.equal(await guarded.value, 1); // doesn't change
+  });
+});
+
+
+
+describe('localStorageStringGrip', () => {
+  let localStorage: Storage;
+
+  beforeEach(() => {
+    localStorage = {
+      getItem: mock.fn(),
+      setItem: mock.fn(),
+      removeItem: mock.fn(),
+      clear: mock.fn(),
+      key: mock.fn(),
+      length: 0
+    } as unknown as Storage;
+  });
+
+  spec('should return the default value if no item is set in localStorage', () => {
+    localStorage.getItem = () => null
+
+    const key = 'testKey';
+    const defaultValue = 'defaultValue';
+    const grip = localStorageStringGrip(key, defaultValue, localStorage);
+
+    assert.equal(grip.value, defaultValue);
+  });
+
+  spec('should return the value from localStorage if it is set', () => {
+    const key = 'testKey';
+    const defaultValue = 'defaultValue';
+    const storedValue = 'storedValue';
+    const grip = localStorageStringGrip(key, defaultValue, localStorage);
+
+    localStorage.getItem = () => storedValue
+
+    assert.equal(grip.value, storedValue);
+  });
+
+  spec('should set the value in localStorage', () => {
+    const key = 'testKey';
+    const defaultValue = 'defaultValue';
+    const newValue = 'newValue';
+    const grip = localStorageStringGrip(key, defaultValue, localStorage);
+
+    grip.set(newValue);
+
+    const m = localStorage.setItem as unknown as ReturnType<typeof mock.fn>;
+    assert.equal(m.mock.callCount(), 1);
+    assert.equal(m.mock.calls[0].arguments[0], key);
+    assert.equal(m.mock.calls[0].arguments[1], newValue);
+  });
+
+  spec('should update the value in localStorage', () => {
+    const key = 'testKey';
+    const defaultValue = 'defaultValue';
+    const newValue = 'newValue';
+    const grip = localStorageStringGrip(key, defaultValue, localStorage);
+
+    grip.set(newValue);
+
+    const m = localStorage.setItem as unknown as ReturnType<typeof mock.fn>;
+    assert.equal(m.mock.callCount(), 1);
+    assert.equal(m.mock.calls[0].arguments[0], key);
+    assert.equal(m.mock.calls[0].arguments[1], newValue);
+  });
+
+});
+
+describe('localStorageJSONGrip', () => {
+  let localStorage: Storage;
+
+  beforeEach(() => {
+    localStorage = {
+      getItem: mock.fn(),
+      setItem: mock.fn(),
+      removeItem: mock.fn(),
+      clear: mock.fn(),
+      key: mock.fn(),
+      length: 0
+    } as unknown as Storage;
+  });
+
+  spec('should return the default value if no item is set in localStorage', () => {
+    localStorage.getItem = () => null
+
+    const key = 'testKey';
+    const defaultValue = 'defaultValue';
+    const grip = localStorageJSONGrip(key, defaultValue, localStorage);
+
+    assert.equal(grip.value, defaultValue);
+  });
+
+  spec('should return the value from localStorage if it is set', () => {
+    const key = 'testKey';
+    const defaultValue = 'defaultValue';
+    const storedValue = 'storedValue';
+    const grip = localStorageJSONGrip(key, defaultValue, localStorage);
+
+    localStorage.getItem = () => JSON.stringify(storedValue)
+
+    assert.equal(grip.value, storedValue);
+  });
+
+  spec('should set the value in localStorage', () => {
+    const key = 'testKey';
+    const defaultValue = 'defaultValue';
+    const newValue = 'newValue';
+    const grip = localStorageJSONGrip(key, defaultValue, localStorage);
+
+    grip.set(newValue);
+
+    const m = localStorage.setItem as unknown as ReturnType<typeof mock.fn>;
+    assert.equal(m.mock.callCount(), 1);
+    assert.equal(m.mock.calls[0].arguments[0], key);
+    assert.equal(m.mock.calls[0].arguments[1], JSON.stringify(newValue));
+  });
+
+  spec('should update the value in localStorage', () => {
+    const key = 'testKey';
+    const defaultValue = 'defaultValue';
+    const newValue = 'newValue';
+    const grip = localStorageJSONGrip(key, defaultValue, localStorage);
+
+    grip.set(newValue);
+
+    const m = localStorage.setItem as unknown as ReturnType<typeof mock.fn>;
+    assert.equal(m.mock.callCount(), 1);
+    assert.equal(m.mock.calls[0].arguments[0], key);
+    assert.equal(m.mock.calls[0].arguments[1], JSON.stringify(newValue));
+  });
+
+  spec('should handle non-string values', () => {
+    const key = 'testKey';
+    const defaultValue = { foo: 'bar' };
+    const newValue = { foo: 'baz' };
+    const grip = localStorageJSONGrip(key, defaultValue, localStorage);
+
+    localStorage.getItem = () => JSON.stringify(newValue)
+
+    assert.deepEqual(grip.value, newValue);
+
+    grip.set(newValue);
+
+    const m = localStorage.setItem as unknown as ReturnType<typeof mock.fn>;
+    assert.equal(m.mock.callCount(), 1);
+    assert.equal(m.mock.calls[0].arguments[0], key);
+    assert.equal(m.mock.calls[0].arguments[1], JSON.stringify(newValue));
   });
 });
