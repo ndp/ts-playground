@@ -2,10 +2,10 @@ import {strict as assert} from 'node:assert'
 import {describe, test} from 'node:test'
 
 type Encoding = 'URL' | 'base64' | 'HTML' | 'XML' | 'SQL' | 'Shell'
-type Encodings = Array<Encoding>
+type EncodingSequence = Array<Encoding>
 
 declare const _encoding: unique symbol;
-export type EncodedString<E extends Encodings = []> = string & { readonly [_encoding]: E };
+export type EncodedString<E extends EncodingSequence = []> = string & { readonly [_encoding]: E };
 
 
 type EncodingsOf<S> = S extends EncodedString<infer T> ? T : []
@@ -16,11 +16,12 @@ type AddEncoding<NewEncoding extends Encoding, ExistingStr extends string> =
         ? EncodedString<Push<ExistingEncodings, NewEncoding>>
         : EncodedString<[NewEncoding]>;
 
-type LastEncodedAs<E extends Encoding> = EncodedString<[E]> | EncodedString<[...Encodings, E]>
+type LastEncodedAs<E extends Encoding> = EncodedString<[E]> | EncodedString<[...EncodingSequence, E]>
 
 /*
 Explicitly mark a string as having a given encoding. If the string already has an
-encoding, the new encoding is added to the list.
+encoding, the new encoding is added to the list. This is just a type-caste disguised
+as a function.
  */
 function encodedAs<NewEncoding extends Encoding, S extends string = string>(s: S) {
     return s as unknown as AddEncoding<NewEncoding, S>;
@@ -65,12 +66,6 @@ export function sqlEscape<S extends string>(raw: S) {
     return raw
         .replace(/[\0\x08\x09\x1a\n\r"'\\\%]/g, char => {
             switch (char) {
-                // case "\0":
-                //     return "\\0";
-                // case "\x08":
-                //     return "\\b";
-                // case "\x1a":
-                //     return "\\z";
                 case "\"":
                 case "'":
                 case "\\":
