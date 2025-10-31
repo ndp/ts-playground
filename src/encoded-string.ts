@@ -8,15 +8,23 @@ declare const _encoding: unique symbol;
 export type EncodedString<E extends EncodingSequence = []> = string & { readonly [_encoding]: E };
 
 
-type EncodingsOf<S> = S extends EncodedString<infer T> ? T : []
-type LastEncodingOf<S> = Last<EncodingsOf<S>>
-type PreviousEncodingOf<S> = Pop<EncodingsOf<S>>
+type EncodingsOf<S extends string> = S extends EncodedString<infer T> ? T : []
+type LastEncodingOf<S extends string> = Last<EncodingsOf<S>>
+type PreviousEncodingOf<S extends string> = Pop<EncodingsOf<S>>
 type AddEncoding<NewEncoding extends Encoding, ExistingStr extends string> =
     ExistingStr extends EncodedString<infer ExistingEncodings>
         ? EncodedString<Push<ExistingEncodings, NewEncoding>>
         : EncodedString<[NewEncoding]>;
 
-type LastEncodedAs<E extends Encoding> = EncodedString<[E]> | EncodedString<[...EncodingSequence, E]>
+// helper: S resolves to the passed EncodedString type only if its encoding tuple ends with E
+type HasLast<S, E extends Encoding> = S extends EncodedString<infer T>
+    ? T extends [...infer Rest, infer L]
+        ? L extends E
+            ? S
+            : never
+        : never
+    : never
+
 
 /*
 Explicitly mark a string as having a given encoding. If the string already has an
@@ -37,9 +45,13 @@ export function urlEncode<S extends string>(s: S) {
     return encodeURIComponent(s) as AddEncoding<'URL', S>
 }
 
-export function urlDecode<S extends LastEncodedAs<'URL'>>(encoded: S) {
-    return decodeURIComponent(encoded) as unknown as EncodedString<PreviousEncodingOf<S>>;
+
+
+// urlDecode: accept only strings whose last encoding is 'URL'
+export function urlDecode<S extends EncodedString<EncodingSequence>>(encoded: HasLast<S, 'URL'>) {
+    return decodeURIComponent(encoded as unknown as string) as unknown as EncodedString<PreviousEncodingOf<S>>;
 }
+
 
 export function base64encode<S extends string>(raw: S) {
     if (typeof window === 'undefined' && typeof Buffer !== 'undefined') {
@@ -51,16 +63,17 @@ export function base64encode<S extends string>(raw: S) {
     return btoa(bin) as AddEncoding<'base64', S>;
 }
 
-export function base64decode<S extends LastEncodedAs<'base64'>>(b64: S) {
+
+// base64decode: accept only strings whose last encoding is 'base64'
+export function base64decode<S extends string>(b64: HasLast<S, 'base64'>) {
     if (typeof window === 'undefined' && typeof Buffer !== 'undefined') {
-        return Buffer.from(b64, 'base64').toString('utf8') as unknown as EncodedString<PreviousEncodingOf<S>>;
+        return Buffer.from(b64 as unknown as string, 'base64').toString('utf8') as unknown as EncodedString<PreviousEncodingOf<S>>;
     }
-    const bin = atob(b64);
+    const bin = atob(b64 as unknown as string);
     const bytes = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
     return new TextDecoder().decode(bytes) as unknown as EncodedString<PreviousEncodingOf<S>>;
 }
-
 
 export function sqlEscape<S extends string>(raw: S) {
     return raw
@@ -76,10 +89,12 @@ export function sqlEscape<S extends string>(raw: S) {
         }) as AddEncoding<'SQL', S>;
 }
 
-export function sqlUnescape<S extends LastEncodedAs<'SQL'>>(escaped: S) {
-    return escaped
-        .replace(/\\([\0\x08\x09\x1a\n\r"'\\\%])/g, "$1") as unknown as PreviousEncodingOf<S>;
+// sqlUnescape: accept only strings whose last encoding is 'SQL'
+export function sqlUnescape<S extends EncodedString<EncodingSequence>>(escaped: HasLast<S, 'SQL'>) {
+    return (escaped as unknown as string)
+        .replace(/\\([\0\x08\x09\x1a\n\r"'\\\%])/g, "$1") as unknown as EncodedString<PreviousEncodingOf<S>>;
 }
+
 
 
 export function htmlEscape<S extends string>(raw: S) {
@@ -91,15 +106,16 @@ export function htmlEscape<S extends string>(raw: S) {
         .replace(/'/g, '&#39;') as AddEncoding<'HTML', S>;
 }
 
-export function htmlUnescape<S extends LastEncodedAs<'HTML'>>(escaped: S) {
-    return escaped
+
+// htmlUnescape: accept only strings whose last encoding is 'HTML'
+export function htmlUnescape<S extends EncodedString<EncodingSequence>>(escaped: HasLast<S, 'HTML'>) {
+    return (escaped as unknown as string)
         .replace(/&amp;/g, '&')
         .replace(/&lt;/g, '<')
         .replace(/&gt;/g, '>')
         .replace(/&quot;/g, '"')
         .replace(/&#39;/g, "'") as unknown as EncodedString<PreviousEncodingOf<S>>;
 }
-
 
 export function shellEscape<S extends string>(raw: S) {
     // Windows: wrap in double quotes and escape " \ and % (best-effort)
@@ -112,9 +128,9 @@ export function shellEscape<S extends string>(raw: S) {
     return escaped as AddEncoding<'Shell', S>;
 }
 
-export function shellUnescape<S extends LastEncodedAs<'Shell'>>(escaped: S) {
+// shellUnescape: accept only strings whose last encoding is 'Shell'
+export function shellUnescape<S extends EncodedString<EncodingSequence>>(escaped: HasLast<S, 'Shell'>) {
     if (typeof process !== 'undefined' && process.platform === 'win32') {
-        // remove surrounding double quotes if present, then unescape backslash-escaped chars
         const s = String(escaped);
         if (s.length >= 2 && s[0] === '"' && s[s.length - 1] === '"') {
             const inner = s.slice(1, -1);
@@ -122,7 +138,6 @@ export function shellUnescape<S extends LastEncodedAs<'Shell'>>(escaped: S) {
         }
         return s.replace(/\\(["\\%])/g, "$1") as unknown as EncodedString<PreviousEncodingOf<S>>;
     }
-    // POSIX: reverse the single-quote wrapping + '\'' sequences
     const str = String(escaped);
     if (str.length >= 2 && str[0] === "'" && str[str.length - 1] === "'") {
         const inner = str.slice(1, -1);
@@ -240,8 +255,8 @@ for (let c of [
         });
 
         test('shellUnescape on non-wrapped value is a no-op', () => {
-            const plain = 'plain-string-with-\\-and-\'-chars';
-            const out = shellUnescape(plain as any); // runtime check; ensure no crash and unchanged
+            const plain = encodedAs<'Shell'>('plain-string-with-\\-and-\'-chars');
+            const out = shellUnescape(plain); // runtime check; ensure no crash and unchanged
             assert.equal(out, plain);
         });
 
@@ -269,7 +284,7 @@ for (let c of [
                 // Windows branch should wrap with double quotes
                 assert.equal(escaped[0], '"');
                 assert.equal(escaped[escaped.length - 1], '"');
-                const un = shellUnescape(escaped as any);
+                const un = shellUnescape(escaped);
                 assert.equal(un, raw);
             } finally {
                 // restore
@@ -291,9 +306,9 @@ export type AssertEqual<T, Expected> = [T] extends [Expected]
 type First<T extends any[]> = T extends [] ? never : T[0]
 
 
-type Pop<T extends unknown[]> = T extends [...infer U, unknown] ? U : never
-type Push<T extends unknown[], U> = [...T, U]
-type Last<T extends unknown[]> = [never, ...T][T["length"]];
+type Pop<T extends Encoding[]> = T extends [...infer U, Encoding] ? U : never
+type Push<T extends Encoding[], U> = [...T, U]
+type Last<T extends Encoding[]> = [never, ...T][T["length"]];
 
 
 /**
@@ -304,7 +319,7 @@ const ss3: EncodedString<['URL']> = "" as EncodedString<['URL']>
 
 // AddEncoding
 const ae0: EncodedString<['URL']> = "" as unknown as AddEncoding<'URL', "">
-const ae2: EncodedString<['HTML']> = ss2 as unknown as AddEncoding<'HTML', typeof ss2>
+const ae2: EncodedString<['HTML']> = ss2 as unknown as AddEncoding<'HTML', EncodedString>
 const ae3: EncodedString<['URL', 'HTML']> = ss3 as unknown as AddEncoding<'HTML', typeof ss3>
 const ae4: EncodedString<['URL', 'HTML', 'URL']> = ae3 as unknown as AddEncoding<'URL', typeof ae3>
 
