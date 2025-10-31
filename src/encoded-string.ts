@@ -63,7 +63,7 @@ export function base64encode<S extends string>(raw: S) {
 
 
 // base64decode: accept only strings whose last encoding is 'base64'
-export function base64decode<S extends string>(b64: HasLast<S, 'base64'>) {
+export function base64decode<S extends EncodedString<EncodingSequence>>(b64: HasLast<S, 'base64'>) {
     if (typeof window === 'undefined' && typeof Buffer !== 'undefined') {
         return Buffer.from(b64 as unknown as string, 'base64').toString('utf8') as unknown as EncodedString<PreviousEncodingOf<S>>;
     }
@@ -146,9 +146,10 @@ export function shellUnescape<S extends EncodedString<EncodingSequence>>(escaped
 
 
 
-type First<T extends any[]> = T extends [] ? never : T[0]
-
-
 type Pop<T extends Encoding[]> = T extends [...infer U, Encoding] ? U : never
 type Push<T extends Encoding[], U> = [...T, U]
-type Last<T extends Encoding[]> = [never, ...T][T["length"]];
+type Last<T extends Encoding[]> = T extends [...any, infer L]
+    ? L extends Encoding
+        ? L
+        : never
+    : never;
