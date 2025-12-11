@@ -23,6 +23,15 @@ type HasLast<S, E extends Encoding> = S extends EncodedString<infer T>
         : never
     : never
 
+// helper: get the last encoding only if it is NOT E; otherwise never
+type NotLast<S, E extends Encoding> = S extends EncodedString<infer T>
+    ? T extends [...infer Rest, infer L]
+        ? L extends E
+            ? `Already encoded as ${L}`
+            : S
+        : S
+    : S
+
 
 /*
 Explicitly mark a string as having a given encoding. If the string already has an
@@ -39,7 +48,7 @@ export function encodedAs<NewEncoding extends Encoding, S extends string = strin
 FUNCTIONS
 
  */
-export function urlEncode<S extends string>(s: S) {
+export function urlEncode<S extends string>(s: NotLast<S, 'URL'>) {
     return encodeURIComponent(s) as AddEncoding<'URL', S>
 }
 
@@ -51,7 +60,7 @@ export function urlDecode<S extends EncodedString<EncodingSequence>>(encoded: Ha
 }
 
 
-export function base64encode<S extends string>(raw: S) {
+export function base64encode<S extends string>(raw: NotLast<S, 'base64'>) {
     if (typeof window === 'undefined' && typeof Buffer !== 'undefined') {
         return Buffer.from(raw, 'utf8').toString('base64') as AddEncoding<'base64', S>;
     }
@@ -73,7 +82,7 @@ export function base64decode<S extends EncodedString<EncodingSequence>>(b64: Has
     return new TextDecoder().decode(bytes) as unknown as EncodedString<PreviousEncodingOf<S>>;
 }
 
-export function sqlEscape<S extends string>(raw: S) {
+export function sqlEscape<S extends string>(raw: NotLast<S, 'SQL'>) {
     return raw
         .replace(/[\0\x08\x09\x1a\n\r"'\\\%]/g, char => {
             switch (char) {
@@ -95,7 +104,7 @@ export function sqlUnescape<S extends EncodedString<EncodingSequence>>(escaped: 
 
 
 
-export function htmlEscape<S extends string>(raw: S) {
+export function htmlEscape<S extends string>(raw: NotLast<S, 'HTML'>) {
     return raw
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
@@ -115,7 +124,7 @@ export function htmlUnescape<S extends EncodedString<EncodingSequence>>(escaped:
         .replace(/&#39;/g, "'") as unknown as EncodedString<PreviousEncodingOf<S>>;
 }
 
-export function shellEscape<S extends string>(raw: S) {
+export function shellEscape<S extends string>(raw: NotLast<S, 'Shell'>) {
     // Windows: wrap in double quotes and escape " \ and % (best-effort)
     if (typeof process !== 'undefined' && process.platform === 'win32') {
         const escaped = '"' + raw.replace(/(["\\%])/g, '\\$1') + '"';
