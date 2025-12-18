@@ -1,0 +1,168 @@
+<!-- File: example.html -->
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>WorldMap component example</title>
+  <script type="module">
+    import "../../build/world/world-map.js";
+
+    let gLocale = document.documentElement.lang || 'en-US';
+
+    // Example runtime usage after component class is loaded
+    window.addEventListener("DOMContentLoaded", () => {
+      const wm = document.querySelector("world-map");
+      if (!wm) return;
+
+      // set a few country colors and labels
+      (wm).setCountryColor("USA", "#b3d9ff");
+      (wm).setCountryColor("CAN", "#cfe8c4");
+      (wm).setCountryLabel("USA", "United States");
+      (wm).setCountryLabel("FRA", "France");
+
+      wm.addEventListener("country-click", (ev) => {
+        const detail = ev.detail
+        console.log("Country clicked:", detail.name);
+        console.log(detail);
+        gLocale = detail.lang.split(',')[0] || 'en-US';
+      });
+    });
+
+    setInterval(() => {
+      const numberFormatEl = document.getElementById("number-format");
+      if (numberFormatEl) {
+        const num1 = 1234567.89;
+        const formattedNum1 = num1.toLocaleString(gLocale);
+        const asDollar = new Intl.NumberFormat(gLocale, {style: 'currency', currency: 'USD'}).format(num1);
+        const meters = new Intl.NumberFormat(gLocale, {style: 'unit', unit: 'meter', unitDisplay: 'long'}).format(100);
+        const kilos = new Intl.NumberFormat(gLocale, {
+          style: 'unit',
+          unit: 'kilogram',
+          unitDisplay: 'short'
+        }).format(5.5);
+
+        numberFormatEl.innerHTML = `Number: ${formattedNum1} <br> As Dollar: ${asDollar} <br> Meters: ${meters} <br> Kilograms: ${kilos}`;
+      }
+
+
+      const now = new Date();
+      const defaultTime = now.toLocaleString(gLocale);
+      const longTime = now.toLocaleString(gLocale, {dateStyle: 'full', timeStyle: 'short'});
+
+      const rtf = new Intl.RelativeTimeFormat(gLocale, {numeric: 'auto'});
+
+      document.getElementById("yesterday").textContent = rtf.format(-1, 'day');
+      document.getElementById("tomorrow").textContent = rtf.format(1, 'day');
+      document.getElementById("seven-days-ago").textContent = rtf.format(-7, 'day');
+      document.getElementById("seconds-ago").textContent = rtf.format(-30, 'second');
+      document.getElementById("in-minutes").textContent = rtf.format(5, 'minute');
+      document.getElementById("in-three-months").textContent = rtf.format(3, 'month');
+      document.getElementById("two-years-ago").textContent = rtf.format(-2, 'year');
+      document.getElementById("now").textContent = rtf.format(0, 'second');
+      document.getElementById("default-time").textContent = defaultTime;
+      document.getElementById("long-time").textContent = longTime;
+      document.getElementById("years-ago").textContent = rtf.format(-5000, 'year');
+
+      const listFormatEl = document.getElementById("list-format");
+      if (listFormatEl) {
+        const items = ['apples', 'oranges', 'bananas'];
+        const cons = new Intl.ListFormat(gLocale, {type: 'conjunction'}).format(items);
+        const disj = new Intl.ListFormat(gLocale, {type: 'disjunction'}).format(items);
+        listFormatEl.innerHTML = `Conjunction: ${cons} <br> Disjunction: ${disj}`;
+      }
+
+    }, 1000)
+  </script>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      margin: 16px;
+    }
+
+    .inset-box {
+      background: rgba(255, 255, 255, 0.9);
+      padding: 6px 8px;
+      border-radius: 4px;
+      border: 1px solid #ddd;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    }
+  </style>
+</head>
+<body>
+<h3>World Map Web Component</h3>
+
+<!-- example usage: place insets via slotted elements with data-country attribute -->
+<world-map style="max-width: 1000px; width: 100%;" geojson="">
+  <!-- inset anchored to country by iso_a3 code (depends on GeoJSON id properties) -->
+  <div slot="inset" class="inset-box" data-country="US">Inset for USA</div>
+  <div slot="inset" class="inset-box" data-country="FR">Inset for France</div>
+
+  <!-- alternatively anchor by lat/lon -->
+  <div id="example-date" slot="inset" class="inset-box" data-lon="139.6917" data-lat="35.6895">Tokyo</div>
+  <div id="number-format" slot="inset" class="inset-box" data-lon="80" data-lat="-15">Number Format</div>
+  <div id="list-format" slot="inset" class="inset-box" data-lon="-150" data-lat="-15">List Format</div>
+</world-map>
+<div id="timeline">
+  <div id="years-ago">Many Years Ago</div>
+  <div id="two-years-ago">Two Years Ago</div>
+  <div id="seven-days-ago">Seven Days Ago</div>
+  <div id="yesterday">Yesterday</div>
+  <div id="seconds-ago">Seconds Ago</div>
+  <div>
+    <div id="long-time">Long time</div>
+    <div id="default-time">Default time</div>
+    <div id="now">Now</div>
+  </div>
+  <div id="in-minutes">In Minutes</div>
+  <div id="tomorrow">Tomorrow</div>
+  <div id="in-three-months">In Three Months</div>
+</div>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+  }
+  #timeline {
+    --bulb-size: 20px;
+    margin-top: 20px;
+    /*box-sizing: border-box;*/
+    /*margin: 16px;*/
+    /*border: 1px solid #ccc;*/
+    /*padding: 8px;*/
+    /*border-radius: 4px;*/
+    /*background: #f9f9f9;*/
+    font-size: 12px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr 3fr 1fr 1fr 1fr;
+    align-items: start;
+    justify-items: center;
+    text-align: center;
+    position: relative;
+  }
+  #timeline::after {
+    content: "";
+    position: absolute;
+    top: calc(var(--bulb-size) / 2);
+    height: 3px;
+    width: 100%;
+    background-color: lightsteelblue;
+  }
+  #timeline > div {
+    position:relative;
+    padding-top: var(--bulb-size);
+  }
+  #timeline > div::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: calc(50% - (var(--bulb-size) / 2));
+    height: var(--bulb-size);
+    width: var(--bulb-size);
+    background-color: lightsteelblue;
+    border-radius: 50%;
+  }
+</style>
+</body>
+</html>
