@@ -92,7 +92,7 @@
 <h3>World Map Web Component</h3>
 
 <!-- example usage: place insets via slotted elements with data-country attribute -->
-<world-map style="max-width: 1000px; width: 100%;" geojson="">
+<world-map style="width: 100%;" geojson="">
   <!-- inset anchored to country by iso_a3 code (depends on GeoJSON id properties) -->
   <div slot="inset" class="inset-box" data-country="US">Inset for USA</div>
   <div slot="inset" class="inset-box" data-country="FR">Inset for France</div>
@@ -127,15 +127,9 @@
   #timeline {
     --bulb-size: 20px;
     margin-top: 20px;
-    /*box-sizing: border-box;*/
-    /*margin: 16px;*/
-    /*border: 1px solid #ccc;*/
-    /*padding: 8px;*/
-    /*border-radius: 4px;*/
-    /*background: #f9f9f9;*/
     font-size: 12px;
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr 1fr 3fr 1fr 1fr 1fr;
+    grid-template-columns: .8fr .8fr .8fr .8fr .8fr 3fr .8fr .8fr .8fr;
     align-items: start;
     justify-items: center;
     text-align: center;

@@ -70,8 +70,9 @@ class WorldMap extends HTMLElement {
     features: any[] = [];
     colors: CountryColorMap = {};
     labels: CountryLabelMap = {};
-    defaultFill = "#d9d9d9";
+    defaultFill = "forestgreen";
     highlightFill = "#ffcc00";
+    oceanFill = "#a4c8e1";
 
     constructor() {
         super();
@@ -81,9 +82,9 @@ class WorldMap extends HTMLElement {
         style.textContent = `
       :host { display: block; position: relative; user-select: none; }
       .map-container { position: relative; width: 100%; max-width: 100%; }
-      svg { width: 100%; height: auto; display: block; }
-      .country { stroke: #333; stroke-width: 0.3; cursor: pointer; transition: fill .12s, opacity .12s; }
-      .country:hover { opacity: 0.9; filter: brightness(0.95); }
+      svg { width: 100%; height: auto; display: block; background-color: ${this.oceanFill}; }
+      .country { stroke: #333; stroke-width: 0.3; cursor: pointer; opacity: 0.5; transition: fill .012s, opacity .012s; }
+      .country:hover { stroke: #000; opacity: 0.9; filter: brightness(0.95); }}"
       .label { font: 10px sans-serif; pointer-events: none; fill: #111; text-anchor: middle; }
       .tooltip { position: absolute; pointer-events: none; background: rgba(0,0,0,0.75); color: white; padding: 4px 6px; border-radius: 3px; font: 12px sans-serif; transform: translate(-50%, -120%); white-space: nowrap; display: none; z-index: 10; }
       .inset-slot ::slotted(*) { position: absolute; transform: translate(-50%, -50%); }
@@ -208,7 +209,7 @@ class WorldMap extends HTMLElement {
 
             // event handlers
             path.addEventListener("mouseenter", (ev) => {
-                path.setAttribute("fill", this.highlightFill);
+                //path.setAttribute("fill", this.highlightFill);
                 this.showTooltip(`${name} (${id})`, ev as MouseEvent);
             });
             path.addEventListener("mouseleave", () => {
