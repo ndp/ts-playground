@@ -25,6 +25,12 @@ console.log("langByCountryCode", langByCountryCode);
 const DEFAULT_GEOJSON_URL =
     "./custom.geo.json";
 
+// -function lonLatToXY(lon: number, lat: number, width: number, height: number) {
+//     -    // simple equirectangular projection
+//         -    const x = ((lon + 180) / 360) * width;
+//     -    const y = ((90 - lat) / 180) * height;
+//     -    return [x, y];
+//     -}
 function polygonToPath(coords: number[][][]) {
     // width/height unused; function signature preserved for compatibility
     const parts = coords.map((ring) => {
