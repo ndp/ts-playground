@@ -89,10 +89,7 @@
   </style>
 </head>
 <body>
-<h3>World Map Web Component</h3>
-
-<!-- example usage: place insets via slotted elements with data-country attribute -->
-<world-map style="width: 100%;" geojson="">
+<world-map style="max-width: 100svw;max-height: 100svh" geojson="">
   <!-- inset anchored to country by iso_a3 code (depends on GeoJSON id properties) -->
   <div slot="inset" class="inset-box" data-country="US">Inset for USA</div>
   <div slot="inset" class="inset-box" data-country="FR">Inset for France</div>
@@ -100,7 +97,7 @@
   <!-- alternatively anchor by lat/lon -->
   <div id="example-date" slot="inset" class="inset-box" data-lon="139.6917" data-lat="35.6895">Tokyo</div>
   <div id="number-format" slot="inset" class="inset-box" data-lon="80" data-lat="-15">Number Format</div>
-  <div id="list-format" slot="inset" class="inset-box" data-lon="-150" data-lat="-15">List Format</div>
+  <div id="list-format" slot="inset" class="inset-box" data-lon="-142" data-lat="-35">List Format</div>
 </world-map>
 <div id="timeline">
   <div id="years-ago">Many Years Ago</div>
