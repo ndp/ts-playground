@@ -14,12 +14,6 @@
       const wm = document.querySelector("world-map");
       if (!wm) return;
 
-      // set a few country colors and labels
-      (wm).setCountryColor("USA", "#b3d9ff");
-      (wm).setCountryColor("CAN", "#cfe8c4");
-      (wm).setCountryLabel("USA", "United States");
-      (wm).setCountryLabel("FRA", "France");
-
       wm.addEventListener("country-click", (ev) => {
         const detail = ev.detail
         console.log("Country clicked:", detail.name);
@@ -47,7 +41,10 @@
 
       const now = new Date();
       const defaultTime = now.toLocaleString(gLocale);
-      const longTime = now.toLocaleString(gLocale, {dateStyle: 'full', timeStyle: 'short'});
+      const yesterdayTime = new Date(now).toLocaleString(gLocale, {dateStyle: 'full'});
+      const nowTime = now.toLocaleString(gLocale, {timeStyle: 'full'});
+      const tomorrowTime = new Date(now).toLocaleString(gLocale, {dateStyle: 'short', timeStyle:'short'});
+
 
       const rtf = new Intl.RelativeTimeFormat(gLocale, {numeric: 'auto'});
 
@@ -59,9 +56,10 @@
       document.getElementById("in-three-months").textContent = rtf.format(3, 'month');
       document.getElementById("two-years-ago").textContent = rtf.format(-2, 'year');
       document.getElementById("now").textContent = rtf.format(0, 'second');
-      document.getElementById("default-time").textContent = defaultTime;
-      document.getElementById("long-time").textContent = longTime;
-      document.getElementById("years-ago").textContent = rtf.format(-5000, 'year');
+      document.getElementById("yesterday-time").textContent = yesterdayTime;
+      document.getElementById("tomorrow-time").textContent = tomorrowTime;
+      document.getElementById("now-time").textContent = nowTime;
+      document.getElementById("in-years").textContent = rtf.format(5000, 'year');
 
       const listFormatEl = document.getElementById("list-format");
       if (listFormatEl) {
@@ -96,23 +94,24 @@
 
   <!-- alternatively anchor by lat/lon -->
   <div id="example-date" slot="inset" class="inset-box" data-lon="139.6917" data-lat="35.6895">Tokyo</div>
-  <div id="number-format" slot="inset" class="inset-box" data-lon="80" data-lat="-15">Number Format</div>
+  <div id="number-format" slot="inset" class="inset-box" data-lon="80" data-lat="-60">Number Format</div>
   <div id="list-format" slot="inset" class="inset-box" data-lon="-142" data-lat="-35">List Format</div>
 </world-map>
 <div id="timeline">
-  <div id="years-ago">Many Years Ago</div>
+  <div id="yesterday-time"></div>
+    <div id="now-time">Long time</div>
+  <div></div>
+  <div id="tomorrow-time"></div>
+  <div id="timeline-bar"></div>
   <div id="two-years-ago">Two Years Ago</div>
   <div id="seven-days-ago">Seven Days Ago</div>
   <div id="yesterday">Yesterday</div>
   <div id="seconds-ago">Seconds Ago</div>
-  <div>
-    <div id="long-time">Long time</div>
-    <div id="default-time">Default time</div>
-    <div id="now">Now</div>
-  </div>
+  <div id="now">Now</div>
   <div id="in-minutes">In Minutes</div>
   <div id="tomorrow">Tomorrow</div>
   <div id="in-three-months">In Three Months</div>
+  <div id="in-years">In Many Years</div>
 </div>
 <style>
   html, body {
@@ -122,36 +121,51 @@
     width: 100%;
   }
   #timeline {
-    --bulb-size: 20px;
-    margin-top: 20px;
+    position: relative;
+    position: fixed;
+    --bulb-size: 16px;
+    --bulb-color: sienna;
+    --line-color: gray;
+    --padding: 10px;
+    --bar-padding: 10px;
+    --bar-width: 4px;
     font-size: 12px;
     display: grid;
-    grid-template-columns: .8fr .8fr .8fr .8fr .8fr 3fr .8fr .8fr .8fr;
+    grid-template-columns: repeat(4, 1fr) 3fr repeat(4, 1fr);
     align-items: start;
     justify-items: center;
     text-align: center;
-    position: relative;
-  }
-  #timeline::after {
-    content: "";
-    position: absolute;
-    top: calc(var(--bulb-size) / 2);
-    height: 3px;
     width: 100%;
-    background-color: lightsteelblue;
+    bottom: 0;
+    background-color: #00000020;
+    padding: var(--padding) 0;
+    grid-row-gap: var(--bar-padding);
   }
-  #timeline > div {
-    position:relative;
-    padding-top: var(--bulb-size);
+  #yesterday-time {
+    grid-column: 2 / 5;
   }
-  #timeline > div::before {
+  #timeline-bar {
+    grid-column-start: 1;
+    grid-column-end: -1;
     content: "";
     position: absolute;
     top: 0;
+    height: var(--bar-width);
+    width: 100%;
+    background-color: var(--line-color);
+  }
+  #timeline > div {
+    position:relative;
+  }
+  #timeline-bar ~ div::before {
+    content: "";
+    position: absolute;
+    top: auto;
+    bottom: calc(var(--bar-padding) + var(--bulb-size) / 2 + var(--bar-width) / 2);
     left: calc(50% - (var(--bulb-size) / 2));
     height: var(--bulb-size);
     width: var(--bulb-size);
-    background-color: lightsteelblue;
+    background-color: var(--bulb-color);
     border-radius: 50%;
   }
 </style>

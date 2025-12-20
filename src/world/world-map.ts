@@ -1,19 +1,17 @@
-// File: src/world/world-map.ts
 const SVG_NS = "http://www.w3.org/2000/svg" as "http://www.w3.org/1999/xhtml";
 
-export type CountryColorMap = Record<string, string>;
 export type CountryLabelMap = Record<string, string>;
 
-import countryCodes from "./country-codes.json" with {type: "json"};
+import countryCodes from "./country-codes.json" with { type: "json" };
 
-const byCountryName = countryCodes.reduce((acc, entry) => {
-    acc[entry['official_name_en'].toString().toLocaleLowerCase()] = entry['ISO3166-1-Alpha-2'];
-    acc[entry['UNTERM English Short'].replace(' (the)','').toString().toLocaleLowerCase()] = entry['ISO3166-1-Alpha-2'];
-    acc[entry['CLDR display name'].toString().toLocaleLowerCase()] = entry['ISO3166-1-Alpha-2'];
-    acc[entry['ISO4217-currency_country_name'].toString().toLocaleLowerCase()] = entry['ISO3166-1-Alpha-2'];
-    return acc;
-}, {} as Record<string, string>);
-console.log("byCountryName", byCountryName);
+// const byCountryName = countryCodes.reduce((acc, entry) => {
+//     acc[entry['official_name_en'].toString().toLocaleLowerCase()] = entry['ISO3166-1-Alpha-2'];
+//     acc[entry['UNTERM English Short'].replace(' (the)','').toString().toLocaleLowerCase()] = entry['ISO3166-1-Alpha-2'];
+//     acc[entry['CLDR display name'].toString().toLocaleLowerCase()] = entry['ISO3166-1-Alpha-2'];
+//     acc[entry['ISO4217-currency_country_name'].toString().toLocaleLowerCase()] = entry['ISO3166-1-Alpha-2'];
+//     return acc;
+// }, {} as Record<string, string>);
+// console.log("byCountryName", byCountryName);
 
 const langByCountryCode = countryCodes.reduce((acc, entry) => {
     acc[entry['ISO3166-1-Alpha-2']] = entry['Languages'];
@@ -32,12 +30,15 @@ const DEFAULT_GEOJSON_URL =
 //     -    return [x, y];
 //     -}
 function polygonToPath(coords: number[][][]) {
-    // width/height unused; function signature preserved for compatibility
+    // Use lon for X and negate lat for Y so SVG text remains upright.
     const parts = coords.map((ring) => {
         return (
             ring
                 .map((pt, i) => {
-                    const [x, y] = [pt[0], pt[1]];
+                    const lon = pt[0];
+                    const lat = pt[1];
+                    const x = lon;
+                    const y = -lat; // invert latitude for SVG Y
                     return `${i === 0 ? "M" : "L"} ${x.toFixed(6)} ${y.toFixed(6)}`;
                 })
                 .join(" ") + " Z"
@@ -53,8 +54,7 @@ function multiPolygonToPath(coords: number[][][][]) {
 function computeCentroidOfCoords(coords: number[][][]): [number, number] {
     const ring = coords[0] ?? [];
     if (ring.length === 0) return [0, 0];
-    let sx = 0,
-        sy = 0;
+    let sx = 0, sy = 0;
     for (const [lon, lat] of ring) {
         sx += lon;
         sy += lat;
@@ -66,7 +66,6 @@ class WorldMap extends HTMLElement {
     shadow: ShadowRoot;
     svg!: SVGSVGElement;
     tooltip!: HTMLDivElement;
-    // viewBox coordinates represent lon/lat space: width=360, height=180
     vbX = -180;
     vbY = -90;
     vbWidth = 360;
@@ -74,10 +73,8 @@ class WorldMap extends HTMLElement {
 
     geojsonUrl = DEFAULT_GEOJSON_URL;
     features: any[] = [];
-    colors: CountryColorMap = {};
     labels: CountryLabelMap = {};
-    defaultFill = "forestgreen";
-    highlightFill = "#ffcc00";
+    countryCentroids: Record<string, [number, number]> = {};
     oceanFill = "#a4c8e1";
 
     constructor() {
@@ -86,22 +83,40 @@ class WorldMap extends HTMLElement {
 
         const style = document.createElement("style");
         style.textContent = `
-      :host { display: block; position: relative; user-select: none; }
-      .map-container { position: relative; width: 100%; max-width: 100%; }
-      svg { width: 100%; height: auto; display: block; background-color: ${this.oceanFill}; }
-      .country { stroke: #333; stroke-width: .1; cursor: pointer; opacity: 0.8; transition: fill .12s, opacity .12s; }
-      .country:hover { stroke: #000; opacity: 0.95; filter: brightness(0.95); }
-      .label { font: 10px sans-serif; pointer-events: none; fill: #111; text-anchor: middle; }
-      .tooltip { position: absolute; pointer-events: none; background: rgba(0,0,0,0.75); color: white; padding: 4px 6px; border-radius: 3px; font: 12px sans-serif; transform: translate(-50%, -120%); white-space: nowrap; display: none; z-index: 10; }
-      .inset-slot ::slotted(*) { position: absolute; transform: translate(-50%, -50%); }
-        .country.color1 { fill: oklch(70% 0.105 20deg); }
-        .country.color2 { fill: oklch(70% 0.105 35deg); }
-        .country.color3 { fill: oklch(70% 0.105 60deg); }
-        .country.color4 { fill: oklch(70% 0.105 90deg); }
-        .country.color5 { fill: oklch(70% 0.105 135deg); }
-        .country.color6 { fill: oklch(70% 0.105 180deg); }
-        .country.color7 { fill: oklch(70% 0.10 225deg); }
-    `;
+:host { display: block; position: relative; user-select: none; }
+.map-container { position: relative; width: 100%; max-width: 100%; }
+svg { width: 100%; height: auto; display: block; background-color: ${this.oceanFill}; }
+.country { stroke: #555; stroke-width: .1; cursor: pointer; opacity: 1; transition: fill .12s, opacity .12s; }
+.country:hover { stroke: #000; stroke-width: .2; opacity: 1; --chroma: .15;  }
+.label { font: 10px sans-serif; pointer-events: none; fill: #111; text-anchor: middle; }
+.tooltip { position: absolute; pointer-events: none; background: rgba(0,0,0,0.75); color: white; padding: 4px 6px; border-radius: 3px; font: 12px sans-serif; transform: translate(-50%, -120%); white-space: nowrap; display: none; z-index: 10; }
+.inset-slot ::slotted(*) { position: absolute; transform: translate(-50%, -50%); }
+.country { 
+--fill: gray; 
+--chroma: 0.1; 
+--luminance: 0.8;
+--north-america-fill: gold;
+--south-america-fill: forestgreen;
+--asia-fill: olive;
+--oceana-fill: purple;
+--europe-fill: blue;
+--africa-fill: orange;
+ }
+.country.color1 { fill: oklch(from var(--fill) var(--luminance) var(--chroma) h); }
+.country.color4 { fill: oklch(from var(--fill) var(--luminance)  var(--chroma) calc(h - 10)); }
+.country.color3 { fill: oklch(from var(--fill) var(--luminance)  var(--chroma) calc(h + 20)); }
+.country.color2 { fill: oklch(from var(--fill) var(--luminance)  var(--chroma) calc(h - 30)); }
+.country.color5 { fill: oklch(from var(--fill) var(--luminance)  var(--chroma) calc(h + 10)); }
+.country.color6 { fill: oklch(from var(--fill) var(--luminance)  var(--chroma) calc(h - 20)); }
+.country.color7 { fill: oklch(from var(--fill) var(--luminance)  var(--chroma) calc(h + 30)); }
+.country.antarctica { fill: aliceblue !important; } /* lightsteelblue */
+.country.central-america, .country.northern-america,.country.caribbean { --fill: var(--north-america-fill); }
+.country.south-america { --fill: var(--south-america-fill); }
+.country.central-asia,.country.eastern-asia,.country.southern-asia,.country.western-asia { --fill: var(--asia-fill); }
+.country.australia-and-new-zealand, .country.melanesia, .country.micronesia, .country.polynesia, .country.south-eastern-asia { --fill: var(--oceana-fill); }
+.country.western-europe, .country.eastern-europe, .country.northern-europe, .country.southern-europe { --fill: var(--europe-fill); }
+.country.northern-africa,.country.eastern-africa,.country.western-africa,.southern-africa, .country.middle-africa { --fill: var(--africa-fill); }
+`;
 
         const container = document.createElement("div");
         container.className = "map-container";
@@ -110,9 +125,8 @@ class WorldMap extends HTMLElement {
         this.svg = document.createElementNS(SVG_NS, "svg") as unknown as SVGSVGElement;
         this.svg.setAttribute("viewBox", `${this.vbX} ${this.vbY} ${this.vbWidth} ${this.vbHeight}`);
         this.svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
-        this.svg.setAttribute('transform', 'scale(1,-1)');
+        // removed: this.svg.setAttribute('transform', 'scale(1,-1)');
 
-        // groups
         const countriesGroup = document.createElementNS(SVG_NS, "g") as SVGGElement;
         countriesGroup.setAttribute("id", "countries");
         this.svg.appendChild(countriesGroup);
@@ -121,7 +135,6 @@ class WorldMap extends HTMLElement {
         labelsGroup.setAttribute("id", "labels");
         this.svg.appendChild(labelsGroup);
 
-        // tooltip and inset slot
         this.tooltip = document.createElement("div");
         this.tooltip.className = "tooltip";
 
@@ -152,9 +165,6 @@ class WorldMap extends HTMLElement {
     connectedCallback() {
         if (this.hasAttribute("geojson")) {
             this.geojsonUrl = this.getAttribute("geojson") || this.geojsonUrl;
-        }
-        if (this.hasAttribute("default-fill")) {
-            this.defaultFill = this.getAttribute("default-fill") || this.defaultFill;
         }
         this.loadAndRender();
     }
@@ -189,9 +199,9 @@ class WorldMap extends HTMLElement {
 
         for (const f of this.features) {
             const name = f.properties.name;
-            let id = f.properties?.["ISO3166-1-Alpha-2"];
-            if (id === "-99" || !id) id = byCountryName[name.toString().toLocaleLowerCase()];
-            if (!id) console.error("No country code for", name, { f });
+            let id = f.properties?.iso_a2_eh
+            let id3 = f.properties?.iso_a3_eh
+            if (!id || !id3) console.error("No country code for", name, { f });
 
             const geom = f.geometry;
             let pathD = "";
@@ -207,16 +217,12 @@ class WorldMap extends HTMLElement {
             const path = document.createElementNS(SVG_NS, "path") as unknown as SVGPathElement;
             path.setAttribute("d", pathD);
             path.setAttribute("data-id", id);
-            path.setAttribute("class", `country color${f.properties.mapcolor7}`);
-            const fill = this.colors[id] ?? this.colors[f.properties?.ADMIN] ?? this.defaultFill;
-            path.setAttribute("fill", fill);
+            path.setAttribute("class", `country color${f.properties.mapcolor7} ${f.properties.subregion.replace(/\s+/g, "-").toLowerCase()}`);
 
             path.addEventListener("mouseenter", (ev) => {
-                this.showTooltip(`${name} (${id})`, ev as MouseEvent);
+                this.showTooltip(`${name} (${id}/${id3})`, ev as MouseEvent);
             });
             path.addEventListener("mouseleave", () => {
-                const fillNow = this.colors[id] ?? this.defaultFill;
-                path.setAttribute("fill", fillNow);
                 this.hideTooltip();
             });
             path.addEventListener("mousemove", (ev) => this.moveTooltip(ev as MouseEvent));
@@ -232,13 +238,15 @@ class WorldMap extends HTMLElement {
 
             countriesGroup.appendChild(path);
 
-            // label
+            // label centroid and placement (negate Y so text is upright)
             const centroidLonLat =
                 geom.type === "Polygon"
                     ? computeCentroidOfCoords(geom.coordinates as number[][][])
                     : computeCentroidOfCoords((geom.coordinates as number[][][][])[0]);
             const [clon, clat] = centroidLonLat;
-            const [cx, cy] = [clon, clat];
+            const cx = clon;
+            const cy = -clat; // invert latitude for SVG Y
+
             const labelText = this.labels[id] ?? this.labels[f.properties?.ADMIN];
             if (labelText) {
                 const text = document.createElementNS(SVG_NS, "text") as unknown as SVGTextElement;
@@ -249,7 +257,9 @@ class WorldMap extends HTMLElement {
                 labelsGroup.appendChild(text);
             }
 
-            (path as any).__centroid = { lon: centroidLonLat[0], lat: centroidLonLat[1] };
+            // title element (place at provided label_x,label_y, negate Y)
+            this.countryCentroids[id] = { lon: f.properties?.label_x, lat: f.properties?.label_y };
+            this.countryCentroids[id3] = { lon: f.properties?.label_x, lat: f.properties?.label_y };
         }
 
         this.positionInsets();
@@ -277,31 +287,9 @@ class WorldMap extends HTMLElement {
         this.positionInsets();
     }
 
-    // API methods (unchanged)
     setGeoJSON(url: string) {
         this.geojsonUrl = url;
         this.loadAndRender();
-    }
-    setCountryColor(idOrName: string, color: string) {
-        this.colors[idOrName] = color;
-        this.updateCountryFill(idOrName);
-    }
-    setDefaultFill(color: string) {
-        this.defaultFill = color;
-        for (const path of Array.from(this.svg.querySelectorAll("path.country"))) {
-            const id = path.getAttribute("data-id") || "";
-            (path as SVGPathElement).setAttribute("fill", this.colors[id] ?? this.defaultFill);
-        }
-    }
-    setCountryLabel(idOrName: string, text: string) {
-        this.labels[idOrName] = text;
-        this.render();
-    }
-    updateCountryFill(idOrName: string) {
-        for (const path of Array.from(this.svg.querySelectorAll<SVGPathElement>("path.country"))) {
-            const id = path.getAttribute("data-id") || "";
-            if (id === idOrName) (path as SVGPathElement).setAttribute("fill", this.colors[id] ?? this.defaultFill);
-        }
     }
 
     positionInsets() {
@@ -326,9 +314,9 @@ class WorldMap extends HTMLElement {
             let py = NaN;
 
             if (targetCountry) {
-                // find centroid for country
-                const path = this.svg.querySelector<SVGPathElement>(`path[data-id="${targetCountry}"]`);
-                const c = path ? (path as any).__centroid : null;
+                // const path = this.svg.querySelector<SVGPathElement>(`path[data-id="${targetCountry}"]`);
+                // const c = path ? (path as any).__centroid : null;
+                const c = this.countryCentroids[targetCountry];
                 if (c) {
                     const [x, y] = [c.lon, -c.lat];
                     px = ((x - vbX) / vbW) * hostRect.width;
