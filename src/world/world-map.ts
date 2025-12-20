@@ -2,7 +2,7 @@ const SVG_NS = "http://www.w3.org/2000/svg" as "http://www.w3.org/1999/xhtml";
 
 export type CountryLabelMap = Record<string, string>;
 
-import countryCodes from "./country-codes.json" with { type: "json" };
+import countryCodes from "./country-codes.json" with {type: "json"};
 
 // const byCountryName = countryCodes.reduce((acc, entry) => {
 //     acc[entry['official_name_en'].toString().toLocaleLowerCase()] = entry['ISO3166-1-Alpha-2'];
@@ -30,7 +30,6 @@ const DEFAULT_GEOJSON_URL =
 //     -    return [x, y];
 //     -}
 function polygonToPath(coords: number[][][]) {
-    // Use lon for X and negate lat for Y so SVG text remains upright.
     const parts = coords.map((ring) => {
         return (
             ring
@@ -74,8 +73,13 @@ class WorldMap extends HTMLElement {
     geojsonUrl = DEFAULT_GEOJSON_URL;
     features: any[] = [];
     labels: CountryLabelMap = {};
-    countryCentroids: Record<string, [number, number]> = {};
+    countryCentroids: Record<string, { lon: number; lat: number }> = {};
     oceanFill = "#a4c8e1";
+
+    // New: selection state and lookup maps
+    private selectedCountryIso3: string | null = null; // stored as iso2 when possible
+    private iso2ToIso3: Record<string, string> = {};
+    private iso3ToIso2: Record<string, string> = {};
 
     constructor() {
         super();
@@ -87,7 +91,8 @@ class WorldMap extends HTMLElement {
 .map-container { position: relative; width: 100%; max-width: 100%; }
 svg { width: 100%; height: auto; display: block; background-color: ${this.oceanFill}; }
 .country { stroke: #555; stroke-width: .1; cursor: pointer; opacity: 1; transition: fill .12s, opacity .12s; }
-.country:hover { stroke: #000; stroke-width: .2; opacity: 1; --chroma: .15;  }
+.country:hover { stroke: oklch(from var(--fill) 0.9 .2 h); stroke-width: .3; opacity: 1; --chroma: .159;  }
+.country.selected { stroke: #000; stroke-width: .3; opacity: 1; }
 .label { font: 10px sans-serif; pointer-events: none; fill: #111; text-anchor: middle; }
 .tooltip { position: absolute; pointer-events: none; background: rgba(0,0,0,0.75); color: white; padding: 4px 6px; border-radius: 3px; font: 12px sans-serif; transform: translate(-50%, -120%); white-space: nowrap; display: none; z-index: 10; }
 .inset-slot ::slotted(*) { position: absolute; transform: translate(-50%, -50%); }
@@ -121,11 +126,9 @@ svg { width: 100%; height: auto; display: block; background-color: ${this.oceanF
         const container = document.createElement("div");
         container.className = "map-container";
 
-        // create SVG with viewBox matching lon/lat ranges
         this.svg = document.createElementNS(SVG_NS, "svg") as unknown as SVGSVGElement;
         this.svg.setAttribute("viewBox", `${this.vbX} ${this.vbY} ${this.vbWidth} ${this.vbHeight}`);
         this.svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
-        // removed: this.svg.setAttribute('transform', 'scale(1,-1)');
 
         const countriesGroup = document.createElementNS(SVG_NS, "g") as SVGGElement;
         countriesGroup.setAttribute("id", "countries");
@@ -197,11 +200,16 @@ svg { width: 100%; height: auto; display: block; background-color: ${this.oceanF
         const countriesGroup = this.svg.querySelector("#countries")!;
         const labelsGroup = this.svg.querySelector("#labels")!;
 
+        // rebuild lookup maps each render
+        this.iso2ToIso3 = {};
+        this.iso3ToIso2 = {};
+
         for (const f of this.features) {
             const name = f.properties.name;
-            let id = f.properties?.iso_a2_eh
-            let id3 = f.properties?.iso_a3_eh
-            if (!id || !id3) console.error("No country code for", name, { f });
+            const iso2 = f.properties?.iso_a2_eh ?? f.properties?.iso_a2 ?? null;
+            const iso3 = f.properties?.iso_a3_eh ?? f.properties?.iso_a3 ?? null;
+            if (iso2) this.iso2ToIso3[iso2] = iso3 ?? "";
+            if (iso3) this.iso3ToIso2[iso3] = iso2 ?? "";
 
             const geom = f.geometry;
             let pathD = "";
@@ -216,11 +224,17 @@ svg { width: 100%; height: auto; display: block; background-color: ${this.oceanF
 
             const path = document.createElementNS(SVG_NS, "path") as unknown as SVGPathElement;
             path.setAttribute("d", pathD);
-            path.setAttribute("data-id", id);
-            path.setAttribute("class", `country color${f.properties.mapcolor7} ${f.properties.subregion.replace(/\s+/g, "-").toLowerCase()}`);
+            path.setAttribute("data-iso2", iso2);
+            path.setAttribute("data-iso3", iso3);
+            path.setAttribute("class", `country color${f.properties.mapcolor7} ${f.properties.subregion?.replace(/\s+/g, "-").toLowerCase() || ""}`);
+
+            // apply selected visual if matches current selection
+            if (this.selectedCountryIso3 && (this.selectedCountryIso3 === iso2 || this.selectedCountryIso3 === iso3)) {
+                path.classList.add("selected");
+            }
 
             path.addEventListener("mouseenter", (ev) => {
-                this.showTooltip(`${name} (${id}/${id3})`, ev as MouseEvent);
+                this.showTooltip(`${name} (${iso2 ?? "?"}/${iso3 ?? "?"})`, ev as MouseEvent);
             });
             path.addEventListener("mouseleave", () => {
                 this.hideTooltip();
@@ -229,7 +243,7 @@ svg { width: 100%; height: auto; display: block; background-color: ${this.oceanF
             path.addEventListener("click", () =>
                 this.dispatchEvent(
                     new CustomEvent("country-click", {
-                        detail: { feature: f, id, name, lang: langByCountryCode[id] },
+                        detail: { feature: f, iso2, iso3, name, lang: langByCountryCode[iso2] },
                         bubbles: true,
                         composed: true,
                     })
@@ -247,7 +261,7 @@ svg { width: 100%; height: auto; display: block; background-color: ${this.oceanF
             const cx = clon;
             const cy = -clat; // invert latitude for SVG Y
 
-            const labelText = this.labels[id] ?? this.labels[f.properties?.ADMIN];
+            const labelText = this.labels[iso2] ?? this.labels[f.properties?.ADMIN];
             if (labelText) {
                 const text = document.createElementNS(SVG_NS, "text") as unknown as SVGTextElement;
                 text.setAttribute("x", `${cx.toFixed(6)}`);
@@ -257,9 +271,9 @@ svg { width: 100%; height: auto; display: block; background-color: ${this.oceanF
                 labelsGroup.appendChild(text);
             }
 
-            // title element (place at provided label_x,label_y, negate Y)
-            this.countryCentroids[id] = { lon: f.properties?.label_x, lat: f.properties?.label_y };
-            this.countryCentroids[id3] = { lon: f.properties?.label_x, lat: f.properties?.label_y };
+            // record centroids for insets and lookups (store raw lon/lat)
+            if (iso2) this.countryCentroids[iso2] = { lon: f.properties?.label_x ?? clon, lat: f.properties?.label_y ?? clat };
+            if (iso3) this.countryCentroids[iso3] = { lon: f.properties?.label_x ?? clon, lat: f.properties?.label_y ?? clat };
         }
 
         this.positionInsets();
@@ -292,6 +306,38 @@ svg { width: 100%; height: auto; display: block; background-color: ${this.oceanF
         this.loadAndRender();
     }
 
+    // New public API: set selected country (code may be iso2 or iso3). Pass null to clear.
+    setSelectedCountry(iso3: string | null) {
+        iso3 = iso3 ? iso3.trim().toUpperCase() : null;
+
+        // if same selection, no-op
+        if (this.selectedCountryIso3 === iso3) return;
+
+        // clear previous
+        if (this.selectedCountryIso3) {
+            const prevPath = this.svg.querySelector<SVGPathElement>(`path.country[data-iso3="${this.selectedCountryIso3}"]`);
+            if (prevPath)
+                prevPath.classList.remove("selected");
+        }
+
+
+        this.selectedCountryIso3 = iso3;
+        if (this.selectedCountryIso3) {
+            const newPath = this.svg.querySelector<SVGPathElement>(`path.country[data-iso3="${this.selectedCountryIso3}"]`);
+            if (newPath) newPath.classList.add("selected");
+        }
+
+        this.dispatchEvent(new CustomEvent("country-selected", {
+            detail: { selectedIso3: this.selectedCountryIso3 },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+
+    getSelectedCountry(): string | null {
+        return this.selectedCountryIso3;
+    }
+
     positionInsets() {
         const slot = this.shadow.querySelector('slot[name="inset"]') as HTMLSlotElement | null;
         if (!slot) return;
@@ -314,9 +360,8 @@ svg { width: 100%; height: auto; display: block; background-color: ${this.oceanF
             let py = NaN;
 
             if (targetCountry) {
-                // const path = this.svg.querySelector<SVGPathElement>(`path[data-id="${targetCountry}"]`);
-                // const c = path ? (path as any).__centroid : null;
-                const c = this.countryCentroids[targetCountry];
+                const key = targetCountry.toUpperCase();
+                const c = this.countryCentroids[key];
                 if (c) {
                     const [x, y] = [c.lon, -c.lat];
                     px = ((x - vbX) / vbW) * hostRect.width;

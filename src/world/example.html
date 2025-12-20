@@ -19,6 +19,7 @@
         console.log("Country clicked:", detail.name);
         console.log(detail);
         gLocale = detail.lang.split(',')[0] || 'en-US';
+        document.getElementsByTagName('world-map')[0].setSelectedCountry(detail.iso3);
       });
     });
 
