@@ -1,0 +1,136 @@
+:host {
+  display: block;
+  position: relative;
+  user-select: none;
+
+  --ocean-fill: oklch(90% 0.05 240);
+  --north-america-fill: gold;
+  --south-america-fill: forestgreen;
+  --asia-fill: olive;
+  --oceana-fill: purple;
+  --europe-fill: blue;
+  --africa-fill: orange;
+}
+
+.map-container {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+}
+
+svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  background-color: var(--ocean-fill);
+}
+
+.country {
+  stroke: #555;
+  stroke-width: .1;
+  cursor: pointer;
+  opacity: 1;
+  transition: fill .12s, opacity .12s;
+}
+
+.country:hover {
+  stroke: oklch(from var(--fill) 0.9 .2 h);
+  stroke-width: .3;
+  opacity: 1;
+  --chroma: .159;
+}
+
+.country.selected {
+  stroke: #000;
+  stroke-width: .3;
+  opacity: 1;
+}
+
+.label {
+  font: 10px sans-serif;
+  pointer-events: none;
+  fill: #111;
+  text-anchor: middle;
+}
+
+.tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.75);
+  color: white;
+  padding: 4px 6px;
+  border-radius: 3px;
+  font: 12px sans-serif;
+  transform: translate(-50%, -120%);
+  white-space: nowrap;
+  display: none;
+  z-index: 10;
+}
+
+.inset-slot ::slotted(*) {
+  position: absolute;
+  transform: translate(-50%, -50%);
+}
+
+.country {
+  --fill: gray;
+  --chroma: 0.1;
+  --luminance: 0.8;
+}
+
+.country.color1 {
+  fill: oklch(from var(--fill) var(--luminance) var(--chroma) h);
+}
+
+.country.color4 {
+  fill: oklch(from var(--fill) var(--luminance) var(--chroma) calc(h - 10));
+}
+
+.country.color3 {
+  fill: oklch(from var(--fill) var(--luminance) var(--chroma) calc(h + 20));
+}
+
+.country.color2 {
+  fill: oklch(from var(--fill) var(--luminance) var(--chroma) calc(h - 30));
+}
+
+.country.color5 {
+  fill: oklch(from var(--fill) var(--luminance) var(--chroma) calc(h + 10));
+}
+
+.country.color6 {
+  fill: oklch(from var(--fill) var(--luminance) var(--chroma) calc(h - 20));
+}
+
+.country.color7 {
+  fill: oklch(from var(--fill) var(--luminance) var(--chroma) calc(h + 30));
+}
+
+.country.antarctica {
+  fill: aliceblue !important;
+}
+
+/* lightsteelblue */
+.country.central-america, .country.northern-america, .country.caribbean {
+  --fill: var(--north-america-fill);
+}
+
+.country.south-america {
+  --fill: var(--south-america-fill);
+}
+
+.country.central-asia, .country.eastern-asia, .country.southern-asia, .country.western-asia {
+  --fill: var(--asia-fill);
+}
+
+.country.australia-and-new-zealand, .country.melanesia, .country.micronesia, .country.polynesia, .country.south-eastern-asia {
+  --fill: var(--oceana-fill);
+}
+
+.country.western-europe, .country.eastern-europe, .country.northern-europe, .country.southern-europe {
+  --fill: var(--europe-fill);
+}
+
+.country.northern-africa, .country.eastern-africa, .country.western-africa, .southern-africa, .country.middle-africa {
+  --fill: var(--africa-fill);
+}
