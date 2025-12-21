@@ -4,15 +4,6 @@ export type CountryLabelMap = Record<string, string>;
 
 import countryCodes from "./country-codes.json" with {type: "json"};
 
-// const byCountryName = countryCodes.reduce((acc, entry) => {
-//     acc[entry['official_name_en'].toString().toLocaleLowerCase()] = entry['ISO3166-1-Alpha-2'];
-//     acc[entry['UNTERM English Short'].replace(' (the)','').toString().toLocaleLowerCase()] = entry['ISO3166-1-Alpha-2'];
-//     acc[entry['CLDR display name'].toString().toLocaleLowerCase()] = entry['ISO3166-1-Alpha-2'];
-//     acc[entry['ISO4217-currency_country_name'].toString().toLocaleLowerCase()] = entry['ISO3166-1-Alpha-2'];
-//     return acc;
-// }, {} as Record<string, string>);
-// console.log("byCountryName", byCountryName);
-
 const langByCountryCode = countryCodes.reduce((acc, entry) => {
     acc[entry['ISO3166-1-Alpha-2']] = entry['Languages'];
     return acc;
@@ -82,7 +73,7 @@ class WorldMap extends HTMLElement {
 
     constructor() {
         super();
-        this.shadow = this.attachShadow({ mode: "open" });
+        this.shadow = this.attachShadow({mode: "open"});
 
         const container = document.createElement("div");
         container.className = "map-container";
@@ -177,6 +168,11 @@ class WorldMap extends HTMLElement {
             if (iso2) this.iso2ToIso3[iso2] = iso3 ?? "";
             if (iso3) this.iso3ToIso2[iso3] = iso2 ?? "";
 
+            const labelX = f.properties?.label_x;
+            const labelY = f.properties?.label_y;
+            const labelLonLat = [labelX, labelY];
+
+
             const geom = f.geometry;
             let pathD = "";
             if (!geom) continue;
@@ -209,23 +205,18 @@ class WorldMap extends HTMLElement {
             path.addEventListener("click", () =>
                 this.dispatchEvent(
                     new CustomEvent("country-click", {
-                        detail: { feature: f, iso2, iso3, name, lang: langByCountryCode[iso2] },
+                        detail: {feature: f, iso2, iso3, name, lang: langByCountryCode[iso2]},
                         bubbles: true,
-                        composed: true,
+                        composed: true
                     })
                 )
             );
 
             countriesGroup.appendChild(path);
 
-            // label centroid and placement (negate Y so text is upright)
-            const centroidLonLat =
-                geom.type === "Polygon"
-                    ? computeCentroidOfCoords(geom.coordinates as number[][][])
-                    : computeCentroidOfCoords((geom.coordinates as number[][][][])[0]);
-            const [clon, clat] = centroidLonLat;
-            const cx = clon;
-            const cy = -clat; // invert latitude for SVG Y
+            const [clon, clat] = labelLonLat;
+            const cx = labelLonLat[0];
+            const cy = -labelLonLat[1]; // invert latitude for SVG Y
 
             const labelText = this.labels[iso2] ?? this.labels[f.properties?.ADMIN];
             if (labelText) {
@@ -235,11 +226,18 @@ class WorldMap extends HTMLElement {
                 text.setAttribute("class", "label");
                 text.textContent = labelText;
                 labelsGroup.appendChild(text);
+                console.log(`Label for ${name} (${iso2}/${iso3}): ${labelText}`);
             }
 
             // record centroids for insets and lookups (store raw lon/lat)
-            if (iso2) this.countryCentroids[iso2] = { lon: f.properties?.label_x ?? clon, lat: f.properties?.label_y ?? clat };
-            if (iso3) this.countryCentroids[iso3] = { lon: f.properties?.label_x ?? clon, lat: f.properties?.label_y ?? clat };
+            this.countryCentroids[iso2] = {
+                lon: labelLonLat[0],
+                lat: labelLonLat[1]
+            };
+            this.countryCentroids[iso3] = {
+                lon: f.properties?.label_x ?? clon,
+                lat: f.properties?.label_y ?? clat
+            };
         }
 
         this.positionInsets();
@@ -294,9 +292,9 @@ class WorldMap extends HTMLElement {
         }
 
         this.dispatchEvent(new CustomEvent("country-selected", {
-            detail: { selectedIso3: this.selectedCountryIso3 },
+            detail: {selectedIso3: this.selectedCountryIso3},
             bubbles: true,
-            composed: true,
+            composed: true
         }));
     }
 
@@ -304,10 +302,60 @@ class WorldMap extends HTMLElement {
         return this.selectedCountryIso3;
     }
 
+// TypeScript
     positionInsets() {
         const slot = this.shadow.querySelector('slot[name="inset"]') as HTMLSlotElement | null;
         if (!slot) return;
         const assigned = slot.assignedElements({ flatten: true }) as HTMLElement[];
+        if (!assigned.length) return;
+
+        const hostRect = this.getBoundingClientRect();
+        const svgCTM = this.svg.getScreenCTM();
+        if (!svgCTM) return;
+
+        for (const el of assigned) {
+            (el as HTMLElement).style.pointerEvents = "auto";
+            (el as HTMLElement).style.position = "absolute";
+
+            const targetCountry = el.getAttribute("data-country");
+            let lon: number | null = null;
+            let lat: number | null = null;
+
+            if (targetCountry) {
+                const key = targetCountry.toUpperCase();
+                const c = this.countryCentroids[key];
+                if (c) {
+                    lon = c.lon;
+                    lat = c.lat;
+                }
+            } else {
+                const latAttr = el.getAttribute("data-lat");
+                const lonAttr = el.getAttribute("data-lon");
+                if (latAttr && lonAttr) {
+                    lon = parseFloat(lonAttr);
+                    lat = parseFloat(latAttr);
+                }
+            }
+
+            if (lon == null || lat == null || Number.isNaN(lon) || Number.isNaN(lat)) continue;
+
+            // convert SVG coordinate to screen coordinate
+            // SVG Y is inverted in this coordinate system
+            const pt = new DOMPoint(lon, -lat).matrixTransform(svgCTM);
+            const px = pt.x - hostRect.left;
+            const py = pt.y - hostRect.top;
+
+            if (Number.isFinite(px) && Number.isFinite(py)) {
+                el.style.left = `${px}px`;
+                el.style.top = `${py}px`;
+            }
+        }
+    }
+
+    xpositionInsets() {
+        const slot = this.shadow.querySelector('slot[name="inset"]') as HTMLSlotElement | null;
+        if (!slot) return;
+        const assigned = slot.assignedElements({flatten: true}) as HTMLElement[];
         if (!assigned.length) return;
 
         const viewBox = this.svg.viewBox.baseVal;
