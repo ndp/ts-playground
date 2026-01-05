@@ -1,59 +1,17 @@
+import {multiPolygonToPath, polygonToPath} from './polygon-to-path.js'
+import {maybeFetchText} from './util.js'
+
 const SVG_NS = "http://www.w3.org/2000/svg" as "http://www.w3.org/1999/xhtml";
 
 export type CountryLabelMap = Record<string, string>;
-
-import countryCodes from "./country-codes.json" with {type: "json"};
-
-const langByCountryCode = countryCodes.reduce((acc, entry) => {
-    acc[entry['ISO3166-1-Alpha-2']] = entry['Languages'];
-    return acc;
-}, {} as Record<string, string[]>);
-console.log("langByCountryCode", langByCountryCode);
 
 
 const DEFAULT_GEOJSON_URL =
     "./custom.geo.json";
 
-// -function lonLatToXY(lon: number, lat: number, width: number, height: number) {
-//     -    // simple equirectangular projection
-//         -    const x = ((lon + 180) / 360) * width;
-//     -    const y = ((90 - lat) / 180) * height;
-//     -    return [x, y];
-//     -}
-function polygonToPath(coords: number[][][]) {
-    const parts = coords.map((ring) => {
-        return (
-            ring
-                .map((pt, i) => {
-                    const lon = pt[0];
-                    const lat = pt[1];
-                    const x = lon;
-                    const y = -lat; // invert latitude for SVG Y
-                    return `${i === 0 ? "M" : "L"} ${x.toFixed(6)} ${y.toFixed(6)}`;
-                })
-                .join(" ") + " Z"
-        );
-    });
-    return parts.join(" ");
-}
-
-function multiPolygonToPath(coords: number[][][][]) {
-    return coords.map((poly) => polygonToPath(poly)).join(" ");
-}
-
-function computeCentroidOfCoords(coords: number[][][]): [number, number] {
-    const ring = coords[0] ?? [];
-    if (ring.length === 0) return [0, 0];
-    let sx = 0, sy = 0;
-    for (const [lon, lat] of ring) {
-        sx += lon;
-        sy += lat;
-    }
-    return [sx / ring.length, sy / ring.length];
-}
-
 class WorldMap extends HTMLElement {
     shadow: ShadowRoot;
+    static stylesheetPromise: Promise<string>;
     svg!: SVGSVGElement;
     tooltip!: HTMLDivElement;
     vbX = -180;
@@ -61,7 +19,6 @@ class WorldMap extends HTMLElement {
     vbWidth = 360;
     vbHeight = 180;
 
-    geojsonUrl = DEFAULT_GEOJSON_URL;
     features: any[] = [];
     labels: CountryLabelMap = {};
     countryCentroids: Record<string, { lon: number; lat: number }> = {};
@@ -78,15 +35,15 @@ class WorldMap extends HTMLElement {
         const container = document.createElement("div");
         container.className = "map-container";
 
-        this.svg = document.createElementNS(SVG_NS, "svg") as unknown as SVGSVGElement;
+        this.svg = this.createSVGElement("svg") as unknown as SVGSVGElement;
         this.svg.setAttribute("viewBox", `${this.vbX} ${this.vbY} ${this.vbWidth} ${this.vbHeight}`);
         this.svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
 
-        const countriesGroup = document.createElementNS(SVG_NS, "g") as SVGGElement;
+        const countriesGroup = this.createSVGElement("g") as SVGGElement;
         countriesGroup.setAttribute("id", "countries");
         this.svg.appendChild(countriesGroup);
 
-        const labelsGroup = document.createElementNS(SVG_NS, "g") as SVGGElement;
+        const labelsGroup = this.createSVGElement("g") as SVGGElement;
         labelsGroup.setAttribute("id", "labels");
         this.svg.appendChild(labelsGroup);
 
@@ -117,13 +74,9 @@ class WorldMap extends HTMLElement {
     }
 
     async connectedCallback() {
-        if (this.hasAttribute("geojson")) {
-            this.geojsonUrl = this.getAttribute("geojson") || this.geojsonUrl;
-        }
-
         const sheet = new CSSStyleSheet()
         sheet.replaceSync(await WorldMap.stylesheetPromise)
-        this.shadowRoot.adoptedStyleSheets = [sheet]
+        this.shadow.adoptedStyleSheets = [sheet]
 
 
         this.loadAndRender();
@@ -135,7 +88,7 @@ class WorldMap extends HTMLElement {
 
     async loadAndRender() {
         try {
-            const resp = await fetch(this.geojsonUrl);
+            const resp = await fetch(DEFAULT_GEOJSON_URL);
             if (!resp.ok) throw new Error("GeoJSON fetch failed");
             const geo = await resp.json();
             this.features = geo.features ?? [];
@@ -184,7 +137,7 @@ class WorldMap extends HTMLElement {
                 continue;
             }
 
-            const path = document.createElementNS(SVG_NS, "path") as unknown as SVGPathElement;
+            const path = this.createSVGElement("path") as unknown as SVGPathElement;
             path.setAttribute("d", pathD);
             path.setAttribute("data-iso2", iso2);
             path.setAttribute("data-iso3", iso3);
@@ -205,7 +158,11 @@ class WorldMap extends HTMLElement {
             path.addEventListener("click", () =>
                 this.dispatchEvent(
                     new CustomEvent("country-click", {
-                        detail: {feature: f, iso2, iso3, name, lang: langByCountryCode[iso2]},
+                        detail: {feature: f,
+                            iso2,
+                            iso3,
+                            name
+                        },
                         bubbles: true,
                         composed: true
                     })
@@ -220,7 +177,7 @@ class WorldMap extends HTMLElement {
 
             const labelText = this.labels[iso2] ?? this.labels[f.properties?.ADMIN];
             if (labelText) {
-                const text = document.createElementNS(SVG_NS, "text") as unknown as SVGTextElement;
+                const text = this.createSVGElement("text") as unknown as SVGTextElement;
                 text.setAttribute("x", `${cx.toFixed(6)}`);
                 text.setAttribute("y", `${cy.toFixed(6)}`);
                 text.setAttribute("class", "label");
@@ -265,11 +222,6 @@ class WorldMap extends HTMLElement {
         this.positionInsets();
     }
 
-    setGeoJSON(url: string) {
-        this.geojsonUrl = url;
-        this.loadAndRender();
-    }
-
     // New public API: set selected country (code may be iso2 or iso3). Pass null to clear.
     setSelectedCountry(iso3: string | null) {
         iso3 = iso3 ? iso3.trim().toUpperCase() : null;
@@ -296,10 +248,6 @@ class WorldMap extends HTMLElement {
             bubbles: true,
             composed: true
         }));
-    }
-
-    getSelectedCountry(): string | null {
-        return this.selectedCountryIso3;
     }
 
 // TypeScript
@@ -399,21 +347,13 @@ class WorldMap extends HTMLElement {
             }
         }
     }
+
+
+    createSVGElement<K extends keyof SVGElementTagNameMap>(tagName: K): SVGElementTagNameMap[K] {
+        return document.createElementNS(SVG_NS, tagName) as unknown as SVGElementTagNameMap[K];
+    }
 }
 
 WorldMap.stylesheetPromise = maybeFetchText(new URL('../../src/world/world-map.css', import.meta.url))
 
-
 customElements.define("world-map", WorldMap);
-
-
-export async function maybeFetchText(url) {
-    try {
-        const res = await fetch(url.href);
-        if (res.ok)
-            return await res.text();
-    } catch (e) {
-        // ignore and return empty
-    }
-    return '';
-}
