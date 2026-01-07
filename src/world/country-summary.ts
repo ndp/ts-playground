@@ -1,4 +1,4 @@
-import { teenyDb } from './teeny-db.js';
+import {ISO2CountryCode, OfficialLanguages, teenyDb} from './teeny-db.js';
 
 class CountrySummary extends HTMLElement {
     static get observedAttributes() { return ['data-iso2']; }
@@ -27,7 +27,7 @@ class CountrySummary extends HTMLElement {
     }
 
     refresh() {
-        const iso2 = this.getAttribute('data-iso2');
+        const iso2 = this.getAttribute('data-iso2') as ISO2CountryCode;
         const container = this.root.querySelector('.root') as HTMLElement;
         if (!container) return;
         if (!iso2) {
@@ -37,7 +37,7 @@ class CountrySummary extends HTMLElement {
 
         const nameEng = teenyDb.countryName(iso2);
         const langs = teenyDb.langs(iso2) || [];
-        const lang = langs[0] || 'en-US';
+        const lang = (langs[0] || 'en-US') as OfficialLanguages;
         const name = teenyDb.countryName(iso2, lang);
         const listFormat = new Intl.ListFormat('en-US', { type: 'conjunction', style: 'narrow' });
         const langsStr = listFormat.format(langs);

@@ -1,10 +1,10 @@
 import countryCodes from './country-codes.json' with { type: 'json' };
 
 type Letter = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z';
-type ISO2CountryCode = `${Letter}${Letter}`;
+export type ISO2CountryCode = `${Letter}${Letter}`;
 type ISOCodeKeys = 'ISO3166-1-Alpha-2' | 'ISO3166-1-Alpha-3';
 type MiscKeys = 'Languages' | 'Capital' | 'Dial' | 'TLD' | 'ISO4217-currency_alphabetic_code' | 'ISO4217-currency_country_name' | 'ISO4217-currency_minor_unit' | 'ISO4217-currency_name';
-type OfficialLanguages = 'en' | 'fr' | 'es' | 'ru' | 'zh' | 'ar';
+export type OfficialLanguages = 'en' | 'fr' | 'es' | 'ru' | 'zh' | 'ar';
 type NameKeys = `official_name_${OfficialLanguages}`;
 type ValidKeys = ISOCodeKeys | MiscKeys | NameKeys;
 type CountryCodeEntry = Record<ValidKeys, string> & {
@@ -58,7 +58,7 @@ class TeenyDB {
         return String.fromCodePoint(...codePoints);
     }
 
-    misc(countryCode: ISO2CountryCode, field: MiscKeys|NameKeys): string | null {
+    misc(countryCode: ISO2CountryCode, field: MiscKeys|NameKeys|ISOCodeKeys): string | null {
         return this.byCountryCode[countryCode]![field] as string || null;
     }
 }
