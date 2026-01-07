@@ -7,10 +7,10 @@
   <script type="module">
     import "../../build/world/world-map.js";
     import "../../build/world/timeline.js";
-    import {teenyDb} from '../../build/world/world-map.js'
+    import {teenyDb} from '../../build/world/teeny-db.js'
 
     let gLocale = document.documentElement.lang || 'en-US';
-let gCountry = null
+    let gCountryIso2 = null
 
     // Example runtime usage after component class is loaded
     window.addEventListener("DOMContentLoaded", () => {
@@ -21,33 +21,26 @@ let gCountry = null
         const detail = ev.detail
         console.log("Country clicked:", detail.name);
         console.log(detail);
-        if (gCountry === detail.iso2) {
+        if (gCountryIso2 === detail.iso2) {
           gLocale = null
-          gCountry = null
-          document.getElementsByTagName('world-map')[0].setSelectedCountry(null);
+          gCountryIso2 = null
+          wm.setSelectedCountry(null);
         } else {
-          gCountry = detail.iso2;
+          gCountryIso2 = detail.iso2;
           gLocale = teenyDb.langs(detail.iso2)[0] || 'en-US';
-          document.getElementsByTagName('world-map')[0].setSelectedCountry(detail.iso3);
+          wm.setSelectedCountry(detail.iso3);
         }
         document.getElementsByTagName('locale-timeline')[0].setAttribute('locale', gLocale);
         updateNumberFormat(gLocale);
         updateListFormat(gLocale);
-        updateCurrentLocale(gCountry, detail.name);
+        updateCurrentLocale(gCountryIso2);
       });
 
     });
 
-    function updateCurrentLocale(iso2, name) {
-      if (!iso2) {
-        const currentLocaleEl = document.getElementById("current-locale");
-        currentLocaleEl.innerHTML = '';
-        return;
-      }
+    function updateCurrentLocale(iso2) {
       const currentLocaleEl = document.getElementById("current-locale");
-      const langs = new Intl.ListFormat(gLocale, {type: 'conjunction', style: 'narrow'}).format(teenyDb.langs(iso2));
-
-      currentLocaleEl.innerHTML = `<h1><span>${teenyDb.flagEmoji(iso2)} ${name}</h1><h2>Languages: ${langs}</h2>${gLocale}`;
+      currentLocaleEl.setAttribute('data-iso2', iso2 || '');
     }
 
     function updateNumberFormat(gLocale) {
@@ -56,17 +49,17 @@ let gCountry = null
 
       const numberFormatEl = document.getElementById("number-format");
 
-        const num1 = 1234567.89;
-        const formattedNum1 = num1.toLocaleString(gLocale);
-        const asDollar = new Intl.NumberFormat(gLocale, {style: 'currency', currency: 'USD'}).format(num1);
-        const meters = new Intl.NumberFormat(gLocale, {style: 'unit', unit: 'meter', unitDisplay: 'long'}).format(100);
-        const kilos = new Intl.NumberFormat(gLocale, {
-          style: 'unit',
-          unit: 'kilogram',
-          unitDisplay: 'short'
-        }).format(5.5);
+      const num1 = 1234567.89;
+      const formattedNum1 = num1.toLocaleString(gLocale);
+      const asDollar = new Intl.NumberFormat(gLocale, {style: 'currency', currency: 'USD'}).format(num1);
+      const meters = new Intl.NumberFormat(gLocale, {style: 'unit', unit: 'meter', unitDisplay: 'long'}).format(100);
+      const kilos = new Intl.NumberFormat(gLocale, {
+        style: 'unit',
+        unit: 'kilogram',
+        unitDisplay: 'short'
+      }).format(5.5);
 
-        numberFormatEl.innerHTML = `Number: ${formattedNum1} <br> As Dollar: ${asDollar} <br> Meters: ${meters} <br> Kilograms: ${kilos}`;
+      numberFormatEl.innerHTML = `Number: ${formattedNum1} <br> As Dollar: ${asDollar} <br> Meters: ${meters} <br> Kilograms: ${kilos}`;
     }
 
     function updateListFormat(gLocale) {
@@ -80,6 +73,57 @@ let gCountry = null
       }
     }
 
+    class CountrySummary extends HTMLElement {
+      constructor() {
+        super();
+      }
+
+      static get observedAttributes() {
+        return ['data-iso2']//, 'data-lat', 'data-lon'];
+      }
+
+      attributeChangedCallback(name, oldValue, newValue) {
+        if (name === 'data-iso2') {
+          this.connectedCallback();
+        }
+      }
+
+      connectedCallback() {
+        this.refresh()
+      }
+
+      refresh() {
+        const iso2 = this.getAttribute('data-iso2');
+        if (!iso2) return;
+        const nameEng = teenyDb.countryName(iso2);
+        const langs = teenyDb.langs(iso2)
+        const lang = langs[0] || 'en-US'
+        const name = teenyDb.countryName(iso2, lang);
+        const listFormat = new Intl.ListFormat('en-US', {type: 'conjunction', style: 'narrow'})
+        const langsStr = listFormat.format(teenyDb.langs(iso2));
+        this.innerHTML = `
+<h2>ISO-3166</h2>
+<div class="flag">${teenyDb.flagEmoji(iso2)}</div>
+<p>${listFormat.format([teenyDb.misc(iso2, 'ISO3166-1-Alpha-2'), teenyDb.misc(iso2, 'ISO3166-1-Alpha-3')])}</p>
+<h2 class="full">Name</h2>
+<p class="full">${nameEng}</p>
+${name && name !== nameEng ? `<h2 class="full">Name [${lang}]</h2><p class="full">${name}</p>` : ''}
+<h2 class="full">Capital</h2>
+<p class="full">${teenyDb.misc(iso2, 'Capital')}</p>
+<h2 class="full">Language${langs.length > 1 ? 's' : ''}</h2>
+<p class="full">${langsStr}</p>
+<h2>Dial</h2>
+<h2>TLD</h2>
+<p>+${teenyDb.misc(iso2, 'Dial')}</p>
+<p><i>&lt;domain&gt;</i>${teenyDb.misc(iso2, 'TLD')}</p>
+<h2 class="full">Currency</h2>
+<p>${teenyDb.misc(iso2, 'ISO4217-currency_alphabetic_code')}</p>
+<p>${teenyDb.misc(iso2, 'ISO4217-currency_name')}</p>
+`;
+      }
+    }
+
+    customElements.define('country-summary', CountrySummary);
   </script>
   <style>
     @import url(https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap);
@@ -92,6 +136,7 @@ let gCountry = null
       height: 100%;
       width: 100%;
     }
+
     body {
       font-family: system-ui, sans-serif;
     }
@@ -116,22 +161,36 @@ let gCountry = null
       background-color: #eee;
       border: 1px solid #555;
 
-      h1, h2 {
-        margin: 0;
-        padding:0;
-        line-height: 1;
-        max-width: 300px;
+      display: grid;
+      align-items: start;
+
+      .full {
+        grid-column-start: 1;
+        grid-column-end: 3;
+        min-width: 200px;
+        max-width: 260px;
       }
-      h1 {
-        font-size: x-large;
-        --space: 8px;
-        padding-bottom: var(--space);
-        border-bottom: 1px solid #ccc;
-        margin-bottom: var(--space);
+      h2, p {
+        margin: 0;
+        padding: 0 3em 0 0;
+        line-height: 1.3;
+        font-size: medium;
+        font-family: system-ui, sans-serif;
+      }
+      .flag {
+        justify-self: right;
+        font-size: 40px;
+        grid-row-start: 1;
+        grid-row-end: 3;
+        grid-column-start: 2;
+        grid-column-end: 3;
       }
       h2 {
-        font-size: large;
+        opacity: 0.8;
         word-wrap: break-word;
+        font-weight: 100;
+        font-style: italic;      }
+      p {
       }
 
     }
@@ -143,15 +202,15 @@ let gCountry = null
   </style>
 </head>
 <body>
-<world-map style="max-width: 100svw;max-height: 100svh" >
+<world-map style="max-width: 100svw;max-height: 100svh">
   <!-- inset anchored to country by iso_a3 code (depends on GeoJSON id properties) -->
-<!--  <div slot="inset" class="inset-box" data-country="US">💲&#127482;&#127480;</div>-->
+  <!--  <div slot="inset" class="inset-box" data-country="US">💲&#127482;&#127480;</div>-->
 
   <!-- alternatively anchor by lat/lon -->
-  <div id="current-locale" slot="inset" class="inset-box" data-lon="-142" data-lat="-35"></div>
-<!--  <div id="example-date" slot="inset" class="inset-box" data-lon="139.6917" data-lat="35.6895">Tokyo</div>-->
+  <country-summary id="current-locale" slot="inset" class="inset-box" data-lon="-142" data-lat="-35"></country-summary>
+  <!--  <div id="example-date" slot="inset" class="inset-box" data-lon="139.6917" data-lat="35.6895">Tokyo</div>-->
   <div id="number-format" slot="inset" class="inset-box" data-lon="80" data-lat="-60">Number Format</div>
-<!--  <div id="list-format" slot="inset" class="inset-box" data-lon="-50" data-lat="30">List Format</div>-->
+  <!--  <div id="list-format" slot="inset" class="inset-box" data-lon="-50" data-lat="30">List Format</div>-->
 </world-map>
 <locale-timeline id="timeline"></locale-timeline>
 </body>

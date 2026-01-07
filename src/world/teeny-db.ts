@@ -1,18 +1,36 @@
-import countryCodes from './country-codes.json'
+import countryCodes from './country-codes.json' with { type: 'json' };
+
+type Letter = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z';
+type ISO2CountryCode = `${Letter}${Letter}`;
+type ISOCodeKeys = 'ISO3166-1-Alpha-2' | 'ISO3166-1-Alpha-3';
+type MiscKeys = 'Languages' | 'Capital' | 'Dial' | 'TLD' | 'ISO4217-currency_alphabetic_code' | 'ISO4217-currency_country_name' | 'ISO4217-currency_minor_unit' | 'ISO4217-currency_name';
+type OfficialLanguages = 'en' | 'fr' | 'es' | 'ru' | 'zh' | 'ar';
+type NameKeys = `official_name_${OfficialLanguages}`;
+type ValidKeys = ISOCodeKeys | MiscKeys | NameKeys;
+type CountryCodeEntry = Record<ValidKeys, string> & {
+    ['ISO3166-1-Alpha-2']: ISO2CountryCode;
+    [key: string]: string|number;
+}
+type CountryCodes = Array<CountryCodeEntry>;
+
 
 class TeenyDB {
-    langByCountryCode: Record<string, string[]> = {};
+    byCountryCode: { [k in ISO2CountryCode]?: CountryCodeEntry } = {};
 
     constructor() {
-        this.langByCountryCode = countryCodes.reduce((acc, entry) => {
-            acc[entry['ISO3166-1-Alpha-2']] = entry['Languages'].split(',');
+        this.byCountryCode = (countryCodes as unknown as CountryCodes).reduce((acc, entry) => {
+            acc[entry['ISO3166-1-Alpha-2']] = entry;
             return acc;
-        }, {} as Record<string, string[]>);
-        // console.log("langByCountryCode", this.langByCountryCode);
+        }, {} as Record<ISO2CountryCode, CountryCodeEntry>);
     }
 
-    langs(countryCode: string): string[] {
-        return this.langByCountryCode[countryCode] || [];
+    langs(countryCode: ISO2CountryCode): string[] {
+        return this.misc(countryCode, 'Languages')?.split(',') || [];
+    }
+
+    countryName(iso2Code: ISO2CountryCode, locale: OfficialLanguages = 'en'): string | null {
+        console.log(`Fetching country name for code: ${iso2Code} in locale: ${locale}`);
+        return this.misc(iso2Code, `official_name_${locale.substring(0, 2)}` as NameKeys);
     }
 
     /**
@@ -20,7 +38,7 @@ class TeenyDB {
      * @param {string} countryCode The two-letter country code (e.g., 'US', 'FR').
      * @returns {string} The corresponding flag emoji (e.g., '🇺🇸', '🇫🇷').
      */
-    flagEmoji(countryCode: string): string {
+    flagEmoji(countryCode: ISO2CountryCode): string {
         // Ensure the input is a valid two-letter string
         if (!countryCode || countryCode.length !== 2 || !/^[a-zA-Z]{2}$/.test(countryCode)) {
             console.error("Invalid country code provided. Must be a two-letter ISO code.");
@@ -40,6 +58,9 @@ class TeenyDB {
         return String.fromCodePoint(...codePoints);
     }
 
+    misc(countryCode: ISO2CountryCode, field: MiscKeys|NameKeys): string | null {
+        return this.byCountryCode[countryCode]![field] as string || null;
+    }
 }
 
 export const teenyDb = new TeenyDB();
