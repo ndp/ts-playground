@@ -38,6 +38,11 @@
         updateCurrentLocale(gCountryIso2);
       });
 
+
+      document.getElementById('detail').addEventListener('change', (ev) => {
+        console.log('Selection changed:', ev.detail);
+      });
+
     });
 
     function updateCurrentLocale(iso2) {
@@ -135,28 +140,25 @@ ${monies.map(money => `<p>${money}</p>`).join('')}
 <body>
 <world-map style="max-width: 100svw;max-height: 100svh">
   <!-- inset anchored to country by iso_a3 code (depends on GeoJSON id properties) -->
-    <div slot="inset" class="inset-box" data-country="MX">MX</div>
-    <div slot="inset" class="inset-box" data-country="CA">CA</div>
-    <div slot="inset" class="inset-box" data-country="FR">FR</div>
-    <div slot="inset" class="inset-box" data-country="DE">DE</div>
-    <div slot="inset" class="inset-box" data-country="EE">EE</div>
-    <div slot="inset" class="inset-box" data-country="BR">BR</div>
-    <div slot="inset" class="inset-box" data-country="AR">AR</div>
-    <div slot="inset" class="inset-box" data-country="CH">CH</div>
-
-
-
-  <multi-select slot="inset" data-country="US">
-    <div slot="option" data-value="US">US</div>
-    <div slot="option" data-value="CA">Canada</div>
-    <div slot="option" data-value="MX">Mexico</div>
-    <div slot="option" data-value="FR">France</div>
-  </multi-select>
+<!--    <div slot="inset" class="inset-box" data-country="MX">MX</div>-->
+<!--    <div slot="inset" class="inset-box" data-country="CA">CA</div>-->
+<!--    <div slot="inset" class="inset-box" data-country="FR">FR</div>-->
+<!--    <div slot="inset" class="inset-box" data-country="DE">DE</div>-->
+<!--    <div slot="inset" class="inset-box" data-country="EE">EE</div>-->
+<!--    <div slot="inset" class="inset-box" data-country="BR">BR</div>-->
+<!--    <div slot="inset" class="inset-box" data-country="AR">AR</div>-->
+<!--    <div slot="inset" class="inset-box" data-country="CH">CH</div>-->
 
   <country-summary id="current-locale" slot="inset" class="inset-box" data-lon="-142" data-lat="-35"></country-summary>
   <div id="number-format" slot="inset" class="inset-box" data-lon="80" data-lat="-30"></div>
   <!--  <div id="list-format" slot="inset" class="inset-box" data-lon="-50" data-lat="30">List Format</div>-->
 </world-map>
 <locale-timeline id="timeline"></locale-timeline>
+<multi-select id='detail' style="position: fixed; top: 0; left: 0;" >
+  <div slot="option" data-value="US">US</div>
+  <div slot="option" data-value="CA">Canada</div>
+  <div slot="option" data-value="MX">Mexico</div>
+  <div slot="option" data-value="FR">France</div>
+</multi-select>
 </body>
 </html>
