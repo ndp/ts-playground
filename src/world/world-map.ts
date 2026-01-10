@@ -270,6 +270,7 @@ class WorldMap extends HTMLElement {
             let lat: number | null = null;
 
             if (targetCountry) {
+                console.log(`Positioning inset for country: ${targetCountry}`);
                 const key = targetCountry.toUpperCase();
                 const c = this.countryCentroids[key];
                 if (c) {
@@ -292,54 +293,6 @@ class WorldMap extends HTMLElement {
             const pt = new DOMPoint(lon, -lat).matrixTransform(svgCTM);
             const px = pt.x - hostRect.left;
             const py = pt.y - hostRect.top;
-
-            if (Number.isFinite(px) && Number.isFinite(py)) {
-                el.style.left = `${px}px`;
-                el.style.top = `${py}px`;
-            }
-        }
-    }
-
-    xpositionInsets() {
-        const slot = this.shadow.querySelector('slot[name="inset"]') as HTMLSlotElement | null;
-        if (!slot) return;
-        const assigned = slot.assignedElements({flatten: true}) as HTMLElement[];
-        if (!assigned.length) return;
-
-        const viewBox = this.svg.viewBox.baseVal;
-        const vbX = viewBox.x;
-        const vbY = viewBox.y;
-        const vbW = viewBox.width;
-        const vbH = viewBox.height;
-
-        const hostRect = this.getBoundingClientRect();
-
-        for (const el of assigned) {
-            (el as HTMLElement).style.pointerEvents = "auto";
-            (el as HTMLElement).style.position = "absolute";
-            const targetCountry = el.getAttribute("data-country");
-            let px = NaN;
-            let py = NaN;
-
-            if (targetCountry) {
-                const key = targetCountry.toUpperCase();
-                const c = this.countryCentroids[key];
-                if (c) {
-                    const [x, y] = [c.lon, -c.lat];
-                    px = ((x - vbX) / vbW) * hostRect.width;
-                    py = ((y - vbY) / vbH) * hostRect.height;
-                }
-            } else {
-                const latAttr = el.getAttribute("data-lat");
-                const lonAttr = el.getAttribute("data-lon");
-                if (latAttr && lonAttr) {
-                    const lon = parseFloat(lonAttr);
-                    const lat = parseFloat(latAttr);
-                    const [x, y] = [lon, -lat];
-                    px = ((x - vbX) / vbW) * hostRect.width;
-                    py = ((y - vbY) / vbH) * hostRect.height;
-                }
-            }
 
             if (Number.isFinite(px) && Number.isFinite(py)) {
                 el.style.left = `${px}px`;

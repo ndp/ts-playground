@@ -1,0 +1,33 @@
+/* css */
+:host {
+  display: block;
+  --ms-selected-outline: #444;
+  --ms-hover-outline: lightgray;
+  --ms-selected-color: inherit;
+}
+
+::slotted([data-value]) {
+  display: inline-block;
+  padding: 6px 10px;
+  margin: 4px;
+  border-radius: 6px;
+  outline: 2px solid transparent;
+  cursor: pointer;
+  user-select: none;
+  color: var(--ms-color, inherit);
+  background: var(--ms-bg, transparent);
+  transition: outline-color .12s, box-shadow .12s, transform .06s;
+}
+
+::slotted([data-value]:hover:not(.selected)) {
+  outline-color: var(--ms-hover-outline);
+  transform: translateY(-1px);
+}
+
+::slotted(.selected) {
+  outline-color: var(--ms-selected-outline);
+  outline-style: solid;
+  outline-width: 3px;
+  box-shadow: 0 0 0 3px rgba(0,0,0,0.04);
+  color: var(--ms-selected-color);
+}

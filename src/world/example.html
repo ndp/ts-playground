@@ -7,6 +7,8 @@
   <script type="module">
     import "../../build/world/world-map.js";
     import "../../build/world/timeline.js";
+    import "../../build/world/country-summary.js";
+    import "../../build/world/multi-select.js";
     import {teenyDb} from '../../build/world/teeny-db.js'
 
     let gLocale = document.documentElement.lang || 'en-US';
@@ -46,20 +48,31 @@
     function updateNumberFormat(gLocale) {
       if (!gLocale) return;
 
-
       const numberFormatEl = document.getElementById("number-format");
 
       const num1 = 1234567.89;
       const formattedNum1 = num1.toLocaleString(gLocale);
-      const asDollar = new Intl.NumberFormat(gLocale, {style: 'currency', currency: 'USD'}).format(num1);
-      const meters = new Intl.NumberFormat(gLocale, {style: 'unit', unit: 'meter', unitDisplay: 'long'}).format(100);
+      const currencies = teenyDb.misc(gCountryIso2, 'ISO4217-currency_alphabetic_code').split(',');
+      const monies = currencies.map(currency => new Intl.NumberFormat(gLocale, {style: 'currency', currency: currency}).format(1234));
+      const asDollar = new Intl.NumberFormat(gLocale, {style: 'currency', currency: 'USD'}).format(1234);
+      const meters = new Intl.NumberFormat(gLocale, {style: 'unit', unit: 'meter', unitDisplay: 'long'}).format(42195.01);
       const kilos = new Intl.NumberFormat(gLocale, {
         style: 'unit',
         unit: 'kilogram',
         unitDisplay: 'short'
-      }).format(5.5);
+      }).format(89.5);
 
-      numberFormatEl.innerHTML = `Number: ${formattedNum1} <br> As Dollar: ${asDollar} <br> Meters: ${meters} <br> Kilograms: ${kilos}`;
+      numberFormatEl.innerHTML = `
+<h2>Number</h2>
+<p>${formattedNum1}<p>
+<h2>Local Currency</h2>
+${monies.map(money => `<p>${money}</p>`).join('')}
+<h2>U.S. Dollar</h2>
+<p>${asDollar}</p>
+<h2>Meters</h2>
+<p>${meters}</p>
+<h2>Kilograms</h2>
+<p>${kilos}</p>`;
     }
 
     function updateListFormat(gLocale) {
@@ -95,7 +108,20 @@
       border-radius: 4px;
       border: 1px solid #333;
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-      font-family: 'Noto Color Emoji', 'Noto Emoji', monospace;
+    }
+
+    #number-format {
+      display: grid;
+      h2, p {
+        margin: 0;
+        padding: 0;
+      }
+      h2 {
+        font-size: unset;
+        font-weight: 100;
+        font-style: italic;
+        opacity: 0.7;
+      }
     }
 
     #timeline {
@@ -104,29 +130,31 @@
       bottom: 0;
     }
 
-    #current-locale {
-      font-size: 30px;
-      background-color: #eee;
-      border: 1px solid #555;
-      display: grid;
-      align-items: start;
-    }
-
-    #current-locale:empty {
-      display: none;
-    }
-
   </style>
 </head>
 <body>
 <world-map style="max-width: 100svw;max-height: 100svh">
   <!-- inset anchored to country by iso_a3 code (depends on GeoJSON id properties) -->
-  <!--  <div slot="inset" class="inset-box" data-country="US">💲&#127482;&#127480;</div>-->
+    <div slot="inset" class="inset-box" data-country="MX">MX</div>
+    <div slot="inset" class="inset-box" data-country="CA">CA</div>
+    <div slot="inset" class="inset-box" data-country="FR">FR</div>
+    <div slot="inset" class="inset-box" data-country="DE">DE</div>
+    <div slot="inset" class="inset-box" data-country="EE">EE</div>
+    <div slot="inset" class="inset-box" data-country="BR">BR</div>
+    <div slot="inset" class="inset-box" data-country="AR">AR</div>
+    <div slot="inset" class="inset-box" data-country="CH">CH</div>
 
-  <!-- alternatively anchor by lat/lon -->
+
+
+  <multi-select slot="inset" data-country="US">
+    <div slot="option" data-value="US">US</div>
+    <div slot="option" data-value="CA">Canada</div>
+    <div slot="option" data-value="MX">Mexico</div>
+    <div slot="option" data-value="FR">France</div>
+  </multi-select>
+
   <country-summary id="current-locale" slot="inset" class="inset-box" data-lon="-142" data-lat="-35"></country-summary>
-  <!--  <div id="example-date" slot="inset" class="inset-box" data-lon="139.6917" data-lat="35.6895">Tokyo</div>-->
-  <div id="number-format" slot="inset" class="inset-box" data-lon="80" data-lat="-60">Number Format</div>
+  <div id="number-format" slot="inset" class="inset-box" data-lon="80" data-lat="-30"></div>
   <!--  <div id="list-format" slot="inset" class="inset-box" data-lon="-50" data-lat="30">List Format</div>-->
 </world-map>
 <locale-timeline id="timeline"></locale-timeline>

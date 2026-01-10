@@ -1,10 +1,12 @@
 /* src/world/country-summary.css */
 .root {
   font-family: system-ui, sans-serif;
+  display: grid;
 }
 
 .flag {
   justify-self: right;
+  font-family: 'Noto Color Emoji', 'Noto Emoji', monospace;
   font-size: 40px;
   grid-row-start: 1;
   grid-row-end: 3;

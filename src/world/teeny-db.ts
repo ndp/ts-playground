@@ -1,4 +1,6 @@
-import countryCodes from './country-codes.json' with { type: 'json' };
+import countryCodes from './country-codes.json' with {type: 'json'};
+// import type { Intl } from 'intl';
+
 
 type Letter = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z';
 export type ISO2CountryCode = `${Letter}${Letter}`;
