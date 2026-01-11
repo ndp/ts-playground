@@ -58,7 +58,7 @@ class MultiSelect extends HTMLElement {
                 if (this.selectedEl === el) {
                     this.selectedEl = null;
                     this.removeAttribute('data-value');
-                    this.emitChange();
+                    this.emitChange(null);
                 }
             }
         }
@@ -110,8 +110,8 @@ class MultiSelect extends HTMLElement {
         if (oldVal !== val) this.emitChange(val);
     }
 
-    private emitChange(value) {
-        this.dispatchEvent(new Event('change', { bubbles: true, details: {value} }));
+    private emitChange(value: string | null) {
+        this.dispatchEvent(new CustomEvent('change', { bubbles: true, detail: {value} }));
     }
 }
 

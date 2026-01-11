@@ -14,6 +14,8 @@ class WorldMap extends HTMLElement {
     static stylesheetPromise: Promise<string>;
     svg!: SVGSVGElement;
     tooltip!: HTMLDivElement;
+    countriesGroup!: SVGGElement
+    labelsGroup!: SVGGElement
     vbX = -180;
     vbY = -90;
     vbWidth = 360;
@@ -25,8 +27,6 @@ class WorldMap extends HTMLElement {
 
     // New: selection state and lookup maps
     private selectedCountryIso3: string | null = null; // stored as iso2 when possible
-    private iso2ToIso3: Record<string, string> = {};
-    private iso3ToIso2: Record<string, string> = {};
 
     constructor() {
         super();
@@ -39,13 +39,13 @@ class WorldMap extends HTMLElement {
         this.svg.setAttribute("viewBox", `${this.vbX} ${this.vbY} ${this.vbWidth} ${this.vbHeight}`);
         this.svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
 
-        const countriesGroup = this.createSVGElement("g") as SVGGElement;
-        countriesGroup.setAttribute("id", "countries");
-        this.svg.appendChild(countriesGroup);
+        this.countriesGroup = this.createSVGElement("g") as SVGGElement;
+        this.countriesGroup.setAttribute("id", "countries");
+        this.svg.appendChild(this.countriesGroup);
 
-        const labelsGroup = this.createSVGElement("g") as SVGGElement;
-        labelsGroup.setAttribute("id", "labels");
-        this.svg.appendChild(labelsGroup);
+        this.labelsGroup = this.createSVGElement("g") as SVGGElement;
+        this.labelsGroup.setAttribute("id", "labels");
+        this.svg.appendChild(this.labelsGroup);
 
         this.tooltip = document.createElement("div");
         this.tooltip.className = "tooltip";
@@ -99,27 +99,17 @@ class WorldMap extends HTMLElement {
     }
 
     clearSvg() {
-        const countriesGroup = this.svg.querySelector("#countries");
-        const labelsGroup = this.svg.querySelector("#labels");
-        if (countriesGroup) countriesGroup.innerHTML = "";
-        if (labelsGroup) labelsGroup.innerHTML = "";
+        this.countriesGroup.innerHTML = "";
+        this.labelsGroup.innerHTML = "";
     }
 
     render() {
         this.clearSvg();
-        const countriesGroup = this.svg.querySelector("#countries")!;
-        const labelsGroup = this.svg.querySelector("#labels")!;
-
-        // rebuild lookup maps each render
-        this.iso2ToIso3 = {};
-        this.iso3ToIso2 = {};
 
         for (const f of this.features) {
             const name = f.properties.name;
             const iso2 = f.properties?.iso_a2_eh ?? f.properties?.iso_a2 ?? null;
             const iso3 = f.properties?.iso_a3_eh ?? f.properties?.iso_a3 ?? null;
-            if (iso2) this.iso2ToIso3[iso2] = iso3 ?? "";
-            if (iso3) this.iso3ToIso2[iso3] = iso2 ?? "";
 
             const labelX = f.properties?.label_x;
             const labelY = f.properties?.label_y;
@@ -169,7 +159,7 @@ class WorldMap extends HTMLElement {
                 )
             );
 
-            countriesGroup.appendChild(path);
+            this.countriesGroup.appendChild(path);
 
             const [clon, clat] = labelLonLat;
             const cx = labelLonLat[0];
@@ -182,7 +172,7 @@ class WorldMap extends HTMLElement {
                 text.setAttribute("y", `${cy.toFixed(6)}`);
                 text.setAttribute("class", "label");
                 text.textContent = labelText;
-                labelsGroup.appendChild(text);
+                this.labelsGroup.appendChild(text);
                 console.log(`Label for ${name} (${iso2}/${iso3}): ${labelText}`);
             }
 
