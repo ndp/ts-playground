@@ -1,6 +1,6 @@
 <!-- File: example.html -->
 <!doctype html>
-<html>
+<html lang="en-US">
 <head>
   <meta charset="utf-8"/>
   <title>WorldMap component example</title>
@@ -16,7 +16,7 @@
 
     // Example runtime usage after component class is loaded
     window.addEventListener("DOMContentLoaded", () => {
-      const wm = document.querySelector("world-map");
+      const wm = document.getElementById("world-map");
       if (!wm) return;
 
 
@@ -138,7 +138,7 @@ ${monies.map(money => `<p>${money}</p>`).join('')}
   </style>
 </head>
 <body>
-<world-map style="max-width: 100svw;max-height: 100svh">
+<world-map id='world-map' style="max-width: 100svw;max-height: 100svh">
   <!-- inset anchored to country by iso_a3 code (depends on GeoJSON id properties) -->
     <div slot="inset" class="inset-box" data-country="MX">MXICO</div>
 <!--    <div slot="inset" class="inset-box" data-country="CA">CA</div>-->
@@ -155,7 +155,7 @@ ${monies.map(money => `<p>${money}</p>`).join('')}
 </world-map>
 <locale-timeline id="timeline"></locale-timeline>
 <multi-select id='detail' style="position: fixed; top: 0; left: 0;" >
-  <div slot="option" data-value="">-</div>
+  <div slot="option" selected>-</div>
   <div slot="option" data-value="iso2">AZ</div>
   <div slot="option" data-value="iso3">ABZ</div>
   <div slot="option" data-value="name">Abc...</div>

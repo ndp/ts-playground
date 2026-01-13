@@ -53,6 +53,7 @@ class WorldMap extends HTMLElement {
 
     // New: label resolver storage
     private labelResolver: LabelResolver = null;
+    private dataLoadedPromise: Promise<void>
 
     constructor() {
         super();
@@ -110,6 +111,17 @@ class WorldMap extends HTMLElement {
 
     disconnectedCallback() {
         window.removeEventListener("resize", this.onResize);
+    }
+
+    async dataLoaded() {
+        this.dataLoadedPromise = this.dataLoadedPromise ?? this.ensureDataLoaded();
+        return this.dataLoadedPromise;
+    }
+
+    async ensureDataLoaded() {
+        if (Object.keys(this.countries).length === 0) {
+            await this.load();
+        }
     }
 
     async load() {
@@ -283,7 +295,8 @@ class WorldMap extends HTMLElement {
         return null;
     }
 
-    positionInsets() {
+    async positionInsets() {
+        await this.dataLoaded()
         const slot = this.shadow.querySelector('slot[name="inset"]') as HTMLSlotElement | null;
         if (!slot) return;
         const assigned = slot.assignedElements({flatten: true}) as HTMLElement[];
@@ -300,11 +313,10 @@ class WorldMap extends HTMLElement {
             const targetCountry = el.getAttribute("data-country");
             let lon: number | null = null;
             let lat: number | null = null;
-
+            console.log(`Positioning inset for element:`, el, `targetCountry=${targetCountry}`);
             if (targetCountry) {
                 console.log(`Positioning inset for country: ${targetCountry}`);
-                const key = targetCountry.toUpperCase();
-                const c = this.countries[key].label;
+                const c = this.countries[targetCountry].label;
                 if (c) {
                     lon = c.lon;
                     lat = c.lat;
