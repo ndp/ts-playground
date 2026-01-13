@@ -31,7 +31,6 @@ class TeenyDB {
     }
 
     countryName(iso2Code: ISO2CountryCode, locale: OfficialLanguages = 'en'): string | null {
-        console.log(`Fetching country name for code: ${iso2Code} in locale: ${locale}`);
         return this.misc(iso2Code, `official_name_${locale.substring(0, 2)}` as NameKeys);
     }
 

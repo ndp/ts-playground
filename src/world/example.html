@@ -22,16 +22,14 @@
 
       wm.addEventListener("country-click", (ev) => {
         const detail = ev.detail
-        console.log("Country clicked:", detail.name);
-        console.log(detail);
         if (gCountryIso2 === detail.iso2) {
           gLocale = null
           gCountryIso2 = null
-          wm.setSelectedCountry(null);
+          wm.selectCountry(null);
         } else {
           gCountryIso2 = detail.iso2;
           gLocale = teenyDb.langs(detail.iso2)[0] || 'en-US';
-          wm.setSelectedCountry(detail.iso3);
+          wm.selectCountry(detail.iso3);
         }
         document.getElementsByTagName('locale-timeline')[0].setAttribute('locale', gLocale);
         updateNumberFormat(gLocale);
