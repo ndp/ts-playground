@@ -7,6 +7,30 @@ export type CountryLabelMap = Record<string, string>;
 type LabelResolverFunction = (iso: string) => string | null | Promise<string | null>;
 type LabelResolver = LabelResolverFunction | 'name' | 'iso2' | 'iso3' | 'flag' | null;
 
+type CountryInfo = {
+    name: string;
+    iso2: string;
+    iso3: string;
+    labelX: number;
+    labelY: number;
+    label: { lon: number; lat: number }
+    geometry: {
+        type: string;
+        coordinates: number[][][] | number[][][][];
+    };
+    properties: {
+        mapcolor7: string;
+        subregion: string;
+    };
+}
+
+type BuildCountryOptions = {
+    tooltip: string;
+} & CountryInfo;
+
+type CountriesInfo = Record<string, CountryInfo>
+
+
 const DEFAULT_GEOJSON_URL =
     "./custom.geo.json";
 
@@ -25,22 +49,7 @@ class WorldMap extends HTMLElement {
     labels: CountryLabelMap = {};
     countryCentroids: Record<string, { lon: number; lat: number }> = {};
 
-    countries: Record<string, {
-        name: string;
-        iso2: string;
-        iso3: string;
-        labelX: number;
-        labelY: number;
-        label: { lon: number; lat: number}
-        geometry: {
-            type: string;
-            coordinates: number[][][] | number[][][][];
-        };
-        properties: {
-            mapcolor7: string;
-            subregion: string;
-        };
-    }> = {};
+    countries: CountriesInfo = {};
 
     private selectedCountryIso2: string | null = null;
 
@@ -146,24 +155,16 @@ class WorldMap extends HTMLElement {
         this.clearSvg();
 
         for (const iso2 in this.countries) {
-            const name = this.countries[iso2].name;
-            const iso3 = this.countries[iso2].iso3;
-            const labelX = this.countries[iso2].labelX;
-            const labelY = this.countries[iso2].labelY;
-
+            const country = this.countries[iso2]
             const path = this.buildCountryPath({
-                geometry: this.countries[iso2].geometry,
-                iso2,
-                iso3,
-                properties: this.countries[iso2].properties,
-                tooltip: `${name} (${iso2 ?? "?"}/${iso3 ?? "?"})`
-            })
-            if (!path) console.error(`Failed to build path for country: ${name} (${iso2}/${iso3})`);
+                ...country,
+                tooltip: `${(country.name)} (${iso2 ?? "?"}/${country.iso3 ?? "?"})`})
+            if (!path) console.error(`Failed to build path for country: ${(country.name)} (${iso2}/${(country.iso3)})`);
             if (!path) continue
 
             this.countriesGroup.appendChild(path);
 
-            const countryLabel = await this.buildCountryLabel({iso2, iso3, name, labelX, labelY});
+            const countryLabel = await this.buildCountryLabel(country);
             if (countryLabel)
                 this.labelsGroup.appendChild(countryLabel)
 
@@ -412,19 +413,6 @@ class WorldMap extends HTMLElement {
 
 }
 
-type BuildCountryOptions = {
-    tooltip: string;
-    iso2: string;
-    iso3: string;
-    geometry: {
-        type: string;
-        coordinates: number[][][] | number[][][][];
-    };
-    properties: {
-        mapcolor7: string;
-        subregion: string;
-    };
-}
 
 WorldMap.stylesheetPromise = maybeFetchText(new URL('../../src/world/world-map.css', import.meta.url))
 
