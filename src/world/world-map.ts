@@ -47,10 +47,8 @@ class WorldMap extends HTMLElement {
     vbHeight = 180;
 
     labels: CountryLabelMap = {};
-    countryCentroids: Record<string, { lon: number; lat: number }> = {};
 
-    countries: CountriesInfo = {};
-
+    private countries: CountriesInfo = {};
     private selectedCountryIso2: string | null = null;
 
     // New: label resolver storage
@@ -114,7 +112,7 @@ class WorldMap extends HTMLElement {
         window.removeEventListener("resize", this.onResize);
     }
 
-    async loadAndRender() {
+    async load() {
         try {
             const resp = await fetch(DEFAULT_GEOJSON_URL);
             if (!resp.ok) throw new Error("GeoJSON fetch failed");
@@ -134,16 +132,16 @@ class WorldMap extends HTMLElement {
                     properties: f.properties
                 }
                 this.countries[record.iso2] = record;
-
-                // not really the centroid-- @deprecated
-                this.countryCentroids[record.iso2] = record.label
-                this.countryCentroids[record.iso3] = record.label
             }
 
-            await this.render();
         } catch (err) {
             console.error("WorldMap load error", err);
         }
+    }
+
+    async loadAndRender() {
+        await this.load()
+        await this.render()
     }
 
     clearSvg() {
@@ -153,24 +151,37 @@ class WorldMap extends HTMLElement {
 
     async render() {
         this.clearSvg();
+        this.renderCountriesGroup()
+        this.renderCountryLabels()
+        this.positionInsets();
+    }
 
+
+    async renderCountriesGroup() {
+        this.countriesGroup.innerHTML = "";
         for (const iso2 in this.countries) {
             const country = this.countries[iso2]
             const path = this.buildCountryPath({
                 ...country,
-                tooltip: `${(country.name)} (${iso2 ?? "?"}/${country.iso3 ?? "?"})`})
+                tooltip: `${(country.name)} (${iso2 ?? "?"}/${country.iso3 ?? "?"})`
+            })
             if (!path) console.error(`Failed to build path for country: ${(country.name)} (${iso2}/${(country.iso3)})`);
             if (!path) continue
 
             this.countriesGroup.appendChild(path);
+        }
+    }
+
+    async renderCountryLabels() {
+        this.labelsGroup.innerHTML = "";
+        for (const iso2 in this.countries) {
+            const country = this.countries[iso2]
 
             const countryLabel = await this.buildCountryLabel(country);
             if (countryLabel)
                 this.labelsGroup.appendChild(countryLabel)
 
         }
-
-        this.positionInsets();
     }
 
     showTooltip(text: string, ev: MouseEvent) {
@@ -234,7 +245,7 @@ class WorldMap extends HTMLElement {
         this.svg.classList[resolver === 'name' ? 'add' : 'remove']('tiny-labels');
         this.svg.classList[resolver === 'iso3' ? 'add' : 'remove']('small-labels');
         this.svg.classList[resolver === 'iso2' ? 'add' : 'remove']('med-labels');
-        void this.render();
+        void this.renderCountryLabels();
     }
 
 // Resolve a label for a country using: explicit map -> resolver (fn or preset) -> null
@@ -293,7 +304,7 @@ class WorldMap extends HTMLElement {
             if (targetCountry) {
                 console.log(`Positioning inset for country: ${targetCountry}`);
                 const key = targetCountry.toUpperCase();
-                const c = this.countryCentroids[key];
+                const c = this.countries[key].label;
                 if (c) {
                     lon = c.lon;
                     lat = c.lat;

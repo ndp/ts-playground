@@ -40,7 +40,7 @@
 
       document.getElementById('detail').addEventListener('change', (ev) => {
         console.log('Selection changed:', ev.detail);
-        wm.setLabelResolver(ev.detail.value);
+        wm.setLabelResolver(ev.detail.value || null);
       });
 
     });
@@ -140,7 +140,7 @@ ${monies.map(money => `<p>${money}</p>`).join('')}
 <body>
 <world-map style="max-width: 100svw;max-height: 100svh">
   <!-- inset anchored to country by iso_a3 code (depends on GeoJSON id properties) -->
-<!--    <div slot="inset" class="inset-box" data-country="MX">MX</div>-->
+    <div slot="inset" class="inset-box" data-country="MX">MXICO</div>
 <!--    <div slot="inset" class="inset-box" data-country="CA">CA</div>-->
 <!--    <div slot="inset" class="inset-box" data-country="FR">FR</div>-->
 <!--    <div slot="inset" class="inset-box" data-country="DE">DE</div>-->
