@@ -22,7 +22,6 @@ class WorldMap extends HTMLElement {
     vbWidth = 360;
     vbHeight = 180;
 
-    features: any[] = [];
     labels: CountryLabelMap = {};
     countryCentroids: Record<string, { lon: number; lat: number }> = {};
 
@@ -32,6 +31,7 @@ class WorldMap extends HTMLElement {
         iso3: string;
         labelX: number;
         labelY: number;
+        label: { lon: number; lat: number}
         geometry: {
             type: string;
             coordinates: number[][][] | number[][][][];
@@ -42,7 +42,7 @@ class WorldMap extends HTMLElement {
         };
     }> = {};
 
-    private selectedCountryIso3: string | null = null; // stored as iso2 when possible
+    private selectedCountryIso2: string | null = null;
 
     // New: label resolver storage
     private labelResolver: LabelResolver = null;
@@ -110,28 +110,25 @@ class WorldMap extends HTMLElement {
             const resp = await fetch(DEFAULT_GEOJSON_URL);
             if (!resp.ok) throw new Error("GeoJSON fetch failed");
             const geo = await resp.json();
-            this.features = geo.features ?? [];
-
-            for (const f of this.features) {
+            for (const f of geo.features) {
                 const record = {
                     name: f.properties.name,
                     iso2: f.properties?.iso_a2_eh ?? f.properties?.iso_a2 ?? null,
                     iso3: f.properties?.iso_a3_eh ?? f.properties?.iso_a3 ?? null,
                     labelX: f.properties?.label_x,
                     labelY: f.properties?.label_y,
+                    label: {
+                        lon: f.properties?.label_x,
+                        lat: f.properties?.label_y
+                    },
                     geometry: f.geometry,
                     properties: f.properties
                 }
                 this.countries[record.iso2] = record;
 
-                this.countryCentroids[record.iso2] = {
-                    lon: record.labelX,
-                    lat: record.labelY
-                };
-                this.countryCentroids[record.iso3] = {
-                    lon: record.labelX,
-                    lat: record.labelY
-                };
+                // not really the centroid-- @deprecated
+                this.countryCentroids[record.iso2] = record.label
+                this.countryCentroids[record.iso3] = record.label
             }
 
             await this.render();
@@ -201,28 +198,27 @@ class WorldMap extends HTMLElement {
         [...this.svg.querySelectorAll('.selected')].forEach(e => e.classList.remove('selected'))
     }
 
-    selectCountry(iso3: string | null) {
+    selectCountry(iso2: string | null) {
         // if same selection, no-op
-        if (this.selectedCountryIso3 === iso3) return;
+        if (this.selectedCountryIso2 === iso2) return;
 
         this.deselectAllCountries()
 
-        iso3 = iso3 ? iso3.trim().toUpperCase() : null;
-        this.selectedCountryIso3 = iso3;
+        this.selectedCountryIso2 = iso2;
 
-        if (!iso3) return;
+        if (!iso2) return;
 
-        this.showSelectedCountry(iso3)
+        this.showSelectedCountry(iso2)
 
         this.dispatchEvent(new CustomEvent("country-selected", {
-            detail: {selectedIso3: this.selectedCountryIso3},
+            detail: {iso2: this.selectedCountryIso2},
             bubbles: true,
             composed: true
         }));
     }
 
-    showSelectedCountry(iso3: string) {
-        const newPath = this.svg.querySelector<SVGPathElement>(`path.country[data-iso3="${iso3}"]`);
+    showSelectedCountry(iso2: string) {
+        const newPath = this.svg.querySelector<SVGPathElement>(`path.country[data-iso2="${iso2}"]`);
         if (!newPath) return; // throw?
         newPath.classList.add("selected");
         newPath.parentNode!.appendChild(newPath) // put it in the front
@@ -347,7 +343,7 @@ class WorldMap extends HTMLElement {
         if (iso3) path.setAttribute("data-iso3", iso3);
         path.setAttribute("class", `country color${properties.mapcolor7} ${properties.subregion?.replace(/\s+/g, "-").toLowerCase() || ""}`);
 
-        // if (this.selectedCountryIso3 && this.selectedCountryIso3 === iso3) {
+        // if (this.selectedCountryIso2 && this.selectedCountryIso2 === iso3) {
         //     path.classList.add("selected");
         //     path.parentNode!.appendChild(path) // put it in the front
         // }
@@ -365,7 +361,7 @@ class WorldMap extends HTMLElement {
                     detail: {
                         iso2,
                         iso3,
-                        selected: this.selectedCountryIso3 === iso3
+                        selected: this.selectedCountryIso2 === iso2
                     },
                     bubbles: true,
                     composed: true

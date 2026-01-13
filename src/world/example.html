@@ -29,7 +29,7 @@
         } else {
           gCountryIso2 = detail.iso2;
           gLocale = teenyDb.langs(detail.iso2)[0] || 'en-US';
-          wm.selectCountry(detail.iso3);
+          wm.selectCountry(detail.iso2);
         }
         document.getElementsByTagName('locale-timeline')[0].setAttribute('locale', gLocale);
         updateNumberFormat(gLocale);
