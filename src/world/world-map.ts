@@ -4,7 +4,8 @@ import {maybeFetchText} from './util.js'
 const SVG_NS = "http://www.w3.org/2000/svg" as "http://www.w3.org/1999/xhtml";
 
 export type CountryLabelMap = Record<string, string>;
-
+type LabelResolverFunction = (iso: string, feature?: any) => string | null | Promise<string | null>;
+type LabelResolver = LabelResolverFunction | 'name' | 'iso2' | 'iso3' | 'flag' | null;
 
 const DEFAULT_GEOJSON_URL =
     "./custom.geo.json";
@@ -27,6 +28,9 @@ class WorldMap extends HTMLElement {
 
     // New: selection state and lookup maps
     private selectedCountryIso3: string | null = null; // stored as iso2 when possible
+
+    // New: label resolver storage
+    private labelResolver: LabelResolver = null;
 
     constructor() {
         super();
@@ -79,7 +83,7 @@ class WorldMap extends HTMLElement {
         this.shadow.adoptedStyleSheets = [sheet]
 
 
-        this.loadAndRender();
+        await this.loadAndRender();
     }
 
     disconnectedCallback() {
@@ -92,7 +96,7 @@ class WorldMap extends HTMLElement {
             if (!resp.ok) throw new Error("GeoJSON fetch failed");
             const geo = await resp.json();
             this.features = geo.features ?? [];
-            this.render();
+            await this.render();
         } catch (err) {
             console.error("WorldMap load error", err);
         }
@@ -103,7 +107,7 @@ class WorldMap extends HTMLElement {
         this.labelsGroup.innerHTML = "";
     }
 
-    render() {
+    async render() {
         this.clearSvg();
 
         for (const f of this.features) {
@@ -114,7 +118,6 @@ class WorldMap extends HTMLElement {
             const labelX = f.properties?.label_x;
             const labelY = f.properties?.label_y;
             const labelLonLat = [labelX, labelY];
-
 
             const geom = f.geometry;
             let pathD = "";
@@ -129,12 +132,11 @@ class WorldMap extends HTMLElement {
 
             const path = this.createSVGElement("path") as unknown as SVGPathElement;
             path.setAttribute("d", pathD);
-            path.setAttribute("data-iso2", iso2);
-            path.setAttribute("data-iso3", iso3);
+            if (iso2) path.setAttribute("data-iso2", iso2);
+            if (iso3) path.setAttribute("data-iso3", iso3);
             path.setAttribute("class", `country color${f.properties.mapcolor7} ${f.properties.subregion?.replace(/\s+/g, "-").toLowerCase() || ""}`);
 
-            // apply selected visual if matches current selection
-            if (this.selectedCountryIso3 && (this.selectedCountryIso3 === iso2 || this.selectedCountryIso3 === iso3)) {
+            if (this.selectedCountryIso3 && this.selectedCountryIso3 === iso3) {
                 path.classList.add("selected");
             }
 
@@ -148,7 +150,8 @@ class WorldMap extends HTMLElement {
             path.addEventListener("click", () =>
                 this.dispatchEvent(
                     new CustomEvent("country-click", {
-                        detail: {feature: f,
+                        detail: {
+                            feature: f,
                             iso2,
                             iso3,
                             name
@@ -165,26 +168,52 @@ class WorldMap extends HTMLElement {
             const cx = labelLonLat[0];
             const cy = -labelLonLat[1]; // invert latitude for SVG Y
 
-            const labelText = this.labels[iso2] ?? this.labels[f.properties?.ADMIN];
-            if (labelText) {
-                const text = this.createSVGElement("text") as unknown as SVGTextElement;
-                text.setAttribute("x", `${cx.toFixed(6)}`);
-                text.setAttribute("y", `${cy.toFixed(6)}`);
-                text.setAttribute("class", "label");
-                text.textContent = labelText;
-                this.labelsGroup.appendChild(text);
-                console.log(`Label for ${name} (${iso2}/${iso3}): ${labelText}`);
+// Use resolver (priority: explicit labels map -> resolver -> none)
+            const requestedKey = iso2 ?? f.properties?.ADMIN ?? null;
+            const labelHtml = await this.resolveLabel(requestedKey, f);
+
+            if (labelHtml) {
+                // if resolver returned HTML (naive check), render via foreignObject to allow innerHTML
+                const looksLikeHtml = /<\w+[^>]*>/.test(labelHtml);
+                if (looksLikeHtml) {
+                    const fo = this.createSVGElement("foreignObject") as unknown as SVGElement;
+                    fo.setAttribute("x", `${cx.toFixed(6)}`);
+                    fo.setAttribute("y", `${cy.toFixed(6)}`);
+                    // a minimal width/height; callers can style via CSS
+                    fo.setAttribute("width", "120");
+                    fo.setAttribute("height", "24");
+                    const div = document.createElement("div");
+                    // ensure XHTML namespace for foreignObject child
+                    div.setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
+                    div.className = "label-fo";
+                    div.innerHTML = labelHtml;
+                    (fo as any).appendChild(div);
+                    this.labelsGroup.appendChild(fo);
+                } else {
+                    const text = this.createSVGElement("text") as unknown as SVGTextElement;
+                    text.setAttribute("x", `${cx.toFixed(6)}`);
+                    text.setAttribute("y", `${cy.toFixed(6)}`);
+                    text.setAttribute("class", "label");
+                    text.textContent = labelHtml;
+                    this.labelsGroup.appendChild(text);
+                }
+                // helpful debug
+                // console.log(`Label for ${name} (${iso2}/${iso3}): ${labelHtml}`);
             }
 
-            // record centroids for insets and lookups (store raw lon/lat)
-            this.countryCentroids[iso2] = {
-                lon: labelLonLat[0],
-                lat: labelLonLat[1]
-            };
-            this.countryCentroids[iso3] = {
-                lon: f.properties?.label_x ?? clon,
-                lat: f.properties?.label_y ?? clat
-            };
+// record centroids for insets and lookups (store raw lon/lat)
+            if (iso2) {
+                this.countryCentroids[iso2] = {
+                    lon: labelLonLat[0],
+                    lat: labelLonLat[1]
+                };
+            }
+            if (iso3) {
+                this.countryCentroids[iso3] = {
+                    lon: f.properties?.label_x ?? clon,
+                    lat: f.properties?.label_y ?? clat
+                };
+            }
         }
 
         this.positionInsets();
@@ -212,26 +241,27 @@ class WorldMap extends HTMLElement {
         this.positionInsets();
     }
 
-    // New public API: set selected country (code may be iso2 or iso3). Pass null to clear.
+    deselectAllCountries() {
+        [...this.svg.querySelectorAll('.selected')].forEach(e => e.classList.remove('selected'))
+    }
+
     setSelectedCountry(iso3: string | null) {
+
         iso3 = iso3 ? iso3.trim().toUpperCase() : null;
 
         // if same selection, no-op
         if (this.selectedCountryIso3 === iso3) return;
 
-        // clear previous
-        if (this.selectedCountryIso3) {
-            const prevPath = this.svg.querySelector<SVGPathElement>(`path.country[data-iso3="${this.selectedCountryIso3}"]`);
-            if (prevPath)
-                prevPath.classList.remove("selected");
-        }
-
+        this.deselectAllCountries()
 
         this.selectedCountryIso3 = iso3;
-        if (this.selectedCountryIso3) {
-            const newPath = this.svg.querySelector<SVGPathElement>(`path.country[data-iso3="${this.selectedCountryIso3}"]`);
-            if (newPath) newPath.classList.add("selected");
-        }
+
+        if (!iso3) return;
+
+        const newPath = this.svg.querySelector<SVGPathElement>(`path.country[data-iso3="${iso3}"]`);
+        if (!newPath) return; // throw?
+        newPath.classList.add("selected");
+        newPath.parentNode!.appendChild(newPath) // put it in the front
 
         this.dispatchEvent(new CustomEvent("country-selected", {
             detail: {selectedIso3: this.selectedCountryIso3},
@@ -240,11 +270,58 @@ class WorldMap extends HTMLElement {
         }));
     }
 
-// TypeScript
+    // New public API: setLabelResolver
+    setLabelResolver(resolver: LabelResolver) {
+        this.labelResolver = resolver;
+        // re-render to pick up new labels; don't await in caller
+
+        this.svg.classList[resolver === 'flag' ? 'add' : 'remove']('flag-labels');
+        this.svg.classList[resolver === 'name' ? 'add' : 'remove']('tiny-labels');
+        this.svg.classList[resolver === 'iso3' ? 'add' : 'remove']('small-labels');
+        this.svg.classList[resolver === 'iso2' ? 'add' : 'remove']('med-labels');
+        void this.render();
+    }
+
+// Resolve a label for a country using: explicit map -> resolver (fn or preset) -> null
+    private async resolveLabel(key: string | null, feature?: any): Promise<string | null> {
+        if (!key) return null;
+        const isoKey = key.toUpperCase();
+
+// 1) explicit labels map (allow both iso2 and ADMIN keys)
+        if (this.labels[isoKey]) return this.labels[isoKey];
+        if (this.labels[key]) return this.labels[key];
+
+// 2) resolver function or preset
+        if (typeof this.labelResolver === 'function') {
+            try {
+                const res = await (this.labelResolver as LabelResolverFunction)(isoKey, feature);
+                if (res) return res;
+            } catch (err) {
+                console.error('label resolver error', err);
+            }
+        } else if (typeof this.labelResolver === 'string') {
+            const preset = this.labelResolver;
+            if (preset === 'name') {
+                return feature?.properties?.name ?? null;
+            } else if (preset === 'iso2') {
+                return (feature?.properties?.iso_a2_eh ?? feature?.properties?.iso_a2 ?? isoKey) ?? null;
+            } else if (preset === 'iso3') {
+                return (feature?.properties?.iso_a3_eh ?? feature?.properties?.iso_a3 ?? null) ?? null;
+            } else if (preset === 'flag') {
+                if (isoKey.length === 2) {
+                    const cp = [...isoKey].map(c => 127397 + c.charCodeAt(0));
+                    return String.fromCodePoint(...cp);
+                }
+            }
+        }
+
+        return null;
+    }
+
     positionInsets() {
         const slot = this.shadow.querySelector('slot[name="inset"]') as HTMLSlotElement | null;
         if (!slot) return;
-        const assigned = slot.assignedElements({ flatten: true }) as HTMLElement[];
+        const assigned = slot.assignedElements({flatten: true}) as HTMLElement[];
         if (!assigned.length) return;
 
         const hostRect = this.getBoundingClientRect();
@@ -300,3 +377,5 @@ class WorldMap extends HTMLElement {
 WorldMap.stylesheetPromise = maybeFetchText(new URL('../../src/world/world-map.css', import.meta.url))
 
 customElements.define("world-map", WorldMap);
+
+export default WorldMap;
