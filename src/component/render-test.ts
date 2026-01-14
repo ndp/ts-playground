@@ -1,9 +1,10 @@
-import {strict as assert} from 'assert';
-import sinon from 'sinon';
+import {strict as assert} from 'node:assert';
+import {describe, it} from 'node:test'
 import {
   makeComponentRendererFromString,
   buildDOM,
-} from './render';
+} from './render.ts';
+
 
 describe('makeComponentRendererFromString', () => {
   it('should return a function that sets root innerHTML to the provided string', () => {
@@ -34,14 +35,20 @@ describe('makeComponentRendererFromString', () => {
 
 
 describe('buildDOM', () => {
-  it('should call the provided renderer on root element', () => {
-    const renderer = sinon.stub();
-    const context = {root: document.createElement('div')};
+  it('should call the provided renderer on root element', (t) => {
+    let calledCount = 0
+    let savedThis = null;
+    const renderer = function () {
+        savedThis = this;
+        calledCount++
+    };
+    const root = document.createElement('div')
+    const context = {root};
 
     buildDOM(context, renderer);
 
-    assert.ok(renderer.called);
-    assert.ok('root' in renderer.firstCall.thisValue);
+    assert.equal(1, calledCount);
+    assert.equal(root, savedThis.root);
   });
 
   it('should return the elements return from the provided renderer', () => {

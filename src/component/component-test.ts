@@ -1,6 +1,6 @@
-import {defineComponent} from "./component";
+import {defineComponent} from "./component.ts";
 import assert from "node:assert/strict";
-import {describe, test} from "mocha";
+import {describe, it as test} from "node:test";
 import path from "node:path";
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -55,7 +55,7 @@ describe('attrs', () => {
 })
 
 
-xdescribe('cssPath', () => {
+describe.skip('cssPath', () => {
 
   /*
    JSDom doesn't provide good support for this... or at least the import assertions.
@@ -98,7 +98,7 @@ document.body.appendChild(image);
  */
 
 
-describe('css', () => {
+describe.skip('css', () => {
 
   test('css with no shadowDOM', async () => {
     const C = defineComponent(

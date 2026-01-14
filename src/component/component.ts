@@ -1,4 +1,4 @@
-import {AttrMethods, dynamicAttrs, requiredAttrs, stripAnnotations} from "./attr";
+import {type AttrMethods, dynamicAttrs, requiredAttrs, stripAnnotations} from "./attr.ts";
 
 // type F0a = AttrMethods<['deckId']>
 // type F0aa = AssertEqual<F0a, {deckId: string}>
