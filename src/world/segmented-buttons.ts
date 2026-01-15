@@ -1,7 +1,7 @@
 // typescript
 import { maybeFetchText } from './util.js';
 
-class MultiSelect extends HTMLElement {
+class SegmentedButtons extends HTMLElement {
     static stylesheetPromise: Promise<string>;
     private root: ShadowRoot;
     private slotEl: HTMLSlotElement | null = null;
@@ -25,7 +25,7 @@ class MultiSelect extends HTMLElement {
 
     async connectedCallback() {
         const sheet = new CSSStyleSheet();
-        sheet.replaceSync(await MultiSelect.stylesheetPromise);
+        sheet.replaceSync(await SegmentedButtons.stylesheetPromise);
         this.root.adoptedStyleSheets = [sheet];
 
         // Initialize selected element if any
@@ -124,7 +124,7 @@ class MultiSelect extends HTMLElement {
     }
 }
 
-MultiSelect.stylesheetPromise = maybeFetchText(new URL('../../src/world/multi-select.css', import.meta.url));
+SegmentedButtons.stylesheetPromise = maybeFetchText(new URL('../../src/world/segmented-buttons.css', import.meta.url));
 
-customElements.define('multi-select', MultiSelect);
-export default MultiSelect;
+customElements.define('segmented-buttons', SegmentedButtons);
+export default SegmentedButtons;

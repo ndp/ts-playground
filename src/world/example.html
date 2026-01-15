@@ -8,7 +8,7 @@
     import "../../build/world/world-map.js";
     import "../../build/world/timeline.js";
     import "../../build/world/country-summary.js";
-    import "../../build/world/multi-select.js";
+    import "../../build/world/segmented-buttons.js";
     import {teenyDb} from '../../build/world/teeny-db.js'
 
     let gLocale = document.documentElement.lang || 'en-US';
@@ -154,12 +154,12 @@ ${monies.map(money => `<p>${money}</p>`).join('')}
   <!--  <div id="list-format" slot="inset" class="inset-box" data-lon="-50" data-lat="30">List Format</div>-->
 </world-map>
 <locale-timeline id="timeline"></locale-timeline>
-<multi-select id='detail' style="position: fixed; top: 0; left: 0;" >
+<segmented-buttons id='detail' style="position: fixed; top: 0; left: 0;" >
   <div slot="option" data-value='' selected>-</div>
   <div slot="option" data-value="iso2">AZ</div>
   <div slot="option" data-value="iso3">ABZ</div>
   <div slot="option" data-value="name">Abc...</div>
   <div slot="option" data-value="flag">FL</div>
-</multi-select>
+</segmented-buttons>
 </body>
 </html>

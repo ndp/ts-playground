@@ -1,13 +1,13 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import '../../src/world/multi-select.ts'; // registers component
+import './segmented-buttons.ts'; // registers component
 
-describe('multi-select component', () => {
+describe('segmented-buttons component', () => {
     let host: HTMLElement;
 
     beforeEach(() => {
         document.body.innerHTML = '';
-        host = document.createElement('multi-select');
+        host = document.createElement('segmented-buttons');
         const a = document.createElement('div');
         a.setAttribute('data-value', 'a');
         a.textContent = 'A';
