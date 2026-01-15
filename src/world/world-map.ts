@@ -313,9 +313,9 @@ class WorldMap extends HTMLElement {
             const targetCountry = el.getAttribute("data-country");
             let lon: number | null = null;
             let lat: number | null = null;
-            console.log(`Positioning inset for element:`, el, `targetCountry=${targetCountry}`);
+            //console.log(`Positioning inset for element:`, el, `targetCountry=${targetCountry}`);
             if (targetCountry) {
-                console.log(`Positioning inset for country: ${targetCountry}`);
+                //console.log(`Positioning inset for country: ${targetCountry}`);
                 const c = this.countries[targetCountry].label;
                 if (c) {
                     lon = c.lon;

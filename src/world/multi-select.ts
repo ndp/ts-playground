@@ -28,6 +28,15 @@ class MultiSelect extends HTMLElement {
         sheet.replaceSync(await MultiSelect.stylesheetPromise);
         this.root.adoptedStyleSheets = [sheet];
 
+        // Initialize selected element if any
+        this.selectedEl = this.querySelector('[data-value][selected]') as HTMLElement | null;
+        if (this.selectedEl) {
+            this.selectedEl.removeAttribute('selected');
+            this.selectedEl.classList.add('selected');
+            const val = this.selectedEl.getAttribute('data-value');
+            this.setAttribute('data-value', val || '');
+        }
+
         if (this.slotEl) {
             this.slotEl.addEventListener('slotchange', this.onSlotChange);
             this.updateAssignedElements(); // initial wiring
