@@ -1,33 +1,126 @@
-/* css */
+/* File: `src/world/segmented-buttons.css` */
+/* Material-like segmented buttons driven by --base-color */
+
 :host {
-  display: block;
-  --ms-selected-outline: #444;
-  --ms-hover-outline: lightgray;
-  --ms-selected-color: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  border-radius: var(--radius, 8px);
+  overflow: hidden;
+  --base-color: #6200ee; /* caller sets this */
+  --surface: #ffffff;
+  --outline: rgba(0,0,0,0.12);
+  --text: #111827;
+  --font-size: 14px;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
 }
 
+/* Host border to define the control boundary like Material */
+:host {
+  border: 1px solid var(--outline);
+  background: var(--surface);
+}
+
+/* Basic slotted item layout */
 ::slotted([data-value]) {
-  display: inline-block;
-  padding: 6px 10px;
-  margin: 4px;
-  border-radius: 6px;
-  outline: 2px solid transparent;
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  min-width: 44px;
+  box-sizing: border-box;
+  font-size: var(--font-size);
+  color: var(--text);
+  background: transparent;
+  border: none;
+  margin: 0;
   cursor: pointer;
   user-select: none;
-  color: var(--ms-color, inherit);
-  background: var(--ms-bg, transparent);
-  transition: outline-color .12s, box-shadow .12s, transform .06s;
+  position: relative;
+  transition: background .16s ease, color .16s ease, transform .06s ease, box-shadow .12s ease;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  border-left: 1px solid var(--outline); /* visual divider */
 }
 
-::slotted([data-value]:hover:not(.selected)) {
-  outline-color: var(--ms-hover-outline);
+/* Remove divider on first child for clean edge */
+::slotted([data-value]:first-child) {
+  border-left: none;
+  border-top-left-radius: var(--radius);
+  border-bottom-left-radius: var(--radius);
+}
+
+/* Rounded end on last child */
+::slotted([data-value]:last-child) {
+  border-top-right-radius: var(--radius);
+  border-bottom-right-radius: var(--radius);
+}
+
+/* Reset internal element radii (host handles rounding) */
+::slotted([data-value]) {
+  border-radius: 0;
+}
+
+/* Hover for non-selected */
+::slotted([data-value]:hover:not(.selected):not([disabled])) {
+  /* subtle translucent tint of base color */
+  background: color-mix(in oklch, var(--base-color) 8%, transparent 92%);
   transform: translateY(-1px);
 }
 
-::slotted(.selected) {
-  outline-color: var(--ms-selected-outline);
-  outline-style: solid;
-  outline-width: 3px;
-  box-shadow: 0 0 0 3px rgba(0,0,0,0.04);
-  color: var(--ms-selected-color);
+/* Active/pressed for non-selected */
+::slotted([data-value]:active:not(.selected):not([disabled])) {
+  background: color-mix(in oklch, var(--base-color) 12%, transparent 88%);
+  transform: translateY(0);
+}
+
+/* Selected (filled) state: strong base-color fill with high contrast text */
+::slotted([data-value].selected) {
+  background: var(--base-color);
+  color: color-contrast(var(--base-color) vs white, black);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.08);
+  transform: translateY(0);
+}
+
+/* Focus-visible for keyboard users */
+::slotted([data-value]:focus-visible) {
+  /* subtle focus ring derived from base color */
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--base-color) 28%, white 72%);
+  z-index: 2;
+}
+
+/* Disabled state */
+::slotted([data-value][disabled]) {
+  opacity: 0.56;
+  cursor: not-allowed;
+  pointer-events: none;
+  filter: grayscale(.04);
+  transform: none;
+}
+
+/* Size variants */
+:host([size="small"]) ::slotted([data-value]) {
+  padding: 6px 10px;
+  font-size: 12px;
+  min-width: 36px;
+}
+:host([size="large"]) ::slotted([data-value]) {
+  padding: 10px 18px;
+  font-size: 16px;
+  min-width: 52px;
+}
+
+/* Utility: support quiet (outline-only) appearance if requested */
+:host([appearance="outline"]) {
+  background: transparent;
+  border-color: var(--outline);
+}
+:host([appearance="outline"]) ::slotted([data-value].selected) {
+  background: color-mix(in oklch, var(--base-color) 12%, transparent 88%);
+  color: var(--base-color);
+  box-shadow: none;
 }

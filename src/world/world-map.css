@@ -3,7 +3,7 @@
   position: relative;
   user-select: none;
 
-  --ocean-fill: oklch(90% 0.05 240);
+  --ocean-fill: var(--ocean-color, oklch(90% 0.05 240));
   --north-america-fill: gold;
   --south-america-fill: forestgreen;
   --asia-fill: olive;

@@ -53,7 +53,7 @@ class WorldMap extends HTMLElement {
 
     // New: label resolver storage
     private labelResolver: LabelResolver = null;
-    private dataLoadedPromise: Promise<void>
+    private isDataLoaded = false
 
     constructor() {
         super();
@@ -114,14 +114,15 @@ class WorldMap extends HTMLElement {
     }
 
     async dataLoaded() {
-        this.dataLoadedPromise = this.dataLoadedPromise ?? this.ensureDataLoaded();
-        return this.dataLoadedPromise;
+        this.isDataLoaded = this.isDataLoaded ?? this.ensureDataLoaded();
+        return this.isDataLoaded;
     }
 
     async ensureDataLoaded() {
         if (Object.keys(this.countries).length === 0) {
             await this.load();
         }
+        return true
     }
 
     async load() {

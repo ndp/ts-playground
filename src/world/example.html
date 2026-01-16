@@ -32,9 +32,12 @@
           wm.selectCountry(detail.iso2);
         }
         document.getElementsByTagName('locale-timeline')[0].setAttribute('locale', gLocale);
-        updateNumberFormat(gLocale);
         updateListFormat(gLocale);
         updateCurrentLocale(gCountryIso2);
+
+        const currentLocaleEl = document.getElementById("current-locale");
+        currentLocaleEl.setAttribute('locale', gLocale);
+
       });
 
 
@@ -43,41 +46,17 @@
         wm.setLabelResolver(ev.detail.value || null);
       });
 
+      document.getElementById('details-chooser').addEventListener('change', (ev) => {
+        console.log('Details Selection changed:', ev.detail);
+        const currentLocaleEl = document.getElementById("current-locale");
+        currentLocaleEl.setAttribute('mode', ev.detail.value || 'name');
+      });
+
     });
 
     function updateCurrentLocale(iso2) {
       const currentLocaleEl = document.getElementById("current-locale");
       currentLocaleEl.setAttribute('data-iso2', iso2 || '');
-    }
-
-    function updateNumberFormat(gLocale) {
-      if (!gLocale) return;
-
-      const numberFormatEl = document.getElementById("number-format");
-
-      const num1 = 1234567.89;
-      const formattedNum1 = num1.toLocaleString(gLocale);
-      const currencies = teenyDb.misc(gCountryIso2, 'ISO4217-currency_alphabetic_code').split(',');
-      const monies = currencies.map(currency => new Intl.NumberFormat(gLocale, {style: 'currency', currency: currency}).format(1234));
-      const asDollar = new Intl.NumberFormat(gLocale, {style: 'currency', currency: 'USD'}).format(1234);
-      const meters = new Intl.NumberFormat(gLocale, {style: 'unit', unit: 'meter', unitDisplay: 'long'}).format(42195.01);
-      const kilos = new Intl.NumberFormat(gLocale, {
-        style: 'unit',
-        unit: 'kilogram',
-        unitDisplay: 'short'
-      }).format(89.5);
-
-      numberFormatEl.innerHTML = `
-<h2>Number</h2>
-<p>${formattedNum1}<p>
-<h2>Local Currency</h2>
-${monies.map(money => `<p>${money}</p>`).join('')}
-<h2>U.S. Dollar</h2>
-<p>${asDollar}</p>
-<h2>Meters</h2>
-<p>${meters}</p>
-<h2>Kilograms</h2>
-<p>${kilos}</p>`;
     }
 
     function updateListFormat(gLocale) {
@@ -96,6 +75,10 @@ ${monies.map(money => `<p>${money}</p>`).join('')}
     @import url(https://fonts.googleapis.com/css2?family=Noto+Emoji&display=swap);
     @import url(https://fonts.googleapis.com/css2?family=Noto+Serif+Ottoman+Siyaq&display=swap);
 
+    :root {
+      --ocean-color: oklch(90% 0.05 240)
+    }
+
     html, body {
       margin: 0;
       padding: 0;
@@ -105,6 +88,8 @@ ${monies.map(money => `<p>${money}</p>`).join('')}
 
     body {
       font-family: system-ui, sans-serif;
+      background-color: var(--ocean-color);
+      padding-top: 30px;
     }
 
     .inset-box {
@@ -113,20 +98,6 @@ ${monies.map(money => `<p>${money}</p>`).join('')}
       border-radius: 4px;
       border: 1px solid #333;
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-    }
-
-    #number-format {
-      display: grid;
-      h2, p {
-        margin: 0;
-        padding: 0;
-      }
-      h2 {
-        font-size: unset;
-        font-weight: 100;
-        font-style: italic;
-        opacity: 0.7;
-      }
     }
 
     #timeline {
@@ -140,26 +111,43 @@ ${monies.map(money => `<p>${money}</p>`).join('')}
 <body>
 <world-map id='world-map' style="max-width: 100svw;max-height: 100svh">
   <!-- inset anchored to country by iso_a3 code (depends on GeoJSON id properties) -->
-    <div slot="inset" class="inset-box" data-country="MX">MXICO</div>
-<!--    <div slot="inset" class="inset-box" data-country="CA">CA</div>-->
-<!--    <div slot="inset" class="inset-box" data-country="FR">FR</div>-->
-<!--    <div slot="inset" class="inset-box" data-country="DE">DE</div>-->
-<!--    <div slot="inset" class="inset-box" data-country="EE">EE</div>-->
-<!--    <div slot="inset" class="inset-box" data-country="BR">BR</div>-->
-<!--    <div slot="inset" class="inset-box" data-country="AR">AR</div>-->
-<!--    <div slot="inset" class="inset-box" data-country="CH">CH</div>-->
+  <div slot="inset" class="inset-box" data-country="MX">MXICO</div>
+  <!--    <div slot="inset" class="inset-box" data-country="CA">CA</div>-->
+  <!--    <div slot="inset" class="inset-box" data-country="FR">FR</div>-->
+  <!--    <div slot="inset" class="inset-box" data-country="DE">DE</div>-->
+  <!--    <div slot="inset" class="inset-box" data-country="EE">EE</div>-->
+  <!--    <div slot="inset" class="inset-box" data-country="BR">BR</div>-->
+  <!--    <div slot="inset" class="inset-box" data-country="AR">AR</div>-->
+  <!--    <div slot="inset" class="inset-box" data-country="CH">CH</div>-->
 
   <country-summary id="current-locale" slot="inset" class="inset-box" data-lon="-142" data-lat="-35"></country-summary>
-  <div id="number-format" slot="inset" class="inset-box" data-lon="80" data-lat="-30"></div>
+<!--  <div id="number-format" slot="inset" class="inset-box" data-lon="80" data-lat="-30"></div>-->
   <!--  <div id="list-format" slot="inset" class="inset-box" data-lon="-50" data-lat="30">List Format</div>-->
 </world-map>
 <locale-timeline id="timeline"></locale-timeline>
-<segmented-buttons id='detail' style="position: fixed; top: 0; left: 0;" >
+<segmented-buttons id='detail' style="position: fixed; top: 0; left: 0;">
   <div slot="option" data-value='' selected>-</div>
   <div slot="option" data-value="iso2">AZ</div>
   <div slot="option" data-value="iso3">ABZ</div>
   <div slot="option" data-value="name">Abc...</div>
   <div slot="option" data-value="flag">FL</div>
+</segmented-buttons>
+<segmented-buttons id='region-chooser' appearance="outline" style="position: fixed; top: 0; left: 20%;">
+  <div slot="option" data-value='' selected>All</div>
+  <div slot="option" data-value="africa">AF</div>
+  <div slot="option" data-value="americas">AM</div>
+  <div slot="option" data-value="asia">AS</div>
+  <div slot="option" data-value="europe">EU</div>
+  <div slot="option" data-value="oceania">OC</div>
+</segmented-buttons>
+<segmented-buttons id='details-chooser' style="position: fixed; top: 0; right: 0;">
+  <div slot="option" data-value='name' selected>US</div>
+  <div slot="option" data-value="language">😛</div>
+  <div slot="option" data-value="numbers">#</div>
+  <div slot="option" data-value="currency">¤</div>
+  <div slot="option" data-value="flag">⚐</div>
+  <div slot="option" data-value="time">⌚</div>
+  <div slot="option" data-value="tech">⚙</div>
 </segmented-buttons>
 </body>
 </html>
