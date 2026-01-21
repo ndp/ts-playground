@@ -12,8 +12,9 @@
     "start:dev": "nodemon",
     "start": "npm run build && node build/index.js",
     "test-doc": "https://medium.com/@s4y.solutions/es-modules-typescript-and-mocha-9e6138883e57",
-    "test": "node --test -n=loader=ts-node/esm -n=es-module-specifier-resolution=node -r test/setup-jsdom.js  'src/component/*-test.ts'",
-    "test2": "node --test -n=loader=ts-node/esm -n=es-module-specifier-resolution=node -r test/setup-jsdom.js src/grip-spec.ts"
+    "test:component": "node --test -r ./test/setup-jsdom.js 'src/component/**/*test.ts'",
+    "test:component:watch": "node --test --watch -r ./test/setup-jsdom.js 'src/component/**/*test.ts'",
+    "test:world": "node --test -r ./test/setup-jsdom.js 'src/world/**/*test.ts'"
   },
   "keywords": [],
   "author": "Andrew Peterson",
@@ -29,6 +30,7 @@
     "nodemon": "*",
     "rimraf": "^5",
     "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   },
   "dependencies": {

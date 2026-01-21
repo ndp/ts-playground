@@ -5,6 +5,7 @@ global.jsdom = dom
 global.document = dom.window.document;
 global.customElements = dom.window.customElements;
 global.HTMLElement = dom.window.HTMLElement
+global.CSSStyleSheet = dom.window.CSSStyleSheet
 
 Object.defineProperty(document, 'adoptedStyleSheets', {
   get() {
