@@ -12,12 +12,12 @@ export function requiredAttrs<S extends string, T = StripAnnotations<S>>(attrs?:
     : []
 }
 
-export function dynamicAttrs<S extends string, T = StripAnnotations<S>>(attrs?: Array<S>): Array<T> {
+export function observedAttrs<S extends string, T = StripAnnotations<S>>(attrs?: Array<S>): Array<T> {
   return attrs
     ? attrs.filter(a => a.includes('🗱')).map(a => stripAnnotations(a))
     : []
 }
 
-type StripAnnotations<T> = T extends `${infer U}*${infer Ignore}`
+export type StripAnnotations<T> = T extends `${infer U}*${infer Ignore}`
   ? U extends `${infer F}🗱` ? F : U
   : T extends `${infer F}🗱` ? F : T

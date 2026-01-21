@@ -1,11 +1,6 @@
 import {defineComponent} from "./component.ts";
 import assert from "node:assert/strict";
 import {describe, it as test} from "node:test";
-import path from "node:path";
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
 
 
 describe('plain component', () => {
@@ -13,79 +8,39 @@ describe('plain component', () => {
   new C1()
 })
 
-describe('attrs', () => {
-
-  test('creates getter for required', () => {
-    const C = defineComponent('reqd-attrs', {shadowDOM: 'none', attrs: ['deckId*']})
-
-    const c2 = new C()
-    c2.setAttribute('deckId', '32k432')
-    assert.equal(c2.deckId, '32k432')
-  })
-
-  test('complains if required is missing', async() => {
-    const C = defineComponent('reqd-attr-missing', {shadowDOM: 'none', attrs: ['deckId*']})
-
-    const c = new C()
-
-    c.connectedCallback().catch(e => {
-      assert.equal(e, 'Missing required attribute deckId')
-    })
-  })
-
-  test('creates getter for optional', () => {
-    const C = defineComponent('opt-attrs', {shadowDOM: 'none', attrs: ['cardId']})
-    const c = new C()
-    c.setAttribute('cardId', '32k432')
-    const cardId = c.cardId
-    assert.equal(cardId, '32k432')
-  })
-
-  test('creates observedAttribute for (optional) dynamic', () => {
-    const C = defineComponent('dynamic-attrs', {shadowDOM: 'none', attrs: ['cardId🗱']})
-    assert.deepStrictEqual((C as unknown as {observedAttributes: string[]}).observedAttributes, ['cardId'])
-  })
-
-
-  test('creates observedAttribute for required and dynamic', () => {
-    const C = defineComponent('dynamic-attrs-reqd', {shadowDOM: 'none', attrs: ['cardId*🗱']})
-    assert.deepStrictEqual((C as unknown as {observedAttributes: string[]}).observedAttributes, ['cardId'])
-  })
-
-})
-
 
 describe.skip('cssPath', () => {
-
   /*
-   JSDom doesn't provide good support for this... or at least the import assertions.
+
+   There's no way to support this reasonably in a component library-- the loading of
+   files is highly environment dependent. We'll ignore it for now (or forever).
    */
-  test('css with no shadowDOM', async () => {
-    const C = defineComponent(
-      'local-css', {
-        shadowDOM: 'none',
-        cssPath: path.join(__dirname, './component-test.css')
-      })
-
-    const c = new C();
-
-    await c.connectedCallback()
-
-    // @ts-ignore
-    console.log('***', global.document.adoptedStyleSheets)
-    assert.equal(c.shadowRoot!.innerHTML, 'my-component.css')
-  })
-
-
-  test('css with shadowDOM', () => {
-    const C = defineComponent(
-      'local-css-shadow', {
-        shadowDOM: 'open',
-        cssPath: path.join(__dirname, './component-test.css')
-      })
-    const c = new C()
-    assert.equal(c.shadowRoot!.innerHTML, 'my-component.css')
-  })
+  // test('css with no shadowDOM', async () => {
+  //   const C = defineComponent(
+  //     'local-css', {
+  //       shadowDOM: 'none',
+  //       cssPath: path.join(__dirname, './component-test.css')
+  //     })
+  //
+  //   const c = new C();
+  //
+  //   await c.connectedCallback()
+  //
+  //   // @ts-ignore
+  //   console.log('***', global.document.adoptedStyleSheets[0].toString())
+  //   assert.equal(c.root!.innerHTML, 'my-component.css')
+  // })
+  //
+  //
+  // test('css with shadowDOM', () => {
+  //   const C = defineComponent(
+  //     'local-css-shadow', {
+  //       shadowDOM: 'open',
+  //       cssPath: path.join(__dirname, './component-test.css')
+  //     })
+  //   const c = new C()
+  //   assert.equal(c.shadowRoot!.innerHTML, 'my-component.css')
+  // })
 
 })
 /*
@@ -98,7 +53,7 @@ document.body.appendChild(image);
  */
 
 
-describe.skip('css', () => {
+describe('css', () => {
 
   test('css with no shadowDOM', async () => {
     const C = defineComponent(

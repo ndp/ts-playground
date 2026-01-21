@@ -3,7 +3,7 @@ import {
   makeComponentRendererFromString,
   buildDOM,
   RenderContext
-} from "./render";
+} from "./render.js";
 
 // Example of how you might write a renderer
 const exampleBuildRenderer = function (this: RenderContext) {

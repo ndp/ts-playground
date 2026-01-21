@@ -1,4 +1,4 @@
-import {type AttrMethods, dynamicAttrs, requiredAttrs, stripAnnotations} from "./attr.ts";
+import {type AttrMethods, observedAttrs, requiredAttrs, type StripAnnotations, stripAnnotations} from "./attr.ts";
 
 // type F0a = AttrMethods<['deckId']>
 // type F0aa = AssertEqual<F0a, {deckId: string}>
@@ -15,21 +15,28 @@ import {type AttrMethods, dynamicAttrs, requiredAttrs, stripAnnotations} from ".
 
 // ********************************************************************************************************************
 
-type ComponentOptions<Attr extends string> = {
+type DefineComponentOptions<Attr extends string> = {
   shadowDOM: 'open' | 'closed' | 'none',
   css?: string,
-  cssPath?: string,
   attrs?: Array<Attr>
+  // onAttrChanged?: (this: HTMLElement & AttrMethods<Attr>, details: {
+  //   name: StripAnnotations<Attr>,
+  //   oldValue: string,
+  //   newValue: string
+  // }) => void
 }
 
-export function defineComponent<Attr extends string, Options extends ComponentOptions<Attr>>(
-  name: string,
+
+// defComponent.wObservedAttrs({ attr1: function() {}, attr2: function() {}}).('foo-comp', {shadowDOM: 'open'})
+
+export function defineComponent<Attr extends string, Options extends DefineComponentOptions<Attr>>(
+  tagName: string,
   options: Options
 ) {
 
-  if (customElements.get(name)) throw `Custom element ${name} already defined.`
-  if (!/-/.test(name)) throw "Custom element names must contain a hyphen."
-  if (name !== name.toLowerCase()) throw "Custom element names must be lowercase."
+  if (customElements.get(tagName)) throw `Custom element ${tagName} already defined.`
+  if (!/-/.test(tagName)) throw "Custom element names must contain a hyphen."
+  if (tagName !== tagName.toLowerCase()) throw "Custom element names must be lowercase."
 
   const elementClass = class extends HTMLElement {
 
@@ -51,7 +58,7 @@ export function defineComponent<Attr extends string, Options extends ComponentOp
     // Begin Attributes
     private validateRequiredAttributes() {
       for (const attr of requiredAttrs(options.attrs)) {
-        if (!this.hasAttribute(attr)) throw `Missing required attribute ${attr}`
+        if (!this.hasAttribute(attr)) throw `Missing required attribute "${attr}"`
       }
     }
 
@@ -61,20 +68,10 @@ export function defineComponent<Attr extends string, Options extends ComponentOp
         style.textContent = options.css
         this.root.appendChild(style)
       }
-
-      if (options.cssPath) {
-        const cssModule = await import(options.cssPath, {
-          assert: {type: 'css'}
-        });
-        if (options.shadowDOM === 'none')
-          document.adoptedStyleSheets = [cssModule.default];
-        else
-          this.shadowRoot!.adoptedStyleSheets = [cssModule.default];
-      }
     }
 
     static get observedAttributes() {
-      return dynamicAttrs(options.attrs) || []
+      return observedAttrs(options.attrs) || []
     }
 
 
@@ -84,11 +81,17 @@ export function defineComponent<Attr extends string, Options extends ComponentOp
         'attribute-changed',
         {detail: {name, oldValue, newValue}})
       this.dispatchEvent(e)
+
+      // if (this.onAttrChanged && typeof this.onAttrChanged === 'function') {
+      //   this.onAttrChanged({name, oldValue, newValue})
+      // }
     }
 
-    // End Attributes
-
   }
+
+  // if (options.onAttrChanged) {
+  //   elementClass.onAttrChanged = options.onAttrChanged
+  // }
 
   // Add accessors for attributes
   if (options.attrs) {
@@ -97,7 +100,7 @@ export function defineComponent<Attr extends string, Options extends ComponentOp
       Object.defineProperty(elementClass.prototype, sanitized, {
         get() {
           return this.getAttribute(sanitized) || ''
-        },
+        }
       })
     }
 
@@ -105,7 +108,7 @@ export function defineComponent<Attr extends string, Options extends ComponentOp
 
 
   // Register and Return
-  customElements.define(name, elementClass)
+  customElements.define(tagName, elementClass)
 
   return elementClass as unknown as {
     prototype: HTMLElement & AttrMethods<Options['attrs']> & TestMethods;

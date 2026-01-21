@@ -4,6 +4,9 @@ import {
   makeComponentRendererFromString,
   buildDOM,
 } from './render.ts';
+import type {
+  ComponentRenderer
+} from './render.ts';
 
 
 describe('makeComponentRendererFromString', () => {
@@ -37,15 +40,16 @@ describe('makeComponentRendererFromString', () => {
 describe('buildDOM', () => {
   it('should call the provided renderer on root element', (t) => {
     let calledCount = 0
-    let savedThis = null;
-    const renderer = function () {
+    let savedThis: any = null
+
+    const rend = function () {
         savedThis = this;
         calledCount++
-    };
+    } as ComponentRenderer<any>
     const root = document.createElement('div')
     const context = {root};
 
-    buildDOM(context, renderer);
+    buildDOM(context, rend);
 
     assert.equal(1, calledCount);
     assert.equal(root, savedThis.root);
@@ -68,7 +72,7 @@ describe('buildDOM', () => {
   it('should render using properties', () => {
     const renderer = function (this: { root: HTMLElement, name: string }) {
       this.root.innerHTML = `<div>Hello, <span>${this.name || 'world'}</span>!</div>`;
-      return {span: this.root.querySelector('span')};
+      return {span: this.root.querySelector('span') as HTMLSpanElement};
     };
 
     type foo =ReturnType<typeof renderer>
