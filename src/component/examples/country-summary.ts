@@ -4,12 +4,15 @@ import {maybeFetchText} from '../../world/util.ts'
 
 const stylesheetPromise = maybeFetchText(new URL('../../src/world/country-summary.css', import.meta.url))
 
+function panel(name: string) {
+  return new ComponentBwilder()
+    .wTagName(`country-summary-${name}-panel`)
+    .wShadowDOM('none')
+    .wObservedAttr('data-iso2')
+    .wObservedAttr('locale')
+}
 
-new ComponentBwilder()
-  .wTagName('country-summary-name-panel')
-  .wShadowDOM('none')
-  .wObservedAttr('data-iso2')
-  .wObservedAttr('locale')
+panel('name')
   .wRender(function (): {} {
     const iso2 = this['data-iso2'] as ISO2CountryCode;
     const listFormat = new Intl.ListFormat('en-US', {type: 'conjunction', style: 'narrow'});
@@ -29,11 +32,7 @@ new ComponentBwilder()
   })
   .build()
 
-new ComponentBwilder()
-  .wTagName('country-summary-language-panel')
-  .wShadowDOM('none')
-  .wObservedAttr('data-iso2')
-  .wObservedAttr('locale')
+panel('language')
   .wRender(function (): {} {
     const iso2 = this['data-iso2'] as ISO2CountryCode;
     const listFormat = new Intl.ListFormat('en-US', {type: 'conjunction', style: 'narrow'});
@@ -51,11 +50,7 @@ new ComponentBwilder()
   })
   .build()
 
-new ComponentBwilder()
-  .wTagName('country-summary-currency-panel')
-  .wShadowDOM('none')
-  .wObservedAttr('data-iso2')
-  .wObservedAttr('locale')
+panel('currency')
   .wRender(function (): {} {
     const iso2 = this['data-iso2'] as ISO2CountryCode;
     const nameEng = teenyDb.countryName(iso2);
@@ -83,11 +78,7 @@ ${monies.map(money => `<p>${money}</p>`).join('')}
   .build()
 
 
-new ComponentBwilder()
-  .wTagName('country-summary-numbers-panel')
-  .wShadowDOM('none')
-  .wObservedAttr('data-iso2')
-  .wObservedAttr('locale')
+panel('numbers')
   .wRender(function (): {} {
     const iso2 = this['data-iso2'] as ISO2CountryCode;
     const nameEng = teenyDb.countryName(iso2);
@@ -120,11 +111,7 @@ new ComponentBwilder()
   .build()
 
 
-new ComponentBwilder()
-  .wTagName('country-summary-political-panel')
-  .wShadowDOM('none')
-  .wObservedAttr('data-iso2')
-  .wObservedAttr('locale')
+panel('political')
   .wRender(function (): {} {
     const iso2 = this['data-iso2'] as ISO2CountryCode;
     const langs = teenyDb.langs(iso2) || [];
@@ -144,11 +131,7 @@ new ComponentBwilder()
   .build()
 
 
-new ComponentBwilder()
-  .wTagName('country-summary-tech-panel')
-  .wShadowDOM('none')
-  .wObservedAttr('data-iso2')
-  .wObservedAttr('locale')
+panel('tech')
   .wRender(function (): {} {
     const iso2 = this['data-iso2'] as ISO2CountryCode;
     const nameEng = teenyDb.countryName(iso2);
@@ -174,43 +157,43 @@ export default new ComponentBwilder()
   .wCSS(await stylesheetPromise)
   .wRender(function (): {} {
     const iso2 = this['data-iso2'] as ISO2CountryCode;
-    let container = this.root.querySelector('.root') as HTMLElement;
-    if (!container) {
-      this.root.innerHTML = `<div class="root"></div>`;
-      container = this.root.querySelector('.root') as HTMLElement;
+    let frame = this.root.querySelector('.frame') as HTMLElement;
+    if (!frame) {
+      this.root.innerHTML = `<div class="frame"></div>`;
+      frame = this.root.querySelector('.frame') as HTMLElement;
     }
     if (!iso2) {
-      container.innerHTML = '';
+      frame.innerHTML = '';
       return {};
     }
     const locale = this.locale || 'en-US';
     switch (this.mode ?? 'name') {
       case 'name': {
-        container.innerHTML = `<country-summary-name-panel data-iso2="${iso2}" locale="${locale}"></country-summary-name-panel>`;
+        frame.innerHTML = `<country-summary-name-panel data-iso2="${iso2}" locale="${locale}"></country-summary-name-panel>`;
         break
       }
       case 'language': {
-        container.innerHTML = `<country-summary-language-panel data-iso2="${iso2}" locale="${locale}"></country-summary-language-panel>`;
+        frame.innerHTML = `<country-summary-language-panel data-iso2="${iso2}" locale="${locale}"></country-summary-language-panel>`;
         break
       }
       case 'currency': {
-        container.innerHTML = `<country-summary-currency-panel data-iso2="${iso2}" locale="${locale}"></country-summary-currency-panel>`;
+        frame.innerHTML = `<country-summary-currency-panel data-iso2="${iso2}" locale="${locale}"></country-summary-currency-panel>`;
         break
       }
       case 'numbers': {
-        container.innerHTML = `<country-summary-numbers-panel data-iso2="${iso2}" locale="${locale}"></country-summary-numbers-panel>`;
+        frame.innerHTML = `<country-summary-numbers-panel data-iso2="${iso2}" locale="${locale}"></country-summary-numbers-panel>`;
         break
       }
       case 'political': {
-        container.innerHTML = `<country-summary-political-panel data-iso2="${iso2}" locale="${locale}"></country-summary-political-panel>`;
+        frame.innerHTML = `<country-summary-political-panel data-iso2="${iso2}" locale="${locale}"></country-summary-political-panel>`;
         break
       }
       case 'tech': {
-        container.innerHTML = `<country-summary-tech-panel data-iso2="${iso2}" locale="${locale}"></country-summary-tech-panel>`;
+        frame.innerHTML = `<country-summary-tech-panel data-iso2="${iso2}" locale="${locale}"></country-summary-tech-panel>`;
         break
       }
       default: {
-        container.innerHTML = `???`;
+        frame.innerHTML = `???`;
       }
     }
     return {}

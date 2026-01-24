@@ -5,7 +5,8 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "build": "npm run clean && esbuild --outdir=./build/world/ --public-path=/ts-playground/ ./src/world/*.ts",
+    "build": "npm run clean && npm run build:world && npm run build:component",
+    "build:world": "esbuild --outdir=./build/world/ --public-path=/ts-playground/ ./src/world/*.ts",
     "build:component": "esbuild --bundle --format=esm --outdir=./build/world/ ./src/component/examples/*.ts",
     "build:types": "tsc --declaration --emitDeclarationOnly --allowImportingTsExtensions --module nodenext --outDir ./build/ 'src/**/*.ts'",
     "clean": "rimraf ./build",
