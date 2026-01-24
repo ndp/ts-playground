@@ -176,7 +176,7 @@ class WorldMap extends HTMLElement {
             const country = this.countries[iso2]
             const path = this.buildCountryPath({
                 ...country,
-                tooltip: `${(country.name)} (${iso2 ?? "?"}/${country.iso3 ?? "?"})`
+                tooltip: `${(country.name)}`
             })
             if (!path) console.error(`Failed to build path for country: ${(country.name)} (${iso2}/${(country.iso3)})`);
             if (!path) continue
@@ -317,7 +317,7 @@ class WorldMap extends HTMLElement {
             //console.log(`Positioning inset for element:`, el, `targetCountry=${targetCountry}`);
             if (targetCountry) {
                 //console.log(`Positioning inset for country: ${targetCountry}`);
-                const c = this.countries[targetCountry].label;
+                const c = this.countries[targetCountry]?.label;
                 if (c) {
                     lon = c.lon;
                     lat = c.lat;

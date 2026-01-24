@@ -18,12 +18,12 @@ new ComponentBwilder()
     const lang = (langs[0] || 'en-US') as OfficialLanguages;
     const name = teenyDb.countryName(iso2, lang);
     this.root.innerHTML = `
-      <h2>ISO-3166</h2>
       <div class="flag">${teenyDb.flagEmoji(iso2)}</div>
-      <p>${listFormat.format([teenyDb.misc(iso2, 'ISO3166-1-Alpha-2')!, teenyDb.misc(iso2, 'ISO3166-1-Alpha-3')!])}</p>
       <h2>Name</h2>
       <p>${nameEng}</p>
       ${name && name !== nameEng ? `<h2>Name [${lang}]</h2><p>${name}</p>` : ''}
+      <h2>ISO-3166</h2>
+      <p>${listFormat.format([teenyDb.misc(iso2, 'ISO3166-1-Alpha-2')!, teenyDb.misc(iso2, 'ISO3166-1-Alpha-3')!])}</p>
     `;
     return {};
   })
@@ -72,7 +72,7 @@ new ComponentBwilder()
       <h2>Name</h2>
       <p>${nameEng}</p>
       <h2>Currency</h2>
-      ${codes.map((code, idx) => `<p>${code}</p><p>${names[idx] ?? names[0]}</p>`).join('')}
+      ${codes.map((code, idx) => `<p>${code}</p><p>&ldquo;${names[idx] ?? names[0]}&rdquo;</p>`).join('')}
       <h2>Local Currency</h2>
 ${monies.map(money => `<p>${money}</p>`).join('')}
 <h2>U.S. Dollar</h2>
@@ -184,7 +184,7 @@ export default new ComponentBwilder()
       return {};
     }
     const locale = this.locale || 'en-US';
-    switch (this.mode) {
+    switch (this.mode ?? 'name') {
       case 'name': {
         container.innerHTML = `<country-summary-name-panel data-iso2="${iso2}" locale="${locale}"></country-summary-name-panel>`;
         break

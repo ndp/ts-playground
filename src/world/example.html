@@ -4,71 +4,18 @@
 <head>
   <meta charset="utf-8"/>
   <title>WorldMap component example</title>
+  <script type="importmap">
+    {
+      "imports": {
+        "/ts-playground/build/world/country-codes.json": "/ts-playground/src/world/country-codes.json"
+      }
+    }
+  </script>
   <script type="module">
     import "../../build/world/world-map.js";
     import "../../build/world/timeline.js";
     import "../../build/world/country-summary.js";
     import "../../build/world/segmented-buttons.js";
-    import {teenyDb} from '../../build/world/teeny-db.js'
-
-    let gLocale = document.documentElement.lang || 'en-US';
-    let gCountryIso2 = null
-
-    // Example runtime usage after component class is loaded
-    window.addEventListener("DOMContentLoaded", () => {
-      const wm = document.getElementById("world-map");
-      if (!wm) return;
-
-
-      wm.addEventListener("country-click", (ev) => {
-        const detail = ev.detail
-        if (gCountryIso2 === detail.iso2) {
-          gLocale = null
-          gCountryIso2 = null
-          wm.selectCountry(null);
-        } else {
-          gCountryIso2 = detail.iso2;
-          gLocale = teenyDb.langs(detail.iso2)[0] || 'en-US';
-          wm.selectCountry(detail.iso2);
-        }
-        document.getElementsByTagName('locale-timeline')[0].setAttribute('locale', gLocale);
-        updateListFormat(gLocale);
-        updateCurrentLocale(gCountryIso2);
-
-        const currentLocaleEl = document.getElementById("current-locale");
-        currentLocaleEl.setAttribute('locale', gLocale);
-
-      });
-
-
-      document.getElementById('detail').addEventListener('change', (ev) => {
-        console.log('Selection changed:', ev.detail);
-        wm.setLabelResolver(ev.detail.value || null);
-      });
-
-      document.getElementById('details-chooser').addEventListener('change', (ev) => {
-        console.log('Details Selection changed:', ev.detail);
-        const currentLocaleEl = document.getElementById("current-locale");
-        currentLocaleEl.setAttribute('mode', ev.detail.value || 'name');
-      });
-
-    });
-
-    function updateCurrentLocale(iso2) {
-      const currentLocaleEl = document.getElementById("current-locale");
-      currentLocaleEl.setAttribute('data-iso2', iso2 || '');
-    }
-
-    function updateListFormat(gLocale) {
-      if (!gLocale) return;
-      const listFormatEl = document.getElementById("list-format");
-      if (listFormatEl) {
-        const items = ['apples', 'oranges', 'bananas'];
-        const cons = new Intl.ListFormat(gLocale, {type: 'conjunction'}).format(items);
-        const disj = new Intl.ListFormat(gLocale, {type: 'disjunction'}).format(items);
-        listFormatEl.innerHTML = `Conjunction: ${cons} <br> Disjunction: ${disj}`;
-      }
-    }
   </script>
   <style>
     @import url(https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap);
@@ -121,7 +68,7 @@
   <!--    <div slot="inset" class="inset-box" data-country="CH">CH</div>-->
 
   <country-summary id="current-locale" slot="inset" class="inset-box" data-lon="-142" data-lat="-35"></country-summary>
-<!--  <div id="number-format" slot="inset" class="inset-box" data-lon="80" data-lat="-30"></div>-->
+  <!--  <div id="number-format" slot="inset" class="inset-box" data-lon="80" data-lat="-30"></div>-->
   <!--  <div id="list-format" slot="inset" class="inset-box" data-lon="-50" data-lat="30">List Format</div>-->
 </world-map>
 <locale-timeline id="timeline"></locale-timeline>
@@ -141,13 +88,75 @@
   <div slot="option" data-value="oceania">OC</div>
 </segmented-buttons>
 <segmented-buttons id='details-chooser' style="position: fixed; top: 0; right: 0;">
-  <div slot="option" data-value='name' selected>US</div>
+  <div slot="option" data-value='name' selected>⚐</div>
+  <div slot="option" data-value='political' selected>C</div>
   <div slot="option" data-value="language">😛</div>
   <div slot="option" data-value="numbers">#</div>
   <div slot="option" data-value="currency">¤</div>
-  <div slot="option" data-value="flag">⚐</div>
   <div slot="option" data-value="time">⌚</div>
   <div slot="option" data-value="tech">⚙</div>
 </segmented-buttons>
 </body>
+<script type="module">
+  let gLocale = document.documentElement.lang || 'en-US';
+  let gCountryIso2 = null
+  import {teenyDb} from '../../build/world/teeny-db.js'
+
+  // Example runtime usage after component class is loaded
+  window.addEventListener("DOMContentLoaded", () => {
+    const wm = document.getElementById("world-map");
+    if (!wm) return;
+
+
+    wm.addEventListener("country-click", (ev) => {
+      const detail = ev.detail
+      if (gCountryIso2 === detail.iso2) {
+        gLocale = null
+        gCountryIso2 = null
+        wm.selectCountry(null);
+      } else {
+        gCountryIso2 = detail.iso2;
+        gLocale = teenyDb.langs(detail.iso2)[0] || 'en-US';
+        wm.selectCountry(detail.iso2);
+      }
+      document.getElementsByTagName('locale-timeline')[0].setAttribute('locale', gLocale);
+      updateListFormat(gLocale);
+      updateCurrentLocale(gCountryIso2);
+``
+      const currentLocaleEl = document.getElementById("current-locale");
+      currentLocaleEl.setAttribute('locale', gLocale);
+
+    });
+
+
+    document.getElementById('detail').addEventListener('change', (ev) => {
+      console.log('Selection changed:', ev.detail);
+      wm.setLabelResolver(ev.detail.value || null);
+    });
+
+    document.getElementById('details-chooser').addEventListener('change', (ev) => {
+      console.log('Details Selection changed:', ev.detail);
+      const currentLocaleEl = document.getElementById("current-locale");
+      currentLocaleEl.setAttribute('mode', ev.detail.value || 'name');
+    });
+
+  });
+
+  function updateCurrentLocale(iso2) {
+    const currentLocaleEl = document.getElementById("current-locale");
+    currentLocaleEl.setAttribute('data-iso2', iso2 || '');
+  }
+
+  function updateListFormat(gLocale) {
+    if (!gLocale) return;
+    const listFormatEl = document.getElementById("list-format");
+    if (listFormatEl) {
+      const items = ['apples', 'oranges', 'bananas'];
+      const cons = new Intl.ListFormat(gLocale, {type: 'conjunction'}).format(items);
+      const disj = new Intl.ListFormat(gLocale, {type: 'disjunction'}).format(items);
+      listFormatEl.innerHTML = `Conjunction: ${cons} <br> Disjunction: ${disj}`;
+    }
+  }
+</script>
+
 </html>

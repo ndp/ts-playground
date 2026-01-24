@@ -5,7 +5,9 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "build": "npm run clean && tsc",
+    "build": "npm run clean && esbuild --outdir=./build/world/ --public-path=/ts-playground/ ./src/world/*.ts",
+    "build:component": "esbuild --bundle --format=esm --outdir=./build/world/ ./src/component/examples/*.ts",
+    "build:types": "tsc --declaration --emitDeclarationOnly --allowImportingTsExtensions --module nodenext --outDir ./build/ 'src/**/*.ts'",
     "clean": "rimraf ./build",
     "lint": "eslint . --ext .ts",
     "lint-and-fix": "eslint . --ext .ts --fix",
@@ -24,13 +26,11 @@
     "@types/jsdom": "^27",
     "@types/node": "^25",
     "chai": "^6.2",
+    "esbuild": "^0.27.2",
     "eslint": "^9.3",
-    "esm": "^3.2.25",
     "jsdom": "^27",
     "nodemon": "*",
     "rimraf": "^5",
-    "ts-node": "^10.9.2",
-    "tsx": "^4.21.0",
     "typescript": "^5"
   },
   "dependencies": {

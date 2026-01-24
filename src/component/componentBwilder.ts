@@ -66,7 +66,7 @@ export class ComponentBwilder<
 
     const elementClass = class extends HTMLElement {
 
-      private root: ShadowRoot | HTMLElement;
+      private readonly root: ShadowRoot | HTMLElement;
 
       constructor() {
         super()
@@ -115,12 +115,6 @@ export class ComponentBwilder<
       }
 
     }
-
-
-    // Object.entries(this.observedAttrs).forEach(([attr,action]) => {
-    //   if (action)
-    //
-    // })
 
 
     // Register and Return

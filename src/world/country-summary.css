@@ -5,13 +5,12 @@
 }
 
 .flag {
-  justify-self: right;
   font-family: 'Noto Color Emoji', 'Noto Emoji', monospace;
-  font-size: 40px;
-  grid-row-start: 1;
-  grid-row-end: 3;
-  grid-column-start: 2;
-  grid-column-end: 3;
+  font-size: 70px;
+  /*grid-row-start: 1;*/
+  /*grid-row-end: 3;*/
+  /*grid-column-start: 1;*/
+  /*grid-column-end: 3;*/
 }
 
 .full {
