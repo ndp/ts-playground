@@ -11,6 +11,7 @@ const exampleBuildRenderer = function (this: RenderContext) {
   this.root.appendChild(div)
   return {}
 } satisfies ComponentRenderer
+
 // Example of how you might write a renderer with subelements
 const exampleBuildRendererWithSubElements = function (this: RenderContext) {
   const div = document.createElement('div')

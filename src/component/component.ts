@@ -1,4 +1,4 @@
-import {type AttrMethods, observedAttrs, requiredAttrs, type StripAnnotations, stripAnnotations} from "./attr.ts";
+import {type AttrMethods, observedAttrs, requiredAttrs, stripAnnotations} from "./attr.ts";
 
 // type F0a = AttrMethods<['deckId']>
 // type F0aa = AssertEqual<F0a, {deckId: string}>
@@ -27,7 +27,6 @@ type DefineComponentOptions<Attr extends string> = {
 }
 
 
-// defComponent.wObservedAttrs({ attr1: function() {}, attr2: function() {}}).('foo-comp', {shadowDOM: 'open'})
 
 export function defineComponent<Attr extends string, Options extends DefineComponentOptions<Attr>>(
   tagName: string,

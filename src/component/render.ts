@@ -22,9 +22,6 @@ export type RenderContext<Attrs extends {} = {}> = {
   root: HTMLElement
 } & { [k in keyof Attrs]: Attrs[k] }
 
-// export interface XRenderContext extends BaseRenderContext {
-// }
-
 /*
 RenderFromString
 ================
