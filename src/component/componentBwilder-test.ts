@@ -157,6 +157,89 @@ describe('ComponentBwilder render', () => {
     }, /No render function provided to component/)
   })
 
+  test('render function receives unobserved attribute value', () => {
+    let unobservedValue: string | null = null;
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName('rendered-component-with-unobs-attr')
+      .wShadowDOM('none')
+      .wAttr('data-info')
+      .wRender(function () {
+        unobservedValue = this['data-info']
+        this.root.innerHTML = `<div>Info: ${unobservedValue}</div>`;
+        return {};
+      })
+      .build();
+
+    const c = new MyComponentClass();
+    c.setAttribute('data-info', 'some info');
+
+    // @ts-ignore
+    c.connectedCallback()
+
+    const contentDiv = c.querySelector('div')
+    assert.equal(contentDiv!.innerHTML, 'Info: some info', 'Content div should have correct content')
+
+    c.setAttribute('data-info', 'other info');
+
+    const contentDiv2 = c.querySelector('div')
+    assert.equal(contentDiv2!.innerHTML, 'Info: some info', 'Content div should not change automatically')
+
+    // Re-render manually since attribute is unobserved
+    // @ts-ignore
+    c.render();
+    const contentDiv3 = c.querySelector('div')
+    assert.equal(contentDiv3!.innerHTML, 'Info: other info', 'Content div should have updated content')
+  })
+
+
+  test('unobserved attribute value is null if not set', () => {
+
+    let unobservedValue: string | null = 'initial';
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName('rendered-component-with-unobs-attr-null')
+      .wShadowDOM('none')
+      .wAttr('data-info')
+      .wRender(function () {
+        unobservedValue = this['data-info']
+        this.root.innerHTML = `<div>Info: ${unobservedValue}</div>`;
+        return {};
+      })
+      .build();
+
+    const c = new MyComponentClass();
+    // Note: not setting data-info attribute
+
+    // @ts-ignore
+    c.connectedCallback()
+
+    const contentDiv = c.querySelector('div')
+    assert.equal(contentDiv!.innerHTML, 'Info: null', 'Content div should show null for unset attribute')
+  })
+
+  test('unobserved attribute can have default value', () => {
+    let unobservedValue: string | null = 'initial';
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName('rendered-component-with-unobs-attr-default')
+      .wShadowDOM('none')
+      .wAttr('data-info', 'a default value')
+      .wRender(function () {
+        this.root.innerHTML = `<div>Info: ${this['data-info']}</div>`;
+        return {};
+      })
+      .build();
+    const c = new MyComponentClass();
+    // Note: not setting data-info attribute
+
+    // @ts-ignore
+    c.connectedCallback()
+
+    const contentDiv = c.querySelector('div')
+    assert.equal(contentDiv!.innerHTML, 'Info: a default value', 'Content div should show default value for unset attribute')
+  })
+
   test('render function receives observed attribute value', () => {
     let observedValue: string | null = null;
 
@@ -183,6 +266,30 @@ describe('ComponentBwilder render', () => {
     c.setAttribute('data-name', 'Frank');
     const contentDiv2 = c.querySelector('div')
     assert.equal(contentDiv2!.innerHTML, 'Hello, Frank', 'Content div should have updated content')
+  })
+
+  test('includes CSS in shadow DOM', () => {
+    const css = `.test-class { color: red; }`;
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName('styled-component')
+      .wShadowDOM('open')
+      .wCSS(css)
+      .wRender(function (this: RenderContext) {
+        this.root.innerHTML = '<div class="test-class">Styled Text</div>';
+        return {};
+      })
+      .build();
+
+    const c = new MyComponentClass();
+    // @ts-ignore
+    c.connectedCallback();
+
+    const shadowRoot = c.shadowRoot;
+    assert.ok(shadowRoot, 'Shadow root should exist');
+
+    const styleElement = shadowRoot!.querySelector('style');
+    assert.ok(styleElement, 'Style element should exist in shadow DOM');
+    assert.equal(styleElement!.textContent, css, 'Style element should contain the correct CSS');
   })
 })
 

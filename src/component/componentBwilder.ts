@@ -2,16 +2,20 @@ import {type ComponentRenderer, type RenderContext} from './render.ts'
 
 
 type ExtendableStringTuple = readonly [string?, string?, string?, string?, string?, string?, string?, string?]
+type ExtendableStringTuple2 = readonly [...ExtendableStringTuple, ...ExtendableStringTuple]
 
 export class ComponentBwilder<
   ObservedAttrs extends ExtendableStringTuple = [],
-  Attrs extends {} = ObservedAttrs[number] extends string ? Record<ObservedAttrs[number], string> : {},
-  RenderingContext extends RenderContext<{}> = RenderContext<Attrs>> {
+  UnobservedAttrs extends ExtendableStringTuple = [],
+  AllAttrs extends ExtendableStringTuple2 = [...ObservedAttrs, ...UnobservedAttrs],
+  AttrsRecord extends {} = AllAttrs[number] extends string ? Record<AllAttrs[number], string> : {},
+  RenderingContext extends RenderContext<{}> = RenderContext<AttrsRecord>> {
 
   private tagName: string | undefined
   private css: string | undefined
   private shadowDOM: 'open' | 'closed' | 'none' = 'open'
   private observedAttrs: Record<string, ((args: { newValue: unknown, oldValue: unknown }) => void) | null> = {}
+  private unobservedAttrs: Record<string, string | null> = {}
   private renderFn: ComponentRenderer<RenderingContext> | undefined
 
   constructor() {
@@ -33,19 +37,24 @@ export class ComponentBwilder<
     return this as this & { wCSS: never }
   }
 
+  wAttr<A extends string>(attr: A, defaultValue?: string) {
+    this.unobservedAttrs[attr] = defaultValue ?? null
+    // @ts-ignore TS2344
+    return this as unknown as ComponentBwilder<ObservedAttrs, [...UnobservedAttrs, A]>;
+  }
 
   wObservedAttr<A extends string>(attr: A,
                                   onChange?: (args: { newValue: unknown, oldValue: unknown }) => void) {
     if (attr in this.observedAttrs)
       throw new Error(`Attr "${attr}" is already observed.`)
     this.observedAttrs[attr] = onChange ?? null
-    // @ts-ignore
+    // @ts-ignore TS2344
     return this as unknown as ComponentBwilder<[...ObservedAttrs, A]>;
   }
 
   wRender(renderFn: ComponentRenderer<RenderingContext>) {
     this.renderFn = renderFn
-    return this as unknown as ComponentBwilder<ObservedAttrs> & {wRender: never};
+    return this as unknown as ComponentBwilder<ObservedAttrs> & { wRender: never };
   }
 
   build() {
@@ -85,17 +94,27 @@ export class ComponentBwilder<
       }
 
       render() {
+
+        // Build out context
         const context = {
-          root: this.root,
+          root: this.root
         } as RenderingContext;
         for (let a in builder.observedAttrs) // @ts-ignore
           context[a] = this.getAttribute(a);
-        console.log(`Component <${builder.tagName}> rendering... @ root ${this.root.constructor.name}`)
+        for (let a in builder.unobservedAttrs) // @ts-ignore
+          context[a] = this.getAttribute(a) ?? builder.unobservedAttrs[a];
+
         renderFn.call(context);
+
+        // Inject CSS if provided
+        if (this.root.querySelector('style') === null && builder.css) {
+          const styleEl = document.createElement('style');
+          styleEl.textContent = builder.css;
+          this.root.prepend(styleEl);
+        }
       }
 
     }
-
 
 
     // Object.entries(this.observedAttrs).forEach(([attr,action]) => {
