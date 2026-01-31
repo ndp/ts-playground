@@ -72,22 +72,8 @@
   <!--  <div id="list-format" slot="inset" class="inset-box" data-lon="-50" data-lat="30">List Format</div>-->
 </world-map>
 <locale-timeline id="timeline"></locale-timeline>
-<segmented-buttons id='detail' style="position: fixed; top: 0; left: 0;">
-  <div slot="option" data-value='' selected>-</div>
-  <div slot="option" data-value="iso2">AZ</div>
-  <div slot="option" data-value="iso3">ABZ</div>
-  <div slot="option" data-value="name">Abc...</div>
-  <div slot="option" data-value="flag">FL</div>
-</segmented-buttons>
-<segmented-buttons id='region-chooser' appearance="outline" style="position: fixed; top: 0; left: 20%;">
-  <div slot="option" data-value='' selected>All</div>
-  <div slot="option" data-value="africa">AF</div>
-  <div slot="option" data-value="americas">AM</div>
-  <div slot="option" data-value="asia">AS</div>
-  <div slot="option" data-value="europe">EU</div>
-  <div slot="option" data-value="oceania">OC</div>
-</segmented-buttons>
-<segmented-buttons id='details-chooser' style="position: fixed; top: 0; right: 0;">
+
+<segmented-buttons id='mode-chooser' style="position: fixed; top: 5px; left: 5px;">
   <div slot="option" data-value='name' selected>⚐</div>
   <div slot="option" data-value="language">😛</div>
   <div slot="option" data-value="numbers">#</div>
@@ -95,6 +81,14 @@
   <div slot="option" data-value="time">⌚</div>
   <div slot="option" data-value="tech">⚙</div>
 </segmented-buttons>
+<segmented-buttons id='country-overlay-mode' style="position: fixed; top: 5px; right: 5px;">
+  <div slot="option" data-value='' selected>-</div>
+  <div slot="option" data-value="iso2">AZ</div>
+  <div slot="option" data-value="iso3">ABZ</div>
+  <div slot="option" data-value="name">Abc...</div>
+  <div slot="option" data-value="flag">FL</div>
+</segmented-buttons>
+
 </body>
 <script type="module">
   let gLocale = document.documentElement.lang || 'en-US';
@@ -127,15 +121,17 @@
   });
 
 
-  document.getElementById('detail').addEventListener('change', (ev) => {
+  document.getElementById('country-overlay-mode').addEventListener('change', (ev) => {
     console.log('Selection changed:', ev.detail);
     wm.setLabelResolver(ev.detail.value || null);
   });
 
-  document.getElementById('details-chooser').addEventListener('change', (ev) => {
-    console.log('Details Selection changed:', ev.detail);
+  document.getElementById('mode-chooser').addEventListener('change', (ev) => {
+    console.log('Mode Selection changed:', ev.detail);
     const countrySummaryEl = document.getElementById("country-summary");
     countrySummaryEl.setAttribute('mode', ev.detail.value || 'name');
+
+    document.body.setAttribute('data-mode', ev.detail.value || 'name');
   });
 
 
