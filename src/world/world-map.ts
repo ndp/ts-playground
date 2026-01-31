@@ -308,8 +308,6 @@ class WorldMap extends HTMLElement {
         if (!svgCTM) return;
 
         for (const el of assigned) {
-            (el as HTMLElement).style.pointerEvents = "auto";
-            (el as HTMLElement).style.position = "absolute";
 
             const targetCountry = el.getAttribute("data-country");
             let lon: number | null = null;
@@ -340,8 +338,8 @@ class WorldMap extends HTMLElement {
             const py = pt.y - hostRect.top;
 
             if (Number.isFinite(px) && Number.isFinite(py)) {
-                el.style.left = `${px}px`;
-                el.style.top = `${py}px`;
+                el.style.setProperty('--x', `${px}px`);
+                el.style.setProperty('--y', `${py}px`);
             }
         }
     }
