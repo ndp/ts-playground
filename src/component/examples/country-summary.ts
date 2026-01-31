@@ -24,10 +24,10 @@ panel('name')
       <div class="flag">${teenyDb.flagEmoji(iso2)}</div>
       <h2>Name</h2>
       <p>${nameEng}</p>
-      ${name && name !== nameEng ? `<h2>Name [${lang}]</h2><p>${name}</p>` : ''}
-      <h2>ISO-3166</h2>
+      ${name && name !== nameEng ? `<h3>Name [${lang}]</h3><p>${name}</p>` : ''}
+      <h3>ISO-3166</h3>
       <p>${listFormat.format([teenyDb.misc(iso2, 'ISO3166-1-Alpha-2')!, teenyDb.misc(iso2, 'ISO3166-1-Alpha-3')!])}</p>
-      <h2>Capital</h2>
+      <h3>Capital</h3>
       <p>${teenyDb.misc(iso2, 'Capital')}</p>
    `;
     return {};
@@ -45,7 +45,7 @@ panel('language')
     this.root.innerHTML = `
       <h2>Name</h2>
       <p>${nameEng}</p>
-      <h2>Official Language${langs.length > 1 ? 's' : ''}</h2>
+      <h3>Official Language${langs.length > 1 ? 's' : ''}</h3>
       <p>${langsStr}</p>
     `;
     return {};
@@ -68,11 +68,11 @@ panel('currency')
     this.root.innerHTML = `
       <h2>Name</h2>
       <p>${nameEng}</p>
-      <h2>Currency</h2>
+      <h3>Currency</h3>
       ${codes.map((code, idx) => `<p>${code}</p><p>&ldquo;${names[idx] ?? names[0]}&rdquo;</p>`).join('')}
-      <h2>Local Currency</h2>
+      <h3>Local Currency</h3>
 ${monies.map(money => `<p>${money}</p>`).join('')}
-<h2>U.S. Dollar</h2>
+<h3>U.S. Dollar</h3>
 <p>${asDollar}</p>
     `;
     return {};
@@ -101,11 +101,11 @@ panel('numbers')
     this.root.innerHTML = `
       <h2>Name</h2>
       <p>${nameEng}</p>
-      <h2>Number</h2>
+      <h3>Number</h3>
       <p>${formattedNum1}<p>
-      <h2>Meters</h2>
+      <h3>Meters</h3>
       <p>${meters}</p>
-      <h2>Kilograms</h2>
+      <h3>Kilograms</h3>
       <p>${kilos}</p>
     `;
     return {};
@@ -121,9 +121,9 @@ panel('tech')
     this.root.innerHTML = `
       <h2>Name</h2>
       <p>${nameEng}</p>
-      <h2>Dial</h2>
+      <h3>Dial</h3>
       <p>+${teenyDb.misc(iso2, 'Dial')}</p>
-      <h2>TLD</h2>
+      <h3>TLD</h3>
       <p><i>&lt;domain&gt;</i>${teenyDb.misc(iso2, 'TLD')}</p>
     `;
     return {};
@@ -139,12 +139,12 @@ panel('time')
     this.root.innerHTML = `
       <h2>Name</h2>
       <p>${nameEng}</p>
-      <h2>Time</h2>
+      <h3>Time</h3>
       <p>${date.toLocaleTimeString(this.locale, {timeStyle: 'short'})}</p>
       <p>${date.toLocaleTimeString(this.locale, {timeStyle: 'medium'})}</p>
       <p>${date.toLocaleTimeString(this.locale, {timeStyle: 'long'})}</p>
       <p>${date.toLocaleTimeString(this.locale, {timeStyle: 'full'})}</p>
-      <h2>Date</h2>
+      <h3>Date</h3>
       <p>${date.toLocaleDateString(this.locale, {dateStyle: 'short'})}</p>
       <p>${date.toLocaleDateString(this.locale, {dateStyle: 'medium'})}</p>
       <p>${date.toLocaleDateString(this.locale, {dateStyle: 'long'})}</p>
