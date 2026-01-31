@@ -26,6 +26,7 @@ h2, p {
   line-height: 1.3;
   font-size: medium;
   font-family: system-ui, sans-serif;
+  max-width: 20ex;
 }
 
 h2 {

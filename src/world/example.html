@@ -7,7 +7,6 @@
   <script type="importmap">
     {
       "imports": {
-        "/ts-playground/build/world/country-codes.json": "/ts-playground/src/world/country-codes.json"
       }
     }
   </script>
@@ -58,7 +57,8 @@
 <body>
 <world-map id='world-map' style="max-width: 100svw;max-height: 100svh">
   <!-- inset anchored to country by iso_a3 code (depends on GeoJSON id properties) -->
-  <div slot="inset" class="inset-box" data-country="MX">MXICO</div>
+<!--  <div slot="inset" class="inset-box" data-country="MX">MXICO</div>-->
+  <div slot="inset" class="inset-box" data-country="US">U.S.A.</div>
   <!--    <div slot="inset" class="inset-box" data-country="CA">CA</div>-->
   <!--    <div slot="inset" class="inset-box" data-country="FR">FR</div>-->
   <!--    <div slot="inset" class="inset-box" data-country="DE">DE</div>-->
@@ -67,7 +67,7 @@
   <!--    <div slot="inset" class="inset-box" data-country="AR">AR</div>-->
   <!--    <div slot="inset" class="inset-box" data-country="CH">CH</div>-->
 
-  <country-summary id="current-locale" slot="inset" class="inset-box" data-lon="-142" data-lat="-35"></country-summary>
+  <country-summary id="country-summary" slot="inset" class="inset-box" data-lon="-142" data-lat="-35"></country-summary>
   <!--  <div id="number-format" slot="inset" class="inset-box" data-lon="80" data-lat="-30"></div>-->
   <!--  <div id="list-format" slot="inset" class="inset-box" data-lon="-50" data-lat="30">List Format</div>-->
 </world-map>
@@ -89,7 +89,6 @@
 </segmented-buttons>
 <segmented-buttons id='details-chooser' style="position: fixed; top: 0; right: 0;">
   <div slot="option" data-value='name' selected>⚐</div>
-  <div slot="option" data-value='political' selected>C</div>
   <div slot="option" data-value="language">😛</div>
   <div slot="option" data-value="numbers">#</div>
   <div slot="option" data-value="currency">¤</div>
@@ -102,49 +101,47 @@
   let gCountryIso2 = null
   import {teenyDb} from '../../build/world/teeny-db.js'
 
-  // Example runtime usage after component class is loaded
-  window.addEventListener("DOMContentLoaded", () => {
-    const wm = document.getElementById("world-map");
-    if (!wm) return;
+
+  const wm = document.getElementById("world-map");
 
 
-    wm.addEventListener("country-click", (ev) => {
-      const detail = ev.detail
-      if (gCountryIso2 === detail.iso2) {
-        gLocale = null
-        gCountryIso2 = null
-        wm.selectCountry(null);
-      } else {
-        gCountryIso2 = detail.iso2;
-        gLocale = teenyDb.langs(detail.iso2)[0] || 'en-US';
-        wm.selectCountry(detail.iso2);
-      }
-      document.getElementsByTagName('locale-timeline')[0].setAttribute('locale', gLocale);
-      updateListFormat(gLocale);
-      updateCurrentLocale(gCountryIso2);
+  wm.addEventListener("country-click", (ev) => {
+    const detail = ev.detail
+    if (gCountryIso2 === detail.iso2) {
+      gLocale = null
+      gCountryIso2 = null
+      wm.selectCountry(null);
+    } else {
+      gCountryIso2 = detail.iso2;
+      gLocale = teenyDb.langs(detail.iso2)[0] || 'en-US';
+      wm.selectCountry(detail.iso2);
+    }
+    document.getElementsByTagName('locale-timeline')[0].setAttribute('locale', gLocale);
+    updateListFormat(gLocale);
+    updateCurrentLocale(gCountryIso2);
 ``
-      const currentLocaleEl = document.getElementById("current-locale");
-      currentLocaleEl.setAttribute('locale', gLocale);
-
-    });
-
-
-    document.getElementById('detail').addEventListener('change', (ev) => {
-      console.log('Selection changed:', ev.detail);
-      wm.setLabelResolver(ev.detail.value || null);
-    });
-
-    document.getElementById('details-chooser').addEventListener('change', (ev) => {
-      console.log('Details Selection changed:', ev.detail);
-      const currentLocaleEl = document.getElementById("current-locale");
-      currentLocaleEl.setAttribute('mode', ev.detail.value || 'name');
-    });
+    const countrySummaryEl = document.getElementById("country-summary");
+    countrySummaryEl.setAttribute('data-country', gCountryIso2 || '');
+    countrySummaryEl.setAttribute('locale', gLocale);
 
   });
 
+
+  document.getElementById('detail').addEventListener('change', (ev) => {
+    console.log('Selection changed:', ev.detail);
+    wm.setLabelResolver(ev.detail.value || null);
+  });
+
+  document.getElementById('details-chooser').addEventListener('change', (ev) => {
+    console.log('Details Selection changed:', ev.detail);
+    const countrySummaryEl = document.getElementById("country-summary");
+    countrySummaryEl.setAttribute('mode', ev.detail.value || 'name');
+  });
+
+
   function updateCurrentLocale(iso2) {
-    const currentLocaleEl = document.getElementById("current-locale");
-    currentLocaleEl.setAttribute('data-iso2', iso2 || '');
+    const countrySummaryEl = document.getElementById("country-summary");
+    countrySummaryEl.setAttribute('data-iso2', iso2 || '');
   }
 
   function updateListFormat(gLocale) {

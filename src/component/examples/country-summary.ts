@@ -27,7 +27,9 @@ panel('name')
       ${name && name !== nameEng ? `<h2>Name [${lang}]</h2><p>${name}</p>` : ''}
       <h2>ISO-3166</h2>
       <p>${listFormat.format([teenyDb.misc(iso2, 'ISO3166-1-Alpha-2')!, teenyDb.misc(iso2, 'ISO3166-1-Alpha-3')!])}</p>
-    `;
+      <h2>Capital</h2>
+      <p>${teenyDb.misc(iso2, 'Capital')}</p>
+   `;
     return {};
   })
   .build()
@@ -111,25 +113,6 @@ panel('numbers')
   .build()
 
 
-panel('political')
-  .wRender(function (): {} {
-    const iso2 = this['data-iso2'] as ISO2CountryCode;
-    const langs = teenyDb.langs(iso2) || [];
-    const lang = (langs[0] || 'en-US') as OfficialLanguages;
-    const nameEng = teenyDb.countryName(iso2);
-    const name = teenyDb.countryName(iso2, lang);
-
-    this.root.innerHTML = `
-      <h2>Name</h2>
-      <p>${nameEng}</p>
-      ${name && name !== nameEng ? `<h2>Name [${lang}]</h2><p>${name}</p>` : ''}
-      <h2>Capital</h2>
-      <p>${teenyDb.misc(iso2, 'Capital')}</p>
-    `;
-    return {};
-  })
-  .build()
-
 
 panel('tech')
   .wRender(function (): {} {
@@ -142,6 +125,30 @@ panel('tech')
       <p>+${teenyDb.misc(iso2, 'Dial')}</p>
       <h2>TLD</h2>
       <p><i>&lt;domain&gt;</i>${teenyDb.misc(iso2, 'TLD')}</p>
+    `;
+    return {};
+  })
+  .build()
+
+
+panel('time')
+  .wRender(function (): {} {
+    const iso2 = this['data-iso2'] as ISO2CountryCode;
+    const nameEng = teenyDb.countryName(iso2);
+    const date = new Date()
+    this.root.innerHTML = `
+      <h2>Name</h2>
+      <p>${nameEng}</p>
+      <h2>Time</h2>
+      <p>${date.toLocaleTimeString(this.locale, {timeStyle: 'short'})}</p>
+      <p>${date.toLocaleTimeString(this.locale, {timeStyle: 'medium'})}</p>
+      <p>${date.toLocaleTimeString(this.locale, {timeStyle: 'long'})}</p>
+      <p>${date.toLocaleTimeString(this.locale, {timeStyle: 'full'})}</p>
+      <h2>Date</h2>
+      <p>${date.toLocaleDateString(this.locale, {dateStyle: 'short'})}</p>
+      <p>${date.toLocaleDateString(this.locale, {dateStyle: 'medium'})}</p>
+      <p>${date.toLocaleDateString(this.locale, {dateStyle: 'long'})}</p>
+      <p>${date.toLocaleDateString(this.locale, {dateStyle: 'full'})}</p>
     `;
     return {};
   })
@@ -184,12 +191,12 @@ export default new ComponentBwilder()
         frame.innerHTML = `<country-summary-numbers-panel data-iso2="${iso2}" locale="${locale}"></country-summary-numbers-panel>`;
         break
       }
-      case 'political': {
-        frame.innerHTML = `<country-summary-political-panel data-iso2="${iso2}" locale="${locale}"></country-summary-political-panel>`;
-        break
-      }
       case 'tech': {
         frame.innerHTML = `<country-summary-tech-panel data-iso2="${iso2}" locale="${locale}"></country-summary-tech-panel>`;
+        break
+      }
+      case 'time': {
+        frame.innerHTML = `<country-summary-time-panel data-iso2="${iso2}" locale="${locale}"></country-summary-time-panel>`;
         break
       }
       default: {

@@ -1,5 +1,4 @@
-import countryCodes from './country-codes.json' with {type: 'json'};
-
+const countryCodes = await fetch('./country-codes.json').then(res => res.json())
 
 type Letter = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z';
 export type ISO2CountryCode = `${Letter}${Letter}`;
