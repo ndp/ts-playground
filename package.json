@@ -7,7 +7,7 @@
   "scripts": {
     "build": "npm run clean && npm run build:world && npm run build:component",
     "build:world": "esbuild --outdir=./build/world/ --public-path=/ts-playground/ ./src/world/*.ts",
-    "build:component": "esbuild --bundle --format=esm --outdir=./build/world/ ./src/component/examples/*.ts",
+    "build:component": "esbuild --bundle --format=esm --outdir=./build/world/ ./src/component/examples/*.ts && esbuild --bundle --format=esm --outdir=./build/world/ ./src/world/segmented-buttons.ts",
     "build:types": "tsc --declaration --emitDeclarationOnly --allowImportingTsExtensions --module nodenext --outDir ./build/ 'src/**/*.ts'",
     "clean": "rimraf ./build",
     "lint": "eslint . --ext .ts",
