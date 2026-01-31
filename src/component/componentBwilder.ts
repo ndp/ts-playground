@@ -74,6 +74,10 @@ export class ComponentBwilder<
           this.root = this.attachShadow({mode: builder.shadowDOM})
         else
           this.root = this
+
+        // if (this.onSlotChange)
+        //    this.onSlotChange = this.onSlotChange.bind(this);
+
       }
 
       static get observedAttributes() {
@@ -121,8 +125,8 @@ export class ComponentBwilder<
     customElements.define(this.tagName!, elementClass)
 
     return elementClass as unknown as {
-      prototype: HTMLElement;
-      new(): HTMLElement;
+      prototype: HTMLElement & { connectedCallback(): Promise<void> | void, root: ShadowRoot | HTMLElement };
+      new(): HTMLElement & { connectedCallback(): Promise<void> | void, root: ShadowRoot | HTMLElement };
     };
 
   }
