@@ -9,43 +9,42 @@ class SegmentedButtons extends (
     .wTagName('base-segmented-button')
     .wShadowDOM('open')
     .wCSS(css)
+    .wElement('slotEl')
     .wRender(function (this: { root: HTMLElement }) {
-      return {}
+      const slotEl = document.createElement('slot')
+      slotEl.setAttribute('name', 'option');
+      this.root.appendChild(slotEl);
+
+      // Initialize selected element from option element, if any
+      const selectedEl = this.root.querySelector('[data-value][selected]') as HTMLElement | null;
+      if (selectedEl) {
+        selectedEl.removeAttribute('selected');
+        selectedEl.classList.add('selected');
+        const val = selectedEl.getAttribute('data-value');
+        this.root.setAttribute('data-value', val || '');
+      }
+
+      return {selectedEl, slotEl};
     })
     .build()) {
   private slotEl: HTMLSlotElement | null = null;
   private selectedEl: HTMLElement | null = null;
   private assignedListeners = new Map<Element, EventListener>();
 
-  constructor() {
-    super();
-
-    const container = document.createElement('div');
-
-    this.slotEl = document.createElement('slot')
-    this.slotEl.setAttribute('name', 'option');
-    container.appendChild(this.slotEl);
-
-    this.root.appendChild(container);
-  }
-
+  // constructor() {
+  //   super();
+  //
+  // }
+  //
   async connectedCallback() {
 
     super.connectedCallback();
-
-    // Initialize selected element if any
-    this.selectedEl = this.querySelector('[data-value][selected]') as HTMLElement | null;
-    if (this.selectedEl) {
-      this.selectedEl.removeAttribute('selected');
-      this.selectedEl.classList.add('selected');
-      const val = this.selectedEl.getAttribute('data-value');
-      this.setAttribute('data-value', val || '');
-    }
 
     if (this.slotEl) {
       this.slotEl.addEventListener('slotchange', this.onSlotChange);
       this.updateAssignedElements(); // initial wiring
     }
+
   }
 
   disconnectedCallback() {

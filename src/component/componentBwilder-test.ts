@@ -18,7 +18,6 @@ new ComponentBwilder().wShadowDOM('open').wShadowDOM('open')
 
 const stubRender = function (this: RenderContext) {
   this.root.innerHTML = '<div>Stub</div>'
-  return {}
 }
 
 describe('ComponentBwilder basic tests', () => {
@@ -29,7 +28,9 @@ describe('ComponentBwilder basic tests', () => {
         .wTagName('another-component')
         .wCSS('.my-class { color: blue; }')
         .wShadowDOM('open')
-        .wRender(stubRender)
+        .wRender(function () {
+          this.root.innerHTML = '<div>Stub</div>'
+        })
     const MyComponent = MyBuilder.build()
 
     const c = new MyComponent()

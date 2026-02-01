@@ -9,6 +9,8 @@
     "build:world": "esbuild --outdir=./build/world/ --public-path=/ts-playground/ ./src/world/*.ts",
     "build:component": "esbuild --bundle --format=esm --outdir=./build/world/ ./src/component/examples/*.ts && esbuild --bundle --format=esm --outdir=./build/world/ ./src/world/segmented-buttons.ts",
     "build:types": "tsc --declaration --emitDeclarationOnly --allowImportingTsExtensions --module nodenext --outDir ./build/ 'src/**/*.ts'",
+    "build:types:watch": "tsc --watch --declaration --emitDeclarationOnly --allowImportingTsExtensions --module nodenext --outDir ./build/ -p .",
+    "dev": "npm run build:types:watch && ",
     "clean": "rimraf ./build",
     "lint": "eslint . --ext .ts",
     "lint-and-fix": "eslint . --ext .ts --fix",

@@ -1,13 +1,14 @@
-import {type ComponentRenderer, type RenderContext} from './render.ts'
+import {type ComponentRenderer, type RenderContext, type SubElementsMap} from './render.ts'
 
 
 type ExtendableStringTuple = readonly [string?, string?, string?, string?, string?, string?, string?, string?]
-type ExtendableStringTuple2 = readonly [...ExtendableStringTuple, ...ExtendableStringTuple]
+type ExtendableStringTuple3 = readonly [...ExtendableStringTuple, ...ExtendableStringTuple, ...ExtendableStringTuple]
 
 export class ComponentBwilder<
   ObservedAttrs extends ExtendableStringTuple = [],
   UnobservedAttrs extends ExtendableStringTuple = [],
-  AllAttrs extends ExtendableStringTuple2 = [...ObservedAttrs, ...UnobservedAttrs],
+  SubElements extends SubElementsMap = {},
+  AllAttrs extends ExtendableStringTuple3 = [...ObservedAttrs, ...UnobservedAttrs],
   AttrsRecord extends {} = AllAttrs[number] extends string ? Record<AllAttrs[number], string> : {},
   RenderingContext extends RenderContext<{}> = RenderContext<AttrsRecord>> {
 
@@ -16,7 +17,8 @@ export class ComponentBwilder<
   private shadowDOM: 'open' | 'closed' | 'none' = 'open'
   private observedAttrs: Record<string, ((args: { newValue: unknown, oldValue: unknown }) => void) | null> = {}
   private unobservedAttrs: Record<string, string | null> = {}
-  private renderFn: ComponentRenderer<RenderingContext> | undefined
+  private elementNames: string[] = []
+  private renderFn: ComponentRenderer<RenderingContext, SubElements> | undefined
 
   constructor() {
   }
@@ -52,7 +54,13 @@ export class ComponentBwilder<
     return this as unknown as ComponentBwilder<[...ObservedAttrs, A]>;
   }
 
-  wRender(renderFn: ComponentRenderer<RenderingContext>) {
+  wElement<A extends string>(elementName: A) {
+    this.elementNames.push(elementName);
+    // @ts-ignore TS2344
+    return this as unknown as ComponentBwilder<ObservedAttrs, UnobservedAttrs, SubElementsMap<A | keyof SubElements>>;
+  }
+
+  wRender(renderFn: ComponentRenderer<RenderingContext, SubElements>) {
     this.renderFn = renderFn
     return this as unknown as ComponentBwilder<ObservedAttrs> & { wRender: never };
   }
@@ -61,7 +69,7 @@ export class ComponentBwilder<
 
     const builder = this
 
-    const renderFn: ComponentRenderer<RenderingContext> | undefined = builder.renderFn
+    const renderFn: ComponentRenderer<RenderingContext, SubElements> | undefined = builder.renderFn
     if (!renderFn) throw new Error('No render function provided to component')
 
     const elementClass = class extends HTMLElement {

@@ -18,6 +18,8 @@ rerender on specified events
 
  */
 
+import type { IsEmptyObject } from '../world/util.ts';
+
 export type RenderContext<Attrs extends {} = {}> = {
   root: HTMLElement
 } & { [k in keyof Attrs]: Attrs[k] }
@@ -40,8 +42,10 @@ export type SubElementsMap<K extends string = string>
  */
 export type ComponentRenderer<
   Context extends RenderContext = RenderContext<{}>,
-  RetVal extends SubElementsMap = {}>
+  SubElements extends SubElementsMap = {},
+  RetVal = IsEmptyObject<SubElements> extends true ? void : SubElements>
   = (this: Context) => RetVal
+
 
 /**
  * Given a map of subElements names to selectors, return a map of subElements.
