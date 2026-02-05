@@ -11,7 +11,7 @@
     "build:types": "tsc --declaration --emitDeclarationOnly --allowImportingTsExtensions --module nodenext --outDir ./build/ 'src/**/*.ts'",
     "build:types:watch": "tsc --watch --declaration --emitDeclarationOnly --allowImportingTsExtensions --module nodenext --outDir ./build/ -p .",
     "dev": "npm run build:types:watch && ",
-    "clean": "rimraf ./build",
+    "clean": "rimraf ./build && rm ./.log* ./ti-*.log",
     "lint": "eslint . --ext .ts",
     "lint-and-fix": "eslint . --ext .ts --fix",
     "start:dev": "nodemon",
