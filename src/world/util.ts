@@ -8,6 +8,3 @@ export async function maybeFetchText(url: URL) {
     }
     return '';
 }
-
-export type IsEmptyObject<Obj extends Record<PropertyKey, unknown>> =
-  [keyof Obj] extends [never] ? true : false;
