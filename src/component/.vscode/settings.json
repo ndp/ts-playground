@@ -7,6 +7,7 @@
         "/^cd /home/ndp/workspace/ts-playground && node --test -r \\./test/setup-jsdom\\.js 'src/component/\\*\\*/\\*test\\.ts'$/": {
             "approve": true,
             "matchCommandLine": true
-        }
+        },
+        "tsc": true
     }
 }
