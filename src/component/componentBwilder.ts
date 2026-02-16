@@ -122,15 +122,6 @@ export class ComponentBwilder<
 
       render() {
 
-        // Build out context
-        // const context = {
-        //   root: this.root
-        // } as RenderingContext;
-        // for (let a in builder.observedAttrs) // @ts-ignore
-        //   context[a] = this.getAttribute(a);
-        // for (let a in builder.unobservedAttrs) // @ts-ignore
-        //   context[a] = this.getAttribute(a) ?? builder.unobservedAttrs[a];
-
         renderFn.call(this as unknown as RenderingContext);
 
         // Inject CSS if provided
