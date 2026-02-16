@@ -903,6 +903,58 @@ describe('ComponentBwilder render', () => {
     assert.equal(c.querySelector('#content')!.textContent, 'C')
   })
 
+  test('subElements are resolved from selector map returned by render', () => {
+    let postRenderTitle = ''
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('subelements-selector-map'))
+      .wElement('title')
+      .wElement('content')
+      .wShadowDOM('none')
+      .wRender(function () {
+        this.root.innerHTML = '<h1 id="title">My Title</h1><div id="content">My Content</div>'
+        return {
+          title: '#title',
+          content: '#content'
+        }
+      })
+      .wPostRenderFn(function ({subElements}) {
+        postRenderTitle = subElements!.title?.textContent ?? ''
+      })
+      .build()
+
+    const c = new MyComponentClass()
+    // @ts-ignore
+    c.connectedCallback()
+
+    assert.equal(postRenderTitle, 'My Title')
+    // @ts-ignore
+    assert.equal(c.subElements.title?.textContent, 'My Title')
+    // @ts-ignore
+    assert.equal(c.subElements.content?.textContent, 'My Content')
+  })
+
+  test('subElements accept direct element map returned by render', () => {
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('subelements-element-map'))
+      .wElement('title')
+      .wShadowDOM('none')
+      .wRender(function () {
+        this.root.innerHTML = '<h1 id="title">Direct Element</h1>'
+        return {
+          title: this.root.querySelector('#title') as HTMLElement | null
+        }
+      })
+      .build()
+
+    const c = new MyComponentClass()
+    // @ts-ignore
+    c.connectedCallback()
+
+    // @ts-ignore
+    assert.equal(c.subElements.title?.textContent, 'Direct Element')
+  })
+
   test('build works without tagName and returns a class', () => {
     const MyComponentClass = new ComponentBwilder()
       .wShadowDOM('none')

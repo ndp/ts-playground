@@ -23,8 +23,9 @@ import type { IsEmptyObject } from '../util/typescript.ts'
 The context object "this" passed to render functions.
 Includes the root element and any attributes that are defined on the class
  */
-export type RenderContext<Attrs extends {} = {}> = {
+export type RenderContext<Attrs extends {} = {}, TSubElements extends SubElementsMap = {}> = {
   root: HTMLElement
+  subElements?: TSubElements
 } & { [k in keyof Attrs]: Attrs[k] }
 
 /*
@@ -38,6 +39,9 @@ export type SubElementSelectorsMap<K extends string = string>
  */
 export type SubElementsMap<K extends string = never>
   = { [k in K]: HTMLElement | null}
+
+export type SubElementInputMap<K extends string = string>
+  = { [k in K]: HTMLElement | null | string }
 
 /**
  * A function that manually (or however) builds the component DOM

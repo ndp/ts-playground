@@ -1,8 +1,17 @@
-import {type ComponentRenderer, type RenderContext, type SubElementsMap} from './render.ts'
+import {
+  type RenderContext,
+  type SubElementInputMap,
+  type SubElementsMap
+} from './render.ts'
 import {type TagName, type TagNameLiteral} from './TagName.ts'
 
 type ExtendableStringTuple = readonly [string?, string?, string?, string?, string?, string?, string?, string?]
 type ExtendableStringTuple3 = readonly [...ExtendableStringTuple, ...ExtendableStringTuple, ...ExtendableStringTuple]
+type SubElementKeys<T extends SubElementsMap> = Extract<keyof T, string>
+type BwilderRendererReturn<TSubElements extends SubElementsMap>
+  = SubElementInputMap<SubElementKeys<TSubElements>> | void
+type ComponentBwilderRenderer<TContext extends RenderContext, TSubElements extends SubElementsMap>
+  = (this: TContext, context: TContext) => BwilderRendererReturn<TSubElements> | Promise<BwilderRendererReturn<TSubElements>>
 
 export class ComponentBwilder<
   ObservedAttrs extends ExtendableStringTuple = [],
@@ -10,15 +19,15 @@ export class ComponentBwilder<
   SubElements extends SubElementsMap = {},
   AllAttrs extends ExtendableStringTuple3 = [...ObservedAttrs, ...UnobservedAttrs],
   AttrsRecord extends {} = AllAttrs[number] extends string ? Record<AllAttrs[number], string> : {},
-  RenderingContext extends RenderContext<{}> = RenderContext<AttrsRecord>> {
+  RenderingContext extends RenderContext<{}, SubElementsMap> = RenderContext<AttrsRecord, SubElements>> {
 
   private tagName?: string
   private css: string | undefined
   private shadowDOM: 'open' | 'closed' | 'none' = 'open'
   private observedAttrs: Record<string, ((args: { newValue: unknown, oldValue: unknown }) => void) | null> = {}
   private unobservedAttrs: Record<string, string | null> = {}
-  private elementNames: string[] = []
-  private renderFn: ComponentRenderer<RenderingContext, SubElements> | undefined
+  private subElementNames: string[] = []
+  private renderFn: ComponentBwilderRenderer<RenderingContext, SubElements> | undefined
   private postMountFn?: (this: RenderingContext, context: RenderingContext) => void | Promise<void>
   private postRenderFn?: (this: RenderingContext, context: RenderingContext) => void | Promise<void>
 
@@ -57,14 +66,14 @@ export class ComponentBwilder<
   }
 
   wElement<A extends string>(elementName: A) {
-    this.elementNames.push(elementName);
+    this.subElementNames.push(elementName);
     // @ts-ignore TS2344
     return this as unknown as ComponentBwilder<ObservedAttrs, UnobservedAttrs, SubElementsMap<A | keyof SubElements>>;
   }
 
-  wRender(renderFn: ComponentRenderer<RenderingContext, SubElements>) {
+  wRender(renderFn: ComponentBwilderRenderer<RenderingContext, SubElements>) {
     this.renderFn = renderFn
-    return this as unknown as ComponentBwilder<ObservedAttrs> & { wRender: never };
+    return this as this & { wRender: never };
   }
 
   wPostMountFn(postMountFn: (this: RenderingContext, context: RenderingContext) => void | Promise<void>) {
@@ -81,12 +90,13 @@ export class ComponentBwilder<
 
     if (!this.renderFn) throw new Error('No render function provided to component')
 
-    const renderFn: ComponentRenderer<RenderingContext, SubElements> = this.renderFn
+    const renderFn: ComponentBwilderRenderer<RenderingContext, SubElements> = this.renderFn
 
     const builder = this
     const elementClass = class extends HTMLElement {
 
       private readonly root: ShadowRoot | HTMLElement;
+      private subElements: SubElements = makeDefaultSubElements(builder.subElementNames) as SubElements
 
       constructor() {
         super()
@@ -136,7 +146,9 @@ export class ComponentBwilder<
         const context = this as unknown as RenderingContext
         const renderResult = renderFn.call(context, context)
 
-        const afterRender = () => {
+        const afterRender = (returnedSubElements?: unknown) => {
+          this.subElements = normalizeSubElements(this.root, returnedSubElements, builder.subElementNames) as SubElements
+
           if (this.root.querySelector('style') === null && builder.css) {
             const styleEl = document.createElement('style');
             styleEl.textContent = builder.css;
@@ -148,10 +160,10 @@ export class ComponentBwilder<
         }
 
         if (isPromiseLike(renderResult)) {
-          return Promise.resolve(renderResult).then(() => afterRender())
+          return Promise.resolve(renderResult).then((returnedSubElements) => afterRender(returnedSubElements))
         }
 
-        const postRenderResult = afterRender()
+        const postRenderResult = afterRender(renderResult)
         if (isPromiseLike(postRenderResult))
           return postRenderResult
       }
@@ -196,4 +208,36 @@ function isPromiseLike<T = unknown>(value: unknown): value is PromiseLike<T> {
   if (!value || (typeof value !== 'object' && typeof value !== 'function'))
     return false
   return typeof (value as PromiseLike<T>).then === 'function'
+}
+
+function makeDefaultSubElements(names: string[]) {
+  const subElements: Record<string, HTMLElement | null> = {}
+  for (const name of names)
+    subElements[name] = null
+  return subElements
+}
+
+function normalizeSubElements(root: ShadowRoot | HTMLElement,
+                              rawSubElements: unknown,
+                              declaredNames: string[]): SubElementsMap<string> {
+  const normalized = makeDefaultSubElements(declaredNames)
+
+  if (!rawSubElements || typeof rawSubElements !== 'object')
+    return normalized
+
+  for (const [key, value] of Object.entries(rawSubElements as Record<string, unknown>)) {
+    if (typeof value === 'string') {
+      normalized[key] = root.querySelector(value)
+      continue
+    }
+
+    if (value === null || value instanceof HTMLElement) {
+      normalized[key] = value as HTMLElement | null
+      continue
+    }
+
+    normalized[key] = null
+  }
+
+  return normalized
 }
