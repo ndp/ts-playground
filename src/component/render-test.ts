@@ -17,7 +17,7 @@ describe('makeComponentRendererFromString', () => {
       makeComponentRendererFromString('Hello, world!');
     const context = {root: document.createElement('div')};
 
-    renderer.call(context);
+    renderer.call(context, context);
 
     assert.equal(context.root.innerHTML, 'Hello, world!');
     assert.equal(context.root.outerHTML, '<div>Hello, world!</div>');
@@ -28,7 +28,7 @@ describe('makeComponentRendererFromString', () => {
       makeComponentRendererFromString('<div id="test">Hello, world!</div>', {test: '#test'});
     const context = {root: document.createElement('div')};
 
-    const result = await renderer.call(context);
+    const result = await renderer.call(context, context);
 
     assert.ok(result.hasOwnProperty('test'));
     assert.equal(result.test!.innerHTML, 'Hello, world!');
@@ -39,7 +39,7 @@ describe('makeComponentRendererFromString', () => {
       makeComponentRendererFromString('<div></div>', {missing: '#nope'});
 
     const context = {root: document.createElement('div')};
-    const result = renderer.call(context) as any;
+    const result = renderer.call(context, context) as any;
 
     assert.ok(result.hasOwnProperty('missing'));
     assert.equal(result.missing, null);
@@ -54,7 +54,7 @@ describe('makeComponentRendererFromFn', () => {
       makeComponentRendererFromFn(() => 'Hello, world!');
     const context = {root: document.createElement('div')};
 
-    renderer.call(context);
+    renderer.call(context, context);
 
     assert.equal(context.root.innerHTML, 'Hello, world!');
     assert.equal(context.root.outerHTML, '<div>Hello, world!</div>');
@@ -67,7 +67,7 @@ describe('makeComponentRendererFromFn', () => {
       });
     const context = {root: document.createElement('div'), name: 'Mars'};
 
-    renderer.call(context);
+    renderer.call(context, context);
 
     assert.equal(context.root.querySelector('#greet')!.innerHTML, 'Hello, Mars');
   });

@@ -19,8 +19,8 @@ export class ComponentBwilder<
   private unobservedAttrs: Record<string, string | null> = {}
   private elementNames: string[] = []
   private renderFn: ComponentRenderer<RenderingContext, SubElements> | undefined
-  private postMountFn?: (this: RenderingContext, context: RenderingContext) => void
-  private postRenderFn?: (this: RenderingContext, context: RenderingContext) => void
+  private postMountFn?: (this: RenderingContext, context: RenderingContext) => void | Promise<void>
+  private postRenderFn?: (this: RenderingContext, context: RenderingContext) => void | Promise<void>
 
   constructor() {
   }
@@ -67,12 +67,12 @@ export class ComponentBwilder<
     return this as unknown as ComponentBwilder<ObservedAttrs> & { wRender: never };
   }
 
-  wPostMountFn(postMountFn: (this: RenderingContext, context: RenderingContext) => void) {
+  wPostMountFn(postMountFn: (this: RenderingContext, context: RenderingContext) => void | Promise<void>) {
     this.postMountFn = postMountFn
     return this as this & { wPostMountFn: never }
   }
 
-  wPostRenderFn(postRenderFn: (this: RenderingContext, context: RenderingContext) => void) {
+  wPostRenderFn(postRenderFn: (this: RenderingContext, context: RenderingContext) => void | Promise<void>) {
     this.postRenderFn = postRenderFn
     return this as this & { wPostRenderFn: never }
   }
@@ -114,27 +114,46 @@ export class ComponentBwilder<
 
       connectedCallback() {
         console.log(`Component <${builder.tagName}> connected to DOM.`)
-        this.render();
-
         const context = this as unknown as RenderingContext
-        if (builder.postMountFn)
-          builder.postMountFn.call(context, context);
+        const rendered = this.render()
+
+        const callPostMount = () => {
+          if (!builder.postMountFn) return
+          return builder.postMountFn.call(context, context)
+        }
+
+        if (isPromiseLike(rendered)) {
+          return Promise.resolve(rendered).then(() => callPostMount())
+        }
+
+        const postMountResult = callPostMount()
+        if (isPromiseLike(postMountResult))
+          return postMountResult
       }
 
       render() {
 
         const context = this as unknown as RenderingContext
-        renderFn.call(context, context);
+        const renderResult = renderFn.call(context, context)
 
-        // Inject CSS if provided
-        if (this.root.querySelector('style') === null && builder.css) {
-          const styleEl = document.createElement('style');
-          styleEl.textContent = builder.css;
-          this.root.prepend(styleEl);
+        const afterRender = () => {
+          if (this.root.querySelector('style') === null && builder.css) {
+            const styleEl = document.createElement('style');
+            styleEl.textContent = builder.css;
+            this.root.prepend(styleEl);
+          }
+
+          if (builder.postRenderFn)
+            return builder.postRenderFn.call(context, context)
         }
 
-        if (builder.postRenderFn)
-          builder.postRenderFn.call(context, context);
+        if (isPromiseLike(renderResult)) {
+          return Promise.resolve(renderResult).then(() => afterRender())
+        }
+
+        const postRenderResult = afterRender()
+        if (isPromiseLike(postRenderResult))
+          return postRenderResult
       }
 
     }
@@ -172,3 +191,9 @@ export class ComponentBwilder<
 }
 
 type ConstructorOf<T> = new (...args: any[]) => T;
+
+function isPromiseLike<T = unknown>(value: unknown): value is PromiseLike<T> {
+  if (!value || (typeof value !== 'object' && typeof value !== 'function'))
+    return false
+  return typeof (value as PromiseLike<T>).then === 'function'
+}

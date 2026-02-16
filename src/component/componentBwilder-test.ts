@@ -585,6 +585,179 @@ describe('ComponentBwilder render', () => {
     assert.equal(lastText, 'next')
   })
 
+  test('supports async render and async post hooks', async () => {
+    const events: string[] = []
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('async-lifecycle'))
+      .wShadowDOM('none')
+      .wRender(async function ({root}) {
+        events.push('render-start')
+        await Promise.resolve()
+        root.innerHTML = '<div>async ready</div>'
+        events.push('render-end')
+      })
+      .wPostRenderFn(async function ({root}) {
+        events.push('postRender-start')
+        await Promise.resolve()
+        const txt = root.querySelector('div')!.textContent
+        events.push(`postRender-end:${txt}`)
+      })
+      .wPostMountFn(async function ({root}) {
+        events.push('postMount-start')
+        await Promise.resolve()
+        const txt = root.querySelector('div')!.textContent
+        events.push(`postMount-end:${txt}`)
+      })
+      .build()
+
+    const c = new MyComponentClass()
+    // @ts-ignore
+    await c.connectedCallback()
+
+    assert.deepEqual(events, [
+      'render-start',
+      'render-end',
+      'postRender-start',
+      'postRender-end:async ready',
+      'postMount-start',
+      'postMount-end:async ready'
+    ])
+  })
+
+  test('render returns promise when postRenderFn is async', async () => {
+    let postRenderDone = false
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('async-post-render-only'))
+      .wShadowDOM('none')
+      .wRender(function () {
+        this.root.innerHTML = '<div>ready</div>'
+      })
+      .wPostRenderFn(async function () {
+        await Promise.resolve()
+        postRenderDone = true
+      })
+      .build()
+
+    const c = new MyComponentClass()
+    // @ts-ignore
+    await c.render()
+
+    assert.equal(postRenderDone, true)
+  })
+
+  test('connectedCallback rejects when async render rejects', async () => {
+    let postMountCalled = false
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('async-render-reject'))
+      .wShadowDOM('none')
+      .wRender(async function () {
+        await Promise.resolve()
+        throw new Error('render failed')
+      })
+      .wPostMountFn(function () {
+        postMountCalled = true
+      })
+      .build()
+
+    const c = new MyComponentClass()
+    // @ts-ignore
+    await assert.rejects(() => c.connectedCallback(), /render failed/)
+    assert.equal(postMountCalled, false)
+  })
+
+  test('render rejects when postRenderFn rejects', async () => {
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('async-post-render-reject'))
+      .wShadowDOM('none')
+      .wRender(function () {
+        this.root.innerHTML = '<div>ready</div>'
+      })
+      .wPostRenderFn(async function () {
+        await Promise.resolve()
+        throw new Error('postRender failed')
+      })
+      .build()
+
+    const c = new MyComponentClass()
+    // @ts-ignore
+    await assert.rejects(() => c.render(), /postRender failed/)
+  })
+
+  test('connectedCallback rejects when postMountFn rejects', async () => {
+    let renderCompleted = false
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('async-post-mount-reject'))
+      .wShadowDOM('none')
+      .wRender(function () {
+        renderCompleted = true
+        this.root.innerHTML = '<div>ready</div>'
+      })
+      .wPostMountFn(async function () {
+        await Promise.resolve()
+        throw new Error('postMount failed')
+      })
+      .build()
+
+    const c = new MyComponentClass()
+    // @ts-ignore
+    await assert.rejects(() => c.connectedCallback(), /postMount failed/)
+    assert.equal(renderCompleted, true)
+  })
+
+  test('sync throws in render and post hooks propagate synchronously', async () => {
+    const RenderThrowsClass = new ComponentBwilder()
+      .wTagName(nextTag('sync-render-throw'))
+      .wShadowDOM('none')
+      .wRender(function () {
+        throw new Error('render sync failed')
+      })
+      .build()
+
+    const c1 = new RenderThrowsClass()
+    assert.throws(() => {
+      // @ts-ignore
+      c1.connectedCallback()
+    }, /render sync failed/)
+
+    const PostRenderThrowsClass = new ComponentBwilder()
+      .wTagName(nextTag('sync-post-render-throw'))
+      .wShadowDOM('none')
+      .wRender(function () {
+        this.root.innerHTML = '<div>ok</div>'
+      })
+      .wPostRenderFn(function () {
+        throw new Error('postRender sync failed')
+      })
+      .build()
+
+    const c2 = new PostRenderThrowsClass()
+    assert.throws(() => {
+      // @ts-ignore
+      c2.render()
+    }, /postRender sync failed/)
+
+    const PostMountThrowsClass = new ComponentBwilder()
+      .wTagName(nextTag('sync-post-mount-throw'))
+      .wShadowDOM('none')
+      .wRender(function () {
+        this.root.innerHTML = '<div>ok</div>'
+      })
+      .wPostMountFn(function () {
+        throw new Error('postMount sync failed')
+      })
+      .build()
+
+    const c3 = new PostMountThrowsClass()
+    assert.throws(() => {
+      // @ts-ignore
+      c3.connectedCallback()
+    }, /postMount sync failed/)
+  })
+
   test('injects CSS style only once across re-renders', () => {
     const css = '.single-style { color: green; }'
 
