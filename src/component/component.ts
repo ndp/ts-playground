@@ -120,22 +120,6 @@ interface TestMethods {
   connectedCallback(): Promise<void>
 }
 
-
-export type AssertEqual<T, Expected> = [T] extends [Expected]
-  ? [Expected] extends [T]
-    ? true
-    : false
-  : false;
-
-
-// type StripAnnotationsA = AssertEqual<StripAnnotations<'a'>, 'a'>
-// type StripAnnotationsB = AssertEqual<StripAnnotations<'a*'>, 'a'>
-// type StripAnnotationsC = AssertEqual<StripAnnotations<'a🗱'>, 'a'>
-// type StripAnnotationsD = AssertEqual<StripAnnotations<'a🗱*'>, 'a'>
-// type StripAnnotationsE = AssertEqual<StripAnnotations<'a*🗱'>, 'a'>
-// type TestStripAnnotations = StripAnnotationsA & StripAnnotationsB & StripAnnotationsC & StripAnnotationsD & StripAnnotationsE
-
-
 /*
 
 Rendering
