@@ -27,6 +27,8 @@ When changing files under `src/component/`, run:
 - Never use `git add -A`.
 - Stage only explicit files or use patch-mode staging.
 - Do not include validation details in commit messages unless explicitly asked.
+- Never run `git commit` without explicit confirmation in the current chat turn.
+- Always ask before committing, even if a commit message was previously discussed.
 
 ### Commit message style
 - Propose commit messages... always ask, "What do you think?" before executing the command.
