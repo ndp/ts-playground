@@ -137,7 +137,6 @@ describe('ComponentBwilder render', () => {
       .wShadowDOM('none')
       .wRender(function (this: RenderContext) {
         this.root.innerHTML = '<div class="content">Hello, world!</div>'
-        return {}
       })
       .build()
 
@@ -168,7 +167,6 @@ describe('ComponentBwilder render', () => {
       .wRender(function () {
         unobservedValue = this['data-info']
         this.root.innerHTML = `<div>Info: ${unobservedValue}</div>`;
-        return {};
       })
       .build();
 
@@ -205,7 +203,6 @@ describe('ComponentBwilder render', () => {
       .wRender(function () {
         unobservedValue = this['data-info']
         this.root.innerHTML = `<div>Info: ${unobservedValue}</div>`;
-        return {};
       })
       .build();
 
@@ -220,15 +217,12 @@ describe('ComponentBwilder render', () => {
   })
 
   test('unobserved attribute can have default value', () => {
-    let unobservedValue: string | null = 'initial';
-
     const MyComponentClass = new ComponentBwilder()
       .wTagName('rendered-component-with-unobs-attr-default')
       .wShadowDOM('none')
       .wAttr('data-info', 'a default value')
       .wRender(function () {
         this.root.innerHTML = `<div>Info: ${this['data-info']}</div>`;
-        return {};
       })
       .build();
     const c = new MyComponentClass();
@@ -251,7 +245,6 @@ describe('ComponentBwilder render', () => {
       .wRender(function () {
         observedValue = this['data-name']
         this.root.innerHTML = `<div>Hello, ${observedValue}</div>`;
-        return {};
       })
       .build();
 
@@ -277,7 +270,6 @@ describe('ComponentBwilder render', () => {
       .wCSS(css)
       .wRender(function (this: RenderContext) {
         this.root.innerHTML = '<div class="test-class">Styled Text</div>';
-        return {};
       })
       .build();
 

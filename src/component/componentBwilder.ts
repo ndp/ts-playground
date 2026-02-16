@@ -67,11 +67,11 @@ export class ComponentBwilder<
 
   build() {
 
+    if (!this.renderFn) throw new Error('No render function provided to component')
+
+    const renderFn: ComponentRenderer<RenderingContext, SubElements> = this.renderFn
+
     const builder = this
-
-    const renderFn: ComponentRenderer<RenderingContext, SubElements> | undefined = builder.renderFn
-    if (!renderFn) throw new Error('No render function provided to component')
-
     const elementClass = class extends HTMLElement {
 
       private readonly root: ShadowRoot | HTMLElement;
@@ -103,20 +103,23 @@ export class ComponentBwilder<
       connectedCallback() {
         console.log(`Component <${builder.tagName}> connected to DOM.`)
         this.render();
+
+        if (builder.postMountFn)
+          builder.postMountFn.call(this as unknown as RenderingContext, this as unknown as RenderingContext);
       }
 
       render() {
 
         // Build out context
-        const context = {
-          root: this.root
-        } as RenderingContext;
-        for (let a in builder.observedAttrs) // @ts-ignore
-          context[a] = this.getAttribute(a);
-        for (let a in builder.unobservedAttrs) // @ts-ignore
-          context[a] = this.getAttribute(a) ?? builder.unobservedAttrs[a];
+        // const context = {
+        //   root: this.root
+        // } as RenderingContext;
+        // for (let a in builder.observedAttrs) // @ts-ignore
+        //   context[a] = this.getAttribute(a);
+        // for (let a in builder.unobservedAttrs) // @ts-ignore
+        //   context[a] = this.getAttribute(a) ?? builder.unobservedAttrs[a];
 
-        renderFn.call(context);
+        renderFn.call(this as unknown as RenderingContext);
 
         // Inject CSS if provided
         if (this.root.querySelector('style') === null && builder.css) {
@@ -124,20 +127,43 @@ export class ComponentBwilder<
           styleEl.textContent = builder.css;
           this.root.prepend(styleEl);
         }
+
+        if (builder.postRenderFn)
+          builder.postRenderFn.call(this as unknown as RenderingContext, this as unknown as RenderingContext);
       }
 
     }
 
+    for (let a in builder.observedAttrs)
+      Object.defineProperty(elementClass.prototype, a, {
+        get: function() {
+          return this.getAttribute(a)
+        },
+        enumerable: true,
+        configurable: true
+      });
+
+    for (let a in builder.unobservedAttrs)
+      Object.defineProperty(elementClass.prototype, a, {
+        get: function() {
+          return this.getAttribute(a) ?? builder.unobservedAttrs[a];
+        },
+        enumerable: true,
+        configurable: true
+      });
 
     // Register and Return
-    customElements.define(this.tagName!, elementClass)
+    if (this.tagName)
+      customElements.define(this.tagName, elementClass)
 
-    return elementClass as unknown as {
-      prototype: HTMLElement & { connectedCallback(): Promise<void> | void, root: ShadowRoot | HTMLElement };
-      new(): HTMLElement & { connectedCallback(): Promise<void> | void, root: ShadowRoot | HTMLElement };
-    };
+    return elementClass as unknown as ClassConstructorOf<HTMLElement & { connectedCallback(): Promise<void> | void, root: ShadowRoot | HTMLElement }>
+    //
+    // return elementClass as unknown as {
+    //   prototype: HTMLElement & { connectedCallback(): Promise<void> | void, root: ShadowRoot | HTMLElement };
+    //   new(): HTMLElement & { connectedCallback(): Promise<void> | void, root: ShadowRoot | HTMLElement };
+    // };
 
   }
 }
 
-
+type ConstructorOf<T> = new (...args: any[]) => T;
