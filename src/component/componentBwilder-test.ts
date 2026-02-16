@@ -1,8 +1,18 @@
-import {ComponentBwilder} from './componentBwilder.ts'
+import {
+  ComponentBwilder
+} from './componentBwilder.ts'
+import {assertValidTagName, type TagName} from './TagName.ts'
 import {describe, test} from 'node:test'
 import {strict as assert} from 'node:assert'
 import {type RenderContext} from './render.ts'
 
+let tagCounter = 0
+function nextTag(prefix: string): TagName {
+  tagCounter += 1
+  const tagName = `${prefix}-${Date.now().toString(36)}-${tagCounter.toString(36)}`
+  assertValidTagName(tagName)
+  return tagName
+}
 
 // Typescript tests: prevent duplicate calls
 
@@ -14,6 +24,12 @@ new ComponentBwilder().wCSS('.my-class { color: blue; }').wCSS('.my-class { colo
 
 // @ts-expect-error
 new ComponentBwilder().wShadowDOM('open').wShadowDOM('open')
+
+// @ts-expect-error
+new ComponentBwilder().wPostMountFn(() => {}).wPostMountFn(() => {})
+
+// @ts-expect-error
+new ComponentBwilder().wPostRenderFn(() => {}).wPostRenderFn(() => {})
 
 
 const stubRender = function (this: RenderContext) {
@@ -127,6 +143,50 @@ describe('ComponentBwilder observed attributes', () => {
     assert.equal(dataParms!.oldValue, null)
     assert.equal(dataParms!.newValue, '123')
   })
+
+  test('callback receives attr name and component as context', () => {
+
+    let callbackThis: unknown = null
+    let callbackArgs: null | { name: unknown, oldValue: unknown, newValue: unknown } = null
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('observed-attrs-context'))
+      .wObservedAttr('data-id', function (this: HTMLElement, args) {
+        callbackThis = this
+        callbackArgs = args as { name: unknown, oldValue: unknown, newValue: unknown }
+      })
+      .wRender(stubRender)
+      .build()
+
+    const c = new MyComponentClass()
+    c.setAttribute('data-id', '42')
+
+    assert.equal(callbackThis, c)
+    assert.equal(callbackArgs!.name, 'data-id')
+    assert.equal(callbackArgs!.oldValue, null)
+    assert.equal(callbackArgs!.newValue, '42')
+  })
+
+  test('callback receives null when observed attribute is removed', () => {
+    const transitions: Array<{ oldValue: unknown, newValue: unknown }> = []
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('observed-attrs-remove'))
+      .wObservedAttr('data-id', ({oldValue, newValue}) => {
+        transitions.push({oldValue, newValue})
+      })
+      .wRender(stubRender)
+      .build()
+
+    const c = new MyComponentClass()
+    c.setAttribute('data-id', '7')
+    c.removeAttribute('data-id')
+
+    assert.deepEqual(transitions, [
+      {oldValue: null, newValue: '7'},
+      {oldValue: '7', newValue: null}
+    ])
+  })
 })
 
 
@@ -235,6 +295,32 @@ describe('ComponentBwilder render', () => {
     assert.equal(contentDiv!.innerHTML, 'Info: a default value', 'Content div should show default value for unset attribute')
   })
 
+  test('unobserved attribute uses empty string over default and falls back after removal', () => {
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('rendered-component-with-empty-string-default'))
+      .wShadowDOM('none')
+      .wAttr('data-info', 'fallback-default')
+      .wRender(function () {
+        this.root.innerHTML = `<div>Info: ${this['data-info']}</div>`
+      })
+      .build()
+
+    const c = new MyComponentClass()
+    // @ts-ignore
+    c.connectedCallback()
+    assert.equal(c.querySelector('div')!.innerHTML, 'Info: fallback-default')
+
+    c.setAttribute('data-info', '')
+    // @ts-ignore
+    c.render()
+    assert.equal(c.querySelector('div')!.innerHTML, 'Info: ')
+
+    c.removeAttribute('data-info')
+    // @ts-ignore
+    c.render()
+    assert.equal(c.querySelector('div')!.innerHTML, 'Info: fallback-default')
+  })
+
   test('render function receives observed attribute value', () => {
     let observedValue: string | null = null;
 
@@ -283,6 +369,293 @@ describe('ComponentBwilder render', () => {
     const styleElement = shadowRoot!.querySelector('style');
     assert.ok(styleElement, 'Style element should exist in shadow DOM');
     assert.equal(styleElement!.textContent, css, 'Style element should contain the correct CSS');
+  })
+
+  test('observedAttributes include only observed attrs in order', () => {
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('observed-order'))
+      .wObservedAttr('data-first')
+      .wObservedAttr('data-second')
+      .wAttr('data-unobserved')
+      .wRender(stubRender)
+      .build()
+
+    assert.deepEqual((MyComponentClass as unknown as { observedAttributes: string[] }).observedAttributes,
+      ['data-first', 'data-second'])
+  })
+
+  test('observed attr with callback does not auto-render', () => {
+    let renderCount = 0
+    let callbackCount = 0
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('obs-callback-no-rerender'))
+      .wShadowDOM('none')
+      .wObservedAttr('data-id', () => {
+        callbackCount += 1
+      })
+      .wRender(function () {
+        renderCount += 1
+        this.root.innerHTML = `<div>${renderCount}</div>`
+      })
+      .build()
+
+    const c = new MyComponentClass()
+    // @ts-ignore
+    c.connectedCallback()
+
+    assert.equal(renderCount, 1)
+    c.setAttribute('data-id', '123')
+    assert.equal(callbackCount, 1)
+    assert.equal(renderCount, 1)
+    assert.equal(c.querySelector('div')!.innerHTML, '1')
+  })
+
+  test('observed attr without callback auto-renders', () => {
+    let renderCount = 0
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('obs-rerender'))
+      .wShadowDOM('none')
+      .wObservedAttr('data-name')
+      .wRender(function () {
+        renderCount += 1
+        this.root.innerHTML = `<div>${this['data-name']}</div>`
+      })
+      .build()
+
+    const c = new MyComponentClass()
+    // @ts-ignore
+    c.connectedCallback()
+    assert.equal(renderCount, 1)
+
+    c.setAttribute('data-name', 'Frank')
+    assert.equal(renderCount, 2)
+    assert.equal(c.querySelector('div')!.innerHTML, 'Frank')
+  })
+
+  test('wPostMountFn runs once after initial render', () => {
+    const events: string[] = []
+    let mountCount = 0
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('post-mount'))
+      .wShadowDOM('none')
+      .wObservedAttr('data-v')
+      .wRender(function () {
+        events.push('render')
+        this.root.innerHTML = `<div>${this['data-v'] ?? 'init'}</div>`
+      })
+      .wPostMountFn(function (c) {
+        mountCount += 1
+        events.push('postMount')
+        assert.equal(this, c)
+      })
+      .build()
+
+    const c = new MyComponentClass()
+    // @ts-ignore
+    c.connectedCallback()
+
+    assert.equal(mountCount, 1)
+    assert.deepEqual(events, ['render', 'postMount'])
+
+    c.setAttribute('data-v', 'next')
+
+    assert.equal(mountCount, 1)
+    assert.deepEqual(events, ['render', 'postMount', 'render'])
+  })
+
+  test('wPostRenderFn runs after every render', () => {
+    let renderCount = 0
+    let postRenderCount = 0
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('post-render'))
+      .wShadowDOM('none')
+      .wObservedAttr('data-v')
+      .wRender(function () {
+        renderCount += 1
+        this.root.innerHTML = `<div>${this['data-v'] ?? 'init'}</div>`
+      })
+      .wPostRenderFn(function (c) {
+        postRenderCount += 1
+        assert.equal(this, c)
+      })
+      .build()
+
+    const c = new MyComponentClass()
+    // @ts-ignore
+    c.connectedCallback()
+    assert.equal(renderCount, 1)
+    assert.equal(postRenderCount, 1)
+
+    c.setAttribute('data-v', 'next')
+    assert.equal(renderCount, 2)
+    assert.equal(postRenderCount, 2)
+
+    // @ts-ignore
+    c.render()
+    assert.equal(renderCount, 3)
+    assert.equal(postRenderCount, 3)
+  })
+
+  test('injects CSS style only once across re-renders', () => {
+    const css = '.single-style { color: green; }'
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('single-style'))
+      .wShadowDOM('none')
+      .wObservedAttr('data-v')
+      .wCSS(css)
+      .wRender(function () {
+        this.root.innerHTML = '<div class="single-style">Text</div>'
+      })
+      .build()
+
+    const c = new MyComponentClass()
+    // @ts-ignore
+    c.connectedCallback()
+    c.setAttribute('data-v', 'a')
+    // @ts-ignore
+    c.render()
+
+    assert.equal(c.querySelectorAll('style').length, 1)
+    assert.equal(c.querySelector('style')!.textContent, css)
+  })
+
+  test('injects CSS style only once in open shadow root across re-renders', () => {
+    const css = '.single-style-shadow { color: purple; }'
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('single-style-shadow'))
+      .wShadowDOM('open')
+      .wObservedAttr('data-v')
+      .wCSS(css)
+      .wRender(function () {
+        this.root.innerHTML = '<div class="single-style-shadow">Shadow Text</div>'
+      })
+      .build()
+
+    const c = new MyComponentClass()
+    // @ts-ignore
+    c.connectedCallback()
+    c.setAttribute('data-v', 'a')
+    // @ts-ignore
+    c.render()
+
+    assert.equal(c.shadowRoot!.querySelectorAll('style').length, 1)
+    assert.equal(c.shadowRoot!.querySelector('style')!.textContent, css)
+  })
+
+  test('does not inject builder CSS when render output already includes style tag', () => {
+    const builderCss = '.builder-style { color: orange; }'
+    const renderCss = '.render-style { color: black; }'
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('preexisting-style'))
+      .wShadowDOM('none')
+      .wCSS(builderCss)
+      .wRender(function () {
+        this.root.innerHTML = `<style>${renderCss}</style><div class="render-style">Styled</div>`
+      })
+      .build()
+
+    const c = new MyComponentClass()
+    // @ts-ignore
+    c.connectedCallback()
+
+    assert.equal(c.querySelectorAll('style').length, 1)
+    assert.equal(c.querySelector('style')!.textContent, renderCss)
+  })
+
+  test('closed shadowDOM keeps shadowRoot inaccessible', () => {
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('closed-shadow'))
+      .wShadowDOM('closed')
+      .wRender(function () {
+        this.root.innerHTML = '<div>Inside closed root</div>'
+      })
+      .build()
+
+    const c = new MyComponentClass()
+    // @ts-ignore
+    c.connectedCallback()
+
+    assert.equal(c.shadowRoot, null)
+    assert.equal(c.innerHTML, '')
+  })
+
+  test('duplicate custom element tag registration throws', () => {
+    const tag = nextTag('duplicate-tag')
+
+    new ComponentBwilder()
+      .wTagName(tag)
+      .wRender(stubRender)
+      .build()
+
+    assert.throws(() => {
+      new ComponentBwilder()
+        .wTagName(tag)
+        .wRender(stubRender)
+        .build()
+    }, /already.*used|already.*defined|already.*registered/i)
+  })
+
+  test('registers class in customElements registry when tagName is provided', () => {
+    const tag = nextTag('registry-tag')
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(tag)
+      .wRender(stubRender)
+      .build()
+
+    assert.equal(customElements.get(tag), MyComponentClass)
+  })
+
+  test('invalid custom element tag name throws at build', () => {
+    assert.throws(() => {
+      new ComponentBwilder()
+        .wTagName('invalidtag' as unknown as TagName)
+        .wRender(stubRender)
+        .build()
+    }, /valid custom element name|NotSupportedError|hyphen/i)
+  })
+
+  test('wElement can be chained without runtime side effects', () => {
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('with-element-chain'))
+      .wElement('title')
+      .wElement('content')
+      .wShadowDOM('none')
+      .wRender(function () {
+        this.root.innerHTML = '<h1 id="title">T</h1><div id="content">C</div>'
+        return {
+          title: this.root.querySelector('#title') as HTMLElement | null,
+          content: this.root.querySelector('#content') as HTMLElement | null
+        }
+      })
+      .build()
+
+    const c = new MyComponentClass()
+    // @ts-ignore
+    c.connectedCallback()
+
+    assert.equal(c.querySelector('#title')!.textContent, 'T')
+    assert.equal(c.querySelector('#content')!.textContent, 'C')
+  })
+
+  test('build works without tagName and returns a class', () => {
+    const MyComponentClass = new ComponentBwilder()
+      .wShadowDOM('none')
+      .wRender(stubRender)
+      .build()
+
+    assert.equal(typeof MyComponentClass, 'function')
+
+    assert.throws(() => {
+      new MyComponentClass()
+    }, /Invalid constructor|not part of the custom element registry/)
   })
 })
 

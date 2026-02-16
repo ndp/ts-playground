@@ -1,5 +1,5 @@
 import {type ComponentRenderer, type RenderContext, type SubElementsMap} from './render.ts'
-
+import {type TagName, type TagNameLiteral} from './TagName.ts'
 
 type ExtendableStringTuple = readonly [string?, string?, string?, string?, string?, string?, string?, string?]
 type ExtendableStringTuple3 = readonly [...ExtendableStringTuple, ...ExtendableStringTuple, ...ExtendableStringTuple]
@@ -12,18 +12,20 @@ export class ComponentBwilder<
   AttrsRecord extends {} = AllAttrs[number] extends string ? Record<AllAttrs[number], string> : {},
   RenderingContext extends RenderContext<{}> = RenderContext<AttrsRecord>> {
 
-  private tagName: string | undefined
+  private tagName?: string
   private css: string | undefined
   private shadowDOM: 'open' | 'closed' | 'none' = 'open'
   private observedAttrs: Record<string, ((args: { newValue: unknown, oldValue: unknown }) => void) | null> = {}
   private unobservedAttrs: Record<string, string | null> = {}
   private elementNames: string[] = []
   private renderFn: ComponentRenderer<RenderingContext, SubElements> | undefined
+  private postMountFn?: (this: RenderingContext, c: RenderingContext) => void
+  private postRenderFn?: (this: RenderingContext, c: RenderingContext) => void
 
   constructor() {
   }
 
-  wTagName(tagName: string) {
+  wTagName<T extends string>(tagName: TagNameLiteral<T> | TagName) {
     this.tagName = tagName
     return this as this & { wTagName: never }
   }
@@ -63,6 +65,16 @@ export class ComponentBwilder<
   wRender(renderFn: ComponentRenderer<RenderingContext, SubElements>) {
     this.renderFn = renderFn
     return this as unknown as ComponentBwilder<ObservedAttrs> & { wRender: never };
+  }
+
+  wPostMountFn(postMountFn: (this: RenderingContext, c: RenderingContext) => void) {
+    this.postMountFn = postMountFn
+    return this as this & { wPostMountFn: never }
+  }
+
+  wPostRenderFn(postRenderFn: (this: RenderingContext, c: RenderingContext) => void) {
+    this.postRenderFn = postRenderFn
+    return this as this & { wPostRenderFn: never }
   }
 
   build() {
@@ -156,7 +168,7 @@ export class ComponentBwilder<
     if (this.tagName)
       customElements.define(this.tagName, elementClass)
 
-    return elementClass as unknown as ClassConstructorOf<HTMLElement & { connectedCallback(): Promise<void> | void, root: ShadowRoot | HTMLElement }>
+    return elementClass as unknown as ConstructorOf<HTMLElement & { connectedCallback(): Promise<void> | void, root: ShadowRoot | HTMLElement }>
     //
     // return elementClass as unknown as {
     //   prototype: HTMLElement & { connectedCallback(): Promise<void> | void, root: ShadowRoot | HTMLElement };
