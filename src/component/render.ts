@@ -50,7 +50,7 @@ export type ComponentRenderer<
   TSubElements extends SubElementsMap = {},
   TReturnData = IsEmptyObject<TSubElements> extends true ? void : TSubElements,
   TRetVal = TReturnData | Promise<TReturnData>>
-  = (this: TContext) => TRetVal
+  = (this: TContext, context: TContext) => TRetVal
 
 
 /**

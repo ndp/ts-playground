@@ -19,8 +19,8 @@ export class ComponentBwilder<
   private unobservedAttrs: Record<string, string | null> = {}
   private elementNames: string[] = []
   private renderFn: ComponentRenderer<RenderingContext, SubElements> | undefined
-  private postMountFn?: (this: RenderingContext, c: RenderingContext) => void
-  private postRenderFn?: (this: RenderingContext, c: RenderingContext) => void
+  private postMountFn?: (this: RenderingContext, context: RenderingContext) => void
+  private postRenderFn?: (this: RenderingContext, context: RenderingContext) => void
 
   constructor() {
   }
@@ -67,12 +67,12 @@ export class ComponentBwilder<
     return this as unknown as ComponentBwilder<ObservedAttrs> & { wRender: never };
   }
 
-  wPostMountFn(postMountFn: (this: RenderingContext, c: RenderingContext) => void) {
+  wPostMountFn(postMountFn: (this: RenderingContext, context: RenderingContext) => void) {
     this.postMountFn = postMountFn
     return this as this & { wPostMountFn: never }
   }
 
-  wPostRenderFn(postRenderFn: (this: RenderingContext, c: RenderingContext) => void) {
+  wPostRenderFn(postRenderFn: (this: RenderingContext, context: RenderingContext) => void) {
     this.postRenderFn = postRenderFn
     return this as this & { wPostRenderFn: never }
   }
@@ -116,13 +116,15 @@ export class ComponentBwilder<
         console.log(`Component <${builder.tagName}> connected to DOM.`)
         this.render();
 
+        const context = this as unknown as RenderingContext
         if (builder.postMountFn)
-          builder.postMountFn.call(this as unknown as RenderingContext, this as unknown as RenderingContext);
+          builder.postMountFn.call(context, context);
       }
 
       render() {
 
-        renderFn.call(this as unknown as RenderingContext);
+        const context = this as unknown as RenderingContext
+        renderFn.call(context, context);
 
         // Inject CSS if provided
         if (this.root.querySelector('style') === null && builder.css) {
@@ -132,7 +134,7 @@ export class ComponentBwilder<
         }
 
         if (builder.postRenderFn)
-          builder.postRenderFn.call(this as unknown as RenderingContext, this as unknown as RenderingContext);
+          builder.postRenderFn.call(context, context);
       }
 
     }

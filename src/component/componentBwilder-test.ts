@@ -434,6 +434,46 @@ describe('ComponentBwilder render', () => {
     assert.equal(c.querySelector('div')!.innerHTML, 'Frank')
   })
 
+  test('render receives context as first argument', () => {
+    let sameContextObject = false
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('render-context-arg'))
+      .wShadowDOM('none')
+      .wObservedAttr('data-name')
+      .wRender(function (context) {
+        sameContextObject = this === context
+        this.root.innerHTML = `<div>${context['data-name'] ?? 'none'}</div>`
+      })
+      .build()
+
+    const c = new MyComponentClass()
+    c.setAttribute('data-name', 'ArgStyle')
+    // @ts-ignore
+    c.connectedCallback()
+
+    assert.equal(sameContextObject, true)
+    assert.equal(c.querySelector('div')!.innerHTML, 'ArgStyle')
+  })
+
+  test('render supports destructured first-argument context', () => {
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('render-context-destructure'))
+      .wShadowDOM('none')
+      .wObservedAttr('data-name')
+      .wRender(function ({root, 'data-name': dataName}) {
+        root.innerHTML = `<div>${dataName ?? 'none'}</div>`
+      })
+      .build()
+
+    const c = new MyComponentClass()
+    c.setAttribute('data-name', 'DestructureStyle')
+    // @ts-ignore
+    c.connectedCallback()
+
+    assert.equal(c.querySelector('div')!.innerHTML, 'DestructureStyle')
+  })
+
   test('wPostMountFn runs once after initial render', () => {
     const events: string[] = []
     let mountCount = 0
@@ -464,6 +504,27 @@ describe('ComponentBwilder render', () => {
 
     assert.equal(mountCount, 1)
     assert.deepEqual(events, ['render', 'postMount', 'render'])
+  })
+
+  test('wPostMountFn receives context as first argument', () => {
+    let sameContextObject = false
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('post-mount-context-arg'))
+      .wShadowDOM('none')
+      .wRender(function () {
+        this.root.innerHTML = '<div>ready</div>'
+      })
+      .wPostMountFn(function (context) {
+        sameContextObject = this === context
+      })
+      .build()
+
+    const c = new MyComponentClass()
+    // @ts-ignore
+    c.connectedCallback()
+
+    assert.equal(sameContextObject, true)
   })
 
   test('wPostRenderFn runs after every render', () => {
@@ -498,6 +559,30 @@ describe('ComponentBwilder render', () => {
     c.render()
     assert.equal(renderCount, 3)
     assert.equal(postRenderCount, 3)
+  })
+
+  test('wPostRenderFn supports destructured first-argument context', () => {
+    let lastText = ''
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('post-render-context-destructure'))
+      .wShadowDOM('none')
+      .wObservedAttr('data-v')
+      .wRender(function ({root, 'data-v': dataV}) {
+        root.innerHTML = `<div>${dataV ?? 'init'}</div>`
+      })
+      .wPostRenderFn(function ({root}) {
+        lastText = root.querySelector('div')!.textContent ?? ''
+      })
+      .build()
+
+    const c = new MyComponentClass()
+    // @ts-ignore
+    c.connectedCallback()
+    assert.equal(lastText, 'init')
+
+    c.setAttribute('data-v', 'next')
+    assert.equal(lastText, 'next')
   })
 
   test('injects CSS style only once across re-renders', () => {
