@@ -12,6 +12,7 @@ type BwilderRendererReturn<TSubElements extends SubElementsMap>
   = SubElementInputMap<SubElementKeys<TSubElements>> | void
 type ComponentBwilderRenderer<TContext extends RenderContext, TSubElements extends SubElementsMap>
   = (this: TContext, context: TContext) => BwilderRendererReturn<TSubElements> | Promise<BwilderRendererReturn<TSubElements>>
+type CSSMode = 'adopted' | 'inline'
 
 export class ComponentBwilder<
   ObservedAttrs extends ExtendableStringTuple = [],
@@ -22,7 +23,7 @@ export class ComponentBwilder<
   RenderingContext extends RenderContext<{}, SubElementsMap> = RenderContext<AttrsRecord, SubElements>> {
 
   private tagName?: string
-  private css: string | undefined
+  private css: { text: string, requestedMode: CSSMode } | undefined
   private shadowDOM: 'open' | 'closed' | 'none' = 'open'
   private observedAttrs: Record<string, ((args: { newValue: unknown, oldValue: unknown }) => void) | null> = {}
   private unobservedAttrs: Record<string, string | null> = {}
@@ -45,8 +46,8 @@ export class ComponentBwilder<
     return this as this & { wShadowDOM: never }
   }
 
-  wCSS(css: string) {
-    this.css = css
+  wCSS(css: string, requestedMode: CSSMode = 'adopted') {
+    this.css = { text: css, requestedMode }
     return this as this & { wCSS: never }
   }
 
@@ -94,6 +95,7 @@ export class ComponentBwilder<
 
     const builder = this
     const elementClass = class extends HTMLElement {
+      private static warnedCSSFallback = false
 
       private readonly root: ShadowRoot | HTMLElement;
       private subElements: SubElements = makeDefaultSubElements(builder.subElementNames) as SubElements
@@ -149,10 +151,26 @@ export class ComponentBwilder<
         const afterRender = (returnedSubElements?: unknown) => {
           this.subElements = normalizeSubElements(this.root, returnedSubElements, builder.subElementNames) as SubElements
 
-          if (this.root.querySelector('style') === null && builder.css) {
-            const styleEl = document.createElement('style');
-            styleEl.textContent = builder.css;
-            this.root.prepend(styleEl);
+          if (builder.css) {
+            const actualMode = resolveCSSMode(this.root, builder.css.requestedMode)
+
+            if (actualMode !== builder.css.requestedMode && !elementClass.warnedCSSFallback) {
+              console.warn(
+                `[ComponentBwilder] CSS mode "${builder.css.requestedMode}" is not supported for this root. Falling back to "${actualMode}".`
+              )
+              elementClass.warnedCSSFallback = true
+            }
+
+            if (actualMode === 'adopted') {
+              const sheet = ensureStyleSheet(builder.css.text)
+              const rootWithSheets = this.root as AdoptedStylesHost
+              if (!rootWithSheets.adoptedStyleSheets.includes(sheet))
+                rootWithSheets.adoptedStyleSheets = [...rootWithSheets.adoptedStyleSheets, sheet]
+            } else if (this.root.querySelector('style') === null) {
+              const styleEl = document.createElement('style');
+              styleEl.textContent = builder.css.text;
+              this.root.prepend(styleEl);
+            }
           }
 
           if (builder.postRenderFn)
@@ -203,6 +221,45 @@ export class ComponentBwilder<
 }
 
 type ConstructorOf<T> = new (...args: any[]) => T;
+
+type AdoptedStylesHost = {
+  adoptedStyleSheets: CSSStyleSheet[]
+}
+
+const styleSheetByCssText = new Map<string, CSSStyleSheet>()
+
+function ensureStyleSheet(cssText: string) {
+  const existing = styleSheetByCssText.get(cssText)
+  if (existing)
+    return existing
+
+  const styleSheet = new CSSStyleSheet()
+  if (typeof styleSheet.replaceSync !== 'function')
+    throw new Error('CSSStyleSheet API is unavailable for adopted mode')
+  styleSheet.replaceSync(cssText)
+
+  styleSheetByCssText.set(cssText, styleSheet)
+  return styleSheet
+}
+
+function supportsAdoptedStyleSheets(root: ShadowRoot | HTMLElement): root is ShadowRoot & AdoptedStylesHost {
+  const maybeRoot = root as Partial<AdoptedStylesHost>
+  if (!Array.isArray(maybeRoot.adoptedStyleSheets))
+    return false
+  try {
+    void new CSSStyleSheet()
+    return true
+  } catch {
+    return false
+  }
+}
+
+function resolveCSSMode(root: ShadowRoot | HTMLElement, requestedMode: CSSMode): CSSMode {
+  if (requestedMode === 'inline')
+    return 'inline'
+
+  return supportsAdoptedStyleSheets(root) ? 'adopted' : 'inline'
+}
 
 function isPromiseLike<T = unknown>(value: unknown): value is PromiseLike<T> {
   if (!value || (typeof value !== 'object' && typeof value !== 'function'))

@@ -348,7 +348,7 @@ describe('ComponentBwilder render', () => {
     assert.equal(contentDiv2!.innerHTML, 'Hello, Frank', 'Content div should have updated content')
   })
 
-  test('includes CSS in shadow DOM', () => {
+  test('defaults to adopted CSS mode in open shadow DOM', () => {
     const css = `.test-class { color: red; }`;
     const MyComponentClass = new ComponentBwilder()
       .wTagName('styled-component')
@@ -367,8 +367,10 @@ describe('ComponentBwilder render', () => {
     assert.ok(shadowRoot, 'Shadow root should exist');
 
     const styleElement = shadowRoot!.querySelector('style');
-    assert.ok(styleElement, 'Style element should exist in shadow DOM');
-    assert.equal(styleElement!.textContent, css, 'Style element should contain the correct CSS');
+    assert.equal(styleElement, null, 'Style element should not be injected in adopted mode');
+
+    const adoptedSheets = (shadowRoot! as unknown as { adoptedStyleSheets: CSSStyleSheet[] }).adoptedStyleSheets
+    assert.equal(adoptedSheets.length, 1, 'One adopted stylesheet should be attached')
   })
 
   test('observedAttributes include only observed attrs in order', () => {
@@ -802,8 +804,156 @@ describe('ComponentBwilder render', () => {
     // @ts-ignore
     c.render()
 
+    assert.equal(c.shadowRoot!.querySelectorAll('style').length, 0)
+    const adoptedSheets = (c.shadowRoot! as unknown as { adoptedStyleSheets: CSSStyleSheet[] }).adoptedStyleSheets
+    assert.equal(adoptedSheets.length, 1)
+  })
+
+  test('falls back to inline CSS and logs warning when adopted mode is unavailable', () => {
+    const css = '.fallback-style { color: teal; }'
+    const warnings: string[] = []
+    const originalWarn = console.warn
+    console.warn = (message?: unknown) => {
+      warnings.push(String(message ?? ''))
+    }
+
+    try {
+      const MyComponentClass = new ComponentBwilder()
+        .wTagName(nextTag('css-fallback-inline'))
+        .wShadowDOM('none')
+        .wObservedAttr('data-v')
+        .wCSS(css)
+        .wRender(function () {
+          this.root.innerHTML = '<div class="fallback-style">Fallback</div>'
+        })
+        .build()
+
+      const c = new MyComponentClass()
+      // @ts-ignore
+      c.connectedCallback()
+      c.setAttribute('data-v', 'next')
+      // @ts-ignore
+      c.render()
+
+      assert.equal(c.querySelectorAll('style').length, 1)
+      assert.equal(c.querySelector('style')!.textContent, css)
+      assert.equal(warnings.length, 1)
+      assert.match(warnings[0], /Falling back to "inline"/)
+    } finally {
+      console.warn = originalWarn
+    }
+  })
+
+  test('supports explicit inline CSS mode in open shadow root', () => {
+    const css = '.inline-style { color: navy; }'
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('css-inline-mode'))
+      .wShadowDOM('open')
+      .wCSS(css, 'inline')
+      .wRender(function () {
+        this.root.innerHTML = '<div class="inline-style">Inline</div>'
+      })
+      .build()
+
+    const c = new MyComponentClass()
+    // @ts-ignore
+    c.connectedCallback()
+
     assert.equal(c.shadowRoot!.querySelectorAll('style').length, 1)
     assert.equal(c.shadowRoot!.querySelector('style')!.textContent, css)
+  })
+
+  test('adopted mode reuses stylesheet instance for same CSS across components', () => {
+    const css = '.shared-adopted { color: magenta; }'
+
+    const ComponentA = new ComponentBwilder()
+      .wTagName(nextTag('adopted-reuse-a'))
+      .wShadowDOM('open')
+      .wCSS(css)
+      .wRender(function () {
+        this.root.innerHTML = '<div class="shared-adopted">A</div>'
+      })
+      .build()
+
+    const ComponentB = new ComponentBwilder()
+      .wTagName(nextTag('adopted-reuse-b'))
+      .wShadowDOM('open')
+      .wCSS(css)
+      .wRender(function () {
+        this.root.innerHTML = '<div class="shared-adopted">B</div>'
+      })
+      .build()
+
+    const a = new ComponentA()
+    const b = new ComponentB()
+    // @ts-ignore
+    a.connectedCallback()
+    // @ts-ignore
+    b.connectedCallback()
+
+    const aSheets = (a.shadowRoot! as unknown as { adoptedStyleSheets: CSSStyleSheet[] }).adoptedStyleSheets
+    const bSheets = (b.shadowRoot! as unknown as { adoptedStyleSheets: CSSStyleSheet[] }).adoptedStyleSheets
+
+    assert.equal(aSheets.length, 1)
+    assert.equal(bSheets.length, 1)
+    assert.equal(aSheets[0], bSheets[0])
+  })
+
+  test('adopted mode does not duplicate stylesheet across re-renders', () => {
+    const css = '.adopted-no-dup { color: brown; }'
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('adopted-no-dup'))
+      .wShadowDOM('open')
+      .wObservedAttr('data-v')
+      .wCSS(css)
+      .wRender(function () {
+        this.root.innerHTML = '<div class="adopted-no-dup">Text</div>'
+      })
+      .build()
+
+    const c = new MyComponentClass()
+    // @ts-ignore
+    c.connectedCallback()
+    c.setAttribute('data-v', '1')
+    c.setAttribute('data-v', '2')
+    // @ts-ignore
+    c.render()
+
+    const sheets = (c.shadowRoot! as unknown as { adoptedStyleSheets: CSSStyleSheet[] }).adoptedStyleSheets
+    assert.equal(sheets.length, 1)
+    assert.equal(c.shadowRoot!.querySelectorAll('style').length, 0)
+  })
+
+  test('adopted mode does not log fallback warning when supported', () => {
+    const css = '.adopted-no-warning { color: olive; }'
+    const warnings: string[] = []
+    const originalWarn = console.warn
+    console.warn = (message?: unknown) => {
+      warnings.push(String(message ?? ''))
+    }
+
+    try {
+      const MyComponentClass = new ComponentBwilder()
+        .wTagName(nextTag('adopted-no-warning'))
+        .wShadowDOM('open')
+        .wObservedAttr('data-v')
+        .wCSS(css)
+        .wRender(function () {
+          this.root.innerHTML = '<div class="adopted-no-warning">Text</div>'
+        })
+        .build()
+
+      const c = new MyComponentClass()
+      // @ts-ignore
+      c.connectedCallback()
+      c.setAttribute('data-v', 'next')
+
+      assert.equal(warnings.length, 0)
+    } finally {
+      console.warn = originalWarn
+    }
   })
 
   test('does not inject builder CSS when render output already includes style tag', () => {
