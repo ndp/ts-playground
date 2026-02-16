@@ -1,6 +1,15 @@
 import {describe, it as test} from 'node:test'
 import {defineComponent} from './component.ts'
 import assert from "node:assert/strict";
+// import {type StripAnnotations} from "./attr.ts";
+// import {type AssertEqual} from "../util/typescript.ts";
+
+// type StripAnnotationsA = AssertEqual<StripAnnotations<'a'>, 'a'>
+// type StripAnnotationsB = AssertEqual<StripAnnotations<'a*'>, 'a'>
+// type StripAnnotationsC = AssertEqual<StripAnnotations<'a🗱'>, 'a'>
+// type StripAnnotationsD = AssertEqual<StripAnnotations<'a🗱*'>, 'a'>
+// type StripAnnotationsE = AssertEqual<StripAnnotations<'a*🗱'>, 'a'>
+// type TestStripAnnotations = StripAnnotationsA & StripAnnotationsB & StripAnnotationsC & StripAnnotationsD & StripAnnotationsE
 
 describe('attrs', () => {
 
