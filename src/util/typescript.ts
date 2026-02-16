@@ -18,6 +18,14 @@ export type Prettify<T> = {
 
 
 
+// detect `unknown` (returns true only for exactly `unknown`, not `any` or other types)
+export type IsUnknown<T> =
+  IsAny<T> extends true
+    ? false
+    : unknown extends T
+      ? (T extends unknown ? true : false)
+      : false;
+
 
 
 // From https://github.com/type-challenges/type-challenges/blob/main/utils/index.d.ts
