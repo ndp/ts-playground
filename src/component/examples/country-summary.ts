@@ -13,7 +13,7 @@ function panel(name: string) {
 }
 
 panel('name')
-  .wRender(function (): {} {
+  .wRender(function () {
     const iso2 = this['data-iso2'] as ISO2CountryCode;
     const listFormat = new Intl.ListFormat('en-US', {type: 'conjunction', style: 'narrow'});
     const nameEng = teenyDb.countryName(iso2);
@@ -30,17 +30,15 @@ panel('name')
       <h3>Capital</h3>
       <p>${teenyDb.misc(iso2, 'Capital')}</p>
    `;
-    return {};
   })
   .build()
 
 panel('language')
-  .wRender(function (): {} {
+  .wRender(function () {
     const iso2 = this['data-iso2'] as ISO2CountryCode;
     const listFormat = new Intl.ListFormat('en-US', {type: 'conjunction', style: 'narrow'});
     const nameEng = teenyDb.countryName(iso2);
     const langs = teenyDb.langs(iso2) || [];
-    const lang = (langs[0] || 'en-US') as OfficialLanguages;
     const langsStr = listFormat.format(langs);
     this.root.innerHTML = `
       <h2>Name</h2>
@@ -48,12 +46,11 @@ panel('language')
       <h3>Official Language${langs.length > 1 ? 's' : ''}</h3>
       <p>${langsStr}</p>
     `;
-    return {};
   })
   .build()
 
 panel('currency')
-  .wRender(function (): {} {
+  .wRender(function () {
     const iso2 = this['data-iso2'] as ISO2CountryCode;
     const nameEng = teenyDb.countryName(iso2);
     const codes = teenyDb.misc(iso2, 'ISO4217-currency_alphabetic_code')?.split(',') ?? [];
@@ -75,13 +72,12 @@ ${monies.map(money => `<p>${money}</p>`).join('')}
 <h3>U.S. Dollar</h3>
 <p>${asDollar}</p>
     `;
-    return {};
   })
   .build()
 
 
 panel('numbers')
-  .wRender(function (): {} {
+  .wRender(function () {
     const iso2 = this['data-iso2'] as ISO2CountryCode;
     const nameEng = teenyDb.countryName(iso2);
     const locale = this.locale || 'en-US';
@@ -108,14 +104,13 @@ panel('numbers')
       <h3>Kilograms</h3>
       <p>${kilos}</p>
     `;
-    return {};
   })
   .build()
 
 
 
 panel('tech')
-  .wRender(function (): {} {
+  .wRender(function () {
     const iso2 = this['data-iso2'] as ISO2CountryCode;
     const nameEng = teenyDb.countryName(iso2);
     this.root.innerHTML = `
@@ -126,13 +121,12 @@ panel('tech')
       <h3>TLD</h3>
       <p><i>&lt;domain&gt;</i>${teenyDb.misc(iso2, 'TLD')}</p>
     `;
-    return {};
   })
   .build()
 
 
 panel('time')
-  .wRender(function (): {} {
+  .wRender(function () {
     const iso2 = this['data-iso2'] as ISO2CountryCode;
     const nameEng = teenyDb.countryName(iso2);
     const date = new Date()
@@ -150,7 +144,6 @@ panel('time')
       <p>${date.toLocaleDateString(this.locale, {dateStyle: 'long'})}</p>
       <p>${date.toLocaleDateString(this.locale, {dateStyle: 'full'})}</p>
     `;
-    return {};
   })
   .build()
 
@@ -162,7 +155,7 @@ export default new ComponentBwilder()
   .wObservedAttr('mode')
   .wObservedAttr('locale')
   .wCSS(await stylesheetPromise)
-  .wRender(function (): {} {
+  .wRender(function () {
     const iso2 = this['data-iso2'] as ISO2CountryCode;
     let frame = this.root.querySelector('.frame') as HTMLElement;
     if (!frame) {
@@ -171,7 +164,7 @@ export default new ComponentBwilder()
     }
     if (!iso2) {
       frame.innerHTML = '';
-      return {};
+      return
     }
     const locale = this.locale || 'en-US';
     switch (this.mode ?? 'name') {
@@ -203,7 +196,7 @@ export default new ComponentBwilder()
         frame.innerHTML = `???`;
       }
     }
-    return {}
+    return
   })
   .build()
 
