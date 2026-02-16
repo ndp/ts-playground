@@ -4,7 +4,6 @@ DOM:
 
 initial rendering:
 renderDOM from string
-buildDOM from root
 
 subElements:
 return selectors from root (subElements)
@@ -18,33 +17,40 @@ rerender on specified events
 
  */
 
-import type { IsEmptyObject } from '../world/util.ts';
+import type { IsEmptyObject } from '../util/typescript.ts'
 
+/*
+The context object "this" passed to render functions.
+Includes the root element and any attributes that are defined on the class
+ */
 export type RenderContext<Attrs extends {} = {}> = {
   root: HTMLElement
 } & { [k in keyof Attrs]: Attrs[k] }
 
 /*
-RenderFromString
-================
-Given a string of HTML, return a render state object that contains the elements
+A map of subElement names to CSS selectors to find them within the root element.
  */
 export type SubElementSelectorsMap<K extends string = string>
   = { [k in K]: string }
-export type SubElementsMap<K extends string = string>
+
+/*
+  A map of subElement names to the actual HTMLElement (or null if not found).
+ */
+export type SubElementsMap<K extends string = never>
   = { [k in K]: HTMLElement | null}
 
 /**
  * A function that manually (or however) builds the component DOM
- * directly from the root element.
+ * directly onto the root element.
  *
  * Returns a map of subElements (if desired).
  */
 export type ComponentRenderer<
-  Context extends RenderContext = RenderContext<{}>,
-  SubElements extends SubElementsMap = {},
-  RetVal = IsEmptyObject<SubElements> extends true ? void : SubElements>
-  = (this: Context) => RetVal
+  TContext extends RenderContext = RenderContext,
+  TSubElements extends SubElementsMap = {},
+  TReturnData = IsEmptyObject<TSubElements> extends true ? void : TSubElements,
+  TRetVal = TReturnData | Promise<TReturnData>>
+  = (this: TContext) => TRetVal
 
 
 /**
@@ -71,33 +77,27 @@ export function makeComponentRendererFromString<
   K = [keyof SelectorsMap][number],
   MyRenderContext extends RenderContext = RenderContext,
   RetVal = K extends string ? ComponentRenderer<MyRenderContext, SubElementsMap<K>> : ComponentRenderer>(
-  html: string | ((this: MyRenderContext) => string),
+  html: string,
   subElements?: SelectorsMap) {
 
   const renderer = function (this: MyRenderContext) {
-    this.root.innerHTML = typeof html === 'string' ? html : html.call(this)
+    this.root.innerHTML = html
     return subElements ? mapSubElements(this.root, subElements) : null
   }
   return renderer as RetVal
 }
 
-/**
- * Given a renderer, build the DOM and return the subElements.
- * @param renderer
- */
-export const xbuildDOM =
-  function<
-    F extends ComponentRenderer,
-    Context extends RenderContext = ThisParameterType<F>
-    > (
-    this: Context,
-    renderer: F): ReturnType<F> {
-    return renderer.call(this) as ReturnType<F>
-  }
+export function makeComponentRendererFromFn<
+  SelectorsMap extends SubElementSelectorsMap,
+  K = [keyof SelectorsMap][number],
+  MyRenderContext extends RenderContext = RenderContext,
+  RetVal = K extends string ? ComponentRenderer<MyRenderContext, SubElementsMap<K>> : ComponentRenderer>(
+  htmlFn: (context: MyRenderContext) => string,
+  subElements?: SelectorsMap) {
 
-  export function buildDOM<
-  Context extends RenderContext,
-  F extends ComponentRenderer<Context>
-  >(context: Context, renderer: F): ReturnType<F> {
-    return renderer.call(context) as ReturnType<F>
+  const renderer = function (this: MyRenderContext) {
+    this.root.innerHTML = htmlFn.call(this, this)
+    return subElements ? mapSubElements(this.root, subElements) : null
   }
+  return renderer as RetVal
+}

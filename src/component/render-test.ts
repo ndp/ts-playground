@@ -2,88 +2,73 @@ import {strict as assert} from 'node:assert';
 import {describe, it} from 'node:test'
 import {
   makeComponentRendererFromString,
-  buildDOM,
+  makeComponentRendererFromFn
 } from './render.ts';
 import type {
-  ComponentRenderer
+  ComponentRenderer,
+  RenderContext
 } from './render.ts';
 
 
 describe('makeComponentRendererFromString', () => {
+
   it('should return a function that sets root innerHTML to the provided string', () => {
-    const renderer = makeComponentRendererFromString('Hello, world!');
+    const renderer =
+      makeComponentRendererFromString('Hello, world!');
     const context = {root: document.createElement('div')};
+
     renderer.call(context);
+
     assert.equal(context.root.innerHTML, 'Hello, world!');
+    assert.equal(context.root.outerHTML, '<div>Hello, world!</div>');
   });
 
-  it('should return a function that sets root innerHTML to the result of the provided function', () => {
-    const renderer = makeComponentRendererFromString(() => 'Hello, world!');
-    const context = {root: document.createElement('div')};
-    renderer.call(context);
-    assert.equal(context.root.innerHTML, 'Hello, world!');
-  });
-
-  it('should return a function that maps subElements', () => {
+  it('should return a function that maps subElements', async () => {
     const renderer =
       makeComponentRendererFromString('<div id="test">Hello, world!</div>', {test: '#test'});
-
     const context = {root: document.createElement('div')};
-    const result = renderer.call(context);
+
+    const result = await renderer.call(context);
 
     assert.ok(result.hasOwnProperty('test'));
     assert.equal(result.test!.innerHTML, 'Hello, world!');
   });
-});
 
-
-describe('buildDOM', () => {
-  it('should call the provided renderer on root element', (t) => {
-    let calledCount = 0
-    let savedThis: any = null
-
-    const rend = function () {
-        savedThis = this;
-        calledCount++
-    } as ComponentRenderer<any>
-    const root = document.createElement('div')
-    const context = {root};
-
-    buildDOM(context, rend);
-
-    assert.equal(1, calledCount);
-    assert.equal(root, savedThis.root);
-  });
-
-  it('should return the elements return from the provided renderer', () => {
-    const renderer = function (this: { root: HTMLElement }) {
-      this.root.innerHTML = '<div>Hello, <span>world</span>!</div>';
-      return {span: this.root.querySelector('span')};
-    };
+  it('should map subElements to null when selector not found', () => {
+    const renderer =
+      makeComponentRendererFromString('<div></div>', {missing: '#nope'});
 
     const context = {root: document.createElement('div')};
-    const result = buildDOM(context, renderer) as ReturnType<typeof renderer>;
+    const result = renderer.call(context) as any;
 
-    assert.ok(result.hasOwnProperty('span'));
-    assert.equal(result.span!.innerHTML, 'world');
-    assert.equal(result.span!.tagName, 'SPAN');
+    assert.ok(result.hasOwnProperty('missing'));
+    assert.equal(result.missing, null);
   });
 
-  it('should render using properties', () => {
-    const renderer = function (this: { root: HTMLElement, name: string }) {
-      this.root.innerHTML = `<div>Hello, <span>${this.name || 'world'}</span>!</div>`;
-      return {span: this.root.querySelector('span') as HTMLSpanElement};
-    };
-
-    type foo =ReturnType<typeof renderer>
-
-    const context = {root: document.createElement('div'), name: 'Earth'};
-    // const result = buildDOM.call(context, renderer) as ReturnType<typeof renderer>;
-    const result = buildDOM(context, renderer)
-
-    assert.ok(result.hasOwnProperty('span'));
-    assert.equal(result.span!.innerHTML, 'Earth');
-    assert.equal(result.span!.tagName, 'SPAN');
-  });
 });
 
+describe('makeComponentRendererFromFn', () => {
+
+  it('should return a function that sets root innerHTML to the result of the provided function', () => {
+    const renderer =
+      makeComponentRendererFromFn(() => 'Hello, world!');
+    const context = {root: document.createElement('div')};
+
+    renderer.call(context);
+
+    assert.equal(context.root.innerHTML, 'Hello, world!');
+    assert.equal(context.root.outerHTML, '<div>Hello, world!</div>');
+  });
+
+  it('should allow html function to use context properties', () => {
+    const renderer =
+      makeComponentRendererFromFn(({name}: RenderContext<{ name: string }>) => {
+        return `<div id="greet">Hello, ${name}</div>`;
+      });
+    const context = {root: document.createElement('div'), name: 'Mars'};
+
+    renderer.call(context);
+
+    assert.equal(context.root.querySelector('#greet')!.innerHTML, 'Hello, Mars');
+  });
+});
