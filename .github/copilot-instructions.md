@@ -18,11 +18,6 @@ This is EXTREMELY IMPORTANT:
 - Preserve existing naming, formatting, and file organization.
 - Do not introduce unrelated refactors.
 
-### Component validation commands
-When changing files under `src/component/`, run:
-- `node --test -r ./test/setup-jsdom.js 'src/component/**/*test.ts'`
-- `tsc --declaration --emitDeclarationOnly --allowImportingTsExtensions --module nodenext --outDir ./build/ src/component/**/*.ts`
-
 ### Git workflow
 - Never use `git add -A`.
 - Stage only explicit files or use patch-mode staging.

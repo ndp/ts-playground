@@ -1,0 +1,14 @@
+{
+  "name": "@ts-playground/component",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "npm run clean && npm run build:js && npm run build:types",
+    "build:js": "esbuild ./componentBwilder.ts --bundle --format=esm --platform=browser --target=es2022 --sourcemap --outfile=../../build/component-lib/componentBwilder.js",
+    "build:types": "tsc -p ./tsconfig.types.json",
+    "typecheck": "tsc -p ./tsconfig.check.json --noEmit",
+    "test": "node --test -r ../../test/setup-jsdom.js './**/*test.ts'",
+    "verify": "npm run typecheck && npm run test",
+    "clean": "rimraf ../../build/component-lib"
+  }
+}

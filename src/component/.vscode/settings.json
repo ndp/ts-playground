@@ -1,13 +1,12 @@
 {
     "chat.tools.terminal.autoApprove": {
-        "/^cd /home/ndp/workspace/ts-playground && tsc --declaration --emitDeclarationOnly --allowImportingTsExtensions --module nodenext --outDir \\./build/ src/component/\\*\\*/\\*\\.ts$/": {
+        "/^cd /home/ndp/workspace/ts-playground && npm --prefix \\./src/component run verify$/": {
             "approve": true,
             "matchCommandLine": true
         },
-        "/^cd /home/ndp/workspace/ts-playground && node --test -r \\./test/setup-jsdom\\.js 'src/component/\\*\\*/\\*test\\.ts'$/": {
+        "/^cd /home/ndp/workspace/ts-playground && npm --prefix \\./src/component run build$/": {
             "approve": true,
             "matchCommandLine": true
-        },
-        "tsc": true
+        }
     }
 }

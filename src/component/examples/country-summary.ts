@@ -3,7 +3,6 @@ import {ComponentBwilder} from '../componentBwilder.ts';
 import {assertValidTagName} from '../TagName.ts'
 import {maybeFetchText} from '../../world/util.ts'
 
-const stylesheetPromise = maybeFetchText(new URL('../../src/world/country-summary.css', import.meta.url))
 
 function panel(name: string) {
   const panelTag = `country-summary-${name}-panel`
@@ -151,6 +150,8 @@ panel('time')
   })
   .build()
 
+  
+const stylesheetPromise = maybeFetchText(new URL('../../src/world/country-summary.css', import.meta.url))
 
 export default new ComponentBwilder()
   .wTagName('country-summary')
