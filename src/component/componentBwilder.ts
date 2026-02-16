@@ -97,8 +97,8 @@ export class ComponentBwilder<
     const elementClass = class extends HTMLElement {
       private static warnedCSSFallback = false
 
-      private readonly root: ShadowRoot | HTMLElement;
-      private subElements: SubElements = makeDefaultSubElements(builder.subElementNames) as SubElements
+      readonly root: ShadowRoot | HTMLElement;
+      subElements: SubElements = makeDefaultSubElements(builder.subElementNames) as SubElements
 
       constructor() {
         super()
@@ -210,7 +210,7 @@ export class ComponentBwilder<
     if (this.tagName)
       customElements.define(this.tagName, elementClass)
 
-    return elementClass as unknown as ConstructorOf<HTMLElement & { connectedCallback(): Promise<void> | void, root: ShadowRoot | HTMLElement }>
+    return elementClass as unknown as ConstructorOf<BuiltComponentInstance<RenderingContext, SubElements>>
     //
     // return elementClass as unknown as {
     //   prototype: HTMLElement & { connectedCallback(): Promise<void> | void, root: ShadowRoot | HTMLElement };
@@ -221,6 +221,15 @@ export class ComponentBwilder<
 }
 
 type ConstructorOf<T> = new (...args: any[]) => T;
+type BuiltComponentInstance<
+  TContext extends RenderContext = RenderContext,
+  TSubElements extends SubElementsMap = {}
+> = HTMLElement & TContext & {
+  connectedCallback(): Promise<void> | void
+  render(): Promise<void> | void
+  root: ShadowRoot | HTMLElement
+  subElements: TSubElements
+}
 
 type AdoptedStylesHost = {
   adoptedStyleSheets: CSSStyleSheet[]

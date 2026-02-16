@@ -201,7 +201,6 @@ describe('ComponentBwilder render', () => {
       .build()
 
     const c = new MyComponentClass()
-    // @ts-ignore
     c.connectedCallback()
     const contentDiv = c.querySelector('.content')
     assert.ok(contentDiv, 'Content div should exist')
@@ -233,7 +232,6 @@ describe('ComponentBwilder render', () => {
     const c = new MyComponentClass();
     c.setAttribute('data-info', 'some info');
 
-    // @ts-ignore
     c.connectedCallback()
 
     const contentDiv = c.querySelector('div')
@@ -245,7 +243,6 @@ describe('ComponentBwilder render', () => {
     assert.equal(contentDiv2!.innerHTML, 'Info: some info', 'Content div should not change automatically')
 
     // Re-render manually since attribute is unobserved
-    // @ts-ignore
     c.render();
     const contentDiv3 = c.querySelector('div')
     assert.equal(contentDiv3!.innerHTML, 'Info: other info', 'Content div should have updated content')
@@ -269,7 +266,6 @@ describe('ComponentBwilder render', () => {
     const c = new MyComponentClass();
     // Note: not setting data-info attribute
 
-    // @ts-ignore
     c.connectedCallback()
 
     const contentDiv = c.querySelector('div')
@@ -288,7 +284,6 @@ describe('ComponentBwilder render', () => {
     const c = new MyComponentClass();
     // Note: not setting data-info attribute
 
-    // @ts-ignore
     c.connectedCallback()
 
     const contentDiv = c.querySelector('div')
@@ -306,17 +301,14 @@ describe('ComponentBwilder render', () => {
       .build()
 
     const c = new MyComponentClass()
-    // @ts-ignore
     c.connectedCallback()
     assert.equal(c.querySelector('div')!.innerHTML, 'Info: fallback-default')
 
     c.setAttribute('data-info', '')
-    // @ts-ignore
     c.render()
     assert.equal(c.querySelector('div')!.innerHTML, 'Info: ')
 
     c.removeAttribute('data-info')
-    // @ts-ignore
     c.render()
     assert.equal(c.querySelector('div')!.innerHTML, 'Info: fallback-default')
   })
@@ -337,7 +329,6 @@ describe('ComponentBwilder render', () => {
     const c = new MyComponentClass();
     c.setAttribute('data-name', 'world!');
 
-    // @ts-ignore
     c.connectedCallback()
 
     const contentDiv = c.querySelector('div')
@@ -360,7 +351,6 @@ describe('ComponentBwilder render', () => {
       .build();
 
     const c = new MyComponentClass();
-    // @ts-ignore
     c.connectedCallback();
 
     const shadowRoot = c.shadowRoot;
@@ -403,7 +393,6 @@ describe('ComponentBwilder render', () => {
       .build()
 
     const c = new MyComponentClass()
-    // @ts-ignore
     c.connectedCallback()
 
     assert.equal(renderCount, 1)
@@ -427,7 +416,6 @@ describe('ComponentBwilder render', () => {
       .build()
 
     const c = new MyComponentClass()
-    // @ts-ignore
     c.connectedCallback()
     assert.equal(renderCount, 1)
 
@@ -451,7 +439,6 @@ describe('ComponentBwilder render', () => {
 
     const c = new MyComponentClass()
     c.setAttribute('data-name', 'ArgStyle')
-    // @ts-ignore
     c.connectedCallback()
 
     assert.equal(sameContextObject, true)
@@ -470,7 +457,6 @@ describe('ComponentBwilder render', () => {
 
     const c = new MyComponentClass()
     c.setAttribute('data-name', 'DestructureStyle')
-    // @ts-ignore
     c.connectedCallback()
 
     assert.equal(c.querySelector('div')!.innerHTML, 'DestructureStyle')
@@ -496,7 +482,6 @@ describe('ComponentBwilder render', () => {
       .build()
 
     const c = new MyComponentClass()
-    // @ts-ignore
     c.connectedCallback()
 
     assert.equal(mountCount, 1)
@@ -523,7 +508,6 @@ describe('ComponentBwilder render', () => {
       .build()
 
     const c = new MyComponentClass()
-    // @ts-ignore
     c.connectedCallback()
 
     assert.equal(sameContextObject, true)
@@ -548,7 +532,6 @@ describe('ComponentBwilder render', () => {
       .build()
 
     const c = new MyComponentClass()
-    // @ts-ignore
     c.connectedCallback()
     assert.equal(renderCount, 1)
     assert.equal(postRenderCount, 1)
@@ -557,7 +540,6 @@ describe('ComponentBwilder render', () => {
     assert.equal(renderCount, 2)
     assert.equal(postRenderCount, 2)
 
-    // @ts-ignore
     c.render()
     assert.equal(renderCount, 3)
     assert.equal(postRenderCount, 3)
@@ -579,7 +561,6 @@ describe('ComponentBwilder render', () => {
       .build()
 
     const c = new MyComponentClass()
-    // @ts-ignore
     c.connectedCallback()
     assert.equal(lastText, 'init')
 
@@ -614,7 +595,6 @@ describe('ComponentBwilder render', () => {
       .build()
 
     const c = new MyComponentClass()
-    // @ts-ignore
     await c.connectedCallback()
 
     assert.deepEqual(events, [
@@ -643,7 +623,6 @@ describe('ComponentBwilder render', () => {
       .build()
 
     const c = new MyComponentClass()
-    // @ts-ignore
     await c.render()
 
     assert.equal(postRenderDone, true)
@@ -665,8 +644,7 @@ describe('ComponentBwilder render', () => {
       .build()
 
     const c = new MyComponentClass()
-    // @ts-ignore
-    await assert.rejects(() => c.connectedCallback(), /render failed/)
+    await assert.rejects(() => Promise.resolve(c.connectedCallback()), /render failed/)
     assert.equal(postMountCalled, false)
   })
 
@@ -684,8 +662,7 @@ describe('ComponentBwilder render', () => {
       .build()
 
     const c = new MyComponentClass()
-    // @ts-ignore
-    await assert.rejects(() => c.render(), /postRender failed/)
+    await assert.rejects(() => Promise.resolve(c.render()), /postRender failed/)
   })
 
   test('connectedCallback rejects when postMountFn rejects', async () => {
@@ -705,8 +682,7 @@ describe('ComponentBwilder render', () => {
       .build()
 
     const c = new MyComponentClass()
-    // @ts-ignore
-    await assert.rejects(() => c.connectedCallback(), /postMount failed/)
+    await assert.rejects(() => Promise.resolve(c.connectedCallback()), /postMount failed/)
     assert.equal(renderCompleted, true)
   })
 
@@ -721,7 +697,6 @@ describe('ComponentBwilder render', () => {
 
     const c1 = new RenderThrowsClass()
     assert.throws(() => {
-      // @ts-ignore
       c1.connectedCallback()
     }, /render sync failed/)
 
@@ -738,7 +713,6 @@ describe('ComponentBwilder render', () => {
 
     const c2 = new PostRenderThrowsClass()
     assert.throws(() => {
-      // @ts-ignore
       c2.render()
     }, /postRender sync failed/)
 
@@ -755,7 +729,6 @@ describe('ComponentBwilder render', () => {
 
     const c3 = new PostMountThrowsClass()
     assert.throws(() => {
-      // @ts-ignore
       c3.connectedCallback()
     }, /postMount sync failed/)
   })
@@ -774,10 +747,8 @@ describe('ComponentBwilder render', () => {
       .build()
 
     const c = new MyComponentClass()
-    // @ts-ignore
     c.connectedCallback()
     c.setAttribute('data-v', 'a')
-    // @ts-ignore
     c.render()
 
     assert.equal(c.querySelectorAll('style').length, 1)
@@ -798,10 +769,8 @@ describe('ComponentBwilder render', () => {
       .build()
 
     const c = new MyComponentClass()
-    // @ts-ignore
     c.connectedCallback()
     c.setAttribute('data-v', 'a')
-    // @ts-ignore
     c.render()
 
     assert.equal(c.shadowRoot!.querySelectorAll('style').length, 0)
@@ -829,10 +798,8 @@ describe('ComponentBwilder render', () => {
         .build()
 
       const c = new MyComponentClass()
-      // @ts-ignore
       c.connectedCallback()
       c.setAttribute('data-v', 'next')
-      // @ts-ignore
       c.render()
 
       assert.equal(c.querySelectorAll('style').length, 1)
@@ -857,7 +824,6 @@ describe('ComponentBwilder render', () => {
       .build()
 
     const c = new MyComponentClass()
-    // @ts-ignore
     c.connectedCallback()
 
     assert.equal(c.shadowRoot!.querySelectorAll('style').length, 1)
@@ -887,9 +853,7 @@ describe('ComponentBwilder render', () => {
 
     const a = new ComponentA()
     const b = new ComponentB()
-    // @ts-ignore
     a.connectedCallback()
-    // @ts-ignore
     b.connectedCallback()
 
     const aSheets = (a.shadowRoot! as unknown as { adoptedStyleSheets: CSSStyleSheet[] }).adoptedStyleSheets
@@ -914,11 +878,9 @@ describe('ComponentBwilder render', () => {
       .build()
 
     const c = new MyComponentClass()
-    // @ts-ignore
     c.connectedCallback()
     c.setAttribute('data-v', '1')
     c.setAttribute('data-v', '2')
-    // @ts-ignore
     c.render()
 
     const sheets = (c.shadowRoot! as unknown as { adoptedStyleSheets: CSSStyleSheet[] }).adoptedStyleSheets
@@ -946,7 +908,6 @@ describe('ComponentBwilder render', () => {
         .build()
 
       const c = new MyComponentClass()
-      // @ts-ignore
       c.connectedCallback()
       c.setAttribute('data-v', 'next')
 
@@ -970,7 +931,6 @@ describe('ComponentBwilder render', () => {
       .build()
 
     const c = new MyComponentClass()
-    // @ts-ignore
     c.connectedCallback()
 
     assert.equal(c.querySelectorAll('style').length, 1)
@@ -987,7 +947,6 @@ describe('ComponentBwilder render', () => {
       .build()
 
     const c = new MyComponentClass()
-    // @ts-ignore
     c.connectedCallback()
 
     assert.equal(c.shadowRoot, null)
@@ -1046,7 +1005,6 @@ describe('ComponentBwilder render', () => {
       .build()
 
     const c = new MyComponentClass()
-    // @ts-ignore
     c.connectedCallback()
 
     assert.equal(c.querySelector('#title')!.textContent, 'T')
@@ -1074,13 +1032,10 @@ describe('ComponentBwilder render', () => {
       .build()
 
     const c = new MyComponentClass()
-    // @ts-ignore
     c.connectedCallback()
 
     assert.equal(postRenderTitle, 'My Title')
-    // @ts-ignore
     assert.equal(c.subElements.title?.textContent, 'My Title')
-    // @ts-ignore
     assert.equal(c.subElements.content?.textContent, 'My Content')
   })
 
@@ -1098,10 +1053,8 @@ describe('ComponentBwilder render', () => {
       .build()
 
     const c = new MyComponentClass()
-    // @ts-ignore
     c.connectedCallback()
 
-    // @ts-ignore
     assert.equal(c.subElements.title?.textContent, 'Direct Element')
   })
 
