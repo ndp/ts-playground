@@ -1,8 +1,4 @@
-import {
-  type RenderContext,
-  type SubElementInputMap,
-  type SubElementsMap
-} from './render.ts'
+import {type RenderContext, type SubElementInputMap, type SubElementsMap} from './render.ts'
 import {type TagName, type TagNameLiteral} from './TagName.ts'
 
 type ExtendableStringTuple = readonly [string?, string?, string?, string?, string?, string?, string?, string?]
@@ -20,17 +16,18 @@ export class ComponentBwilder<
   SubElements extends SubElementsMap = {},
   AllAttrs extends ExtendableStringTuple3 = [...ObservedAttrs, ...UnobservedAttrs],
   AttrsRecord extends {} = AllAttrs[number] extends string ? Record<AllAttrs[number], string> : {},
-  RenderingContext extends RenderContext<{}, SubElementsMap> = RenderContext<AttrsRecord, SubElements>> {
+  RenderingContext extends RenderContext<{}, SubElementsMap> = RenderContext<AttrsRecord, SubElements>,
+  ComponentType = HTMLElement & RenderingContext> {
 
   private tagName?: string
   private css: { text: string, requestedMode: CSSMode } | undefined
   private shadowDOM: 'open' | 'closed' | 'none' = 'open'
-  private observedAttrs: Record<string, ((args: { newValue: unknown, oldValue: unknown }) => void) | null> = {}
+  private observedAttrs: Record<string, ((args: { name: string, newValue: unknown, oldValue: unknown }) => void) | null> = {}
   private unobservedAttrs: Record<string, string | null> = {}
   private subElementNames: string[] = []
   private renderFn: ComponentBwilderRenderer<RenderingContext, SubElements> | undefined
-  private postMountFn?: (this: RenderingContext, context: RenderingContext) => void | Promise<void>
-  private postRenderFn?: (this: RenderingContext, context: RenderingContext) => void | Promise<void>
+  private postMountFn?: (this: ComponentType, context: ComponentType) => void | Promise<void>
+  private postRenderFn?: (this: ComponentType, context: ComponentType) => void | Promise<void>
 
   constructor() {
   }
@@ -58,7 +55,7 @@ export class ComponentBwilder<
   }
 
   wObservedAttr<A extends string>(attr: A,
-                                  onChange?: (args: { newValue: unknown, oldValue: unknown }) => void) {
+                                  onChange?: (args: { name: string, newValue: unknown, oldValue: unknown }) => void) {
     if (attr in this.observedAttrs)
       throw new Error(`Attr "${attr}" is already observed.`)
     this.observedAttrs[attr] = onChange ?? null
@@ -77,13 +74,13 @@ export class ComponentBwilder<
     return this as this & { wRender: never };
   }
 
-  wPostMountFn(postMountFn: (this: RenderingContext, context: RenderingContext) => void | Promise<void>) {
-    this.postMountFn = postMountFn
+  wPostMountFn(postMountFn: (this: ComponentType, context: ComponentType) => void | Promise<void>) {
+    this.postMountFn = postMountFn as any
     return this as this & { wPostMountFn: never }
   }
 
-  wPostRenderFn(postRenderFn: (this: RenderingContext, context: RenderingContext) => void | Promise<void>) {
-    this.postRenderFn = postRenderFn
+  wPostRenderFn(postRenderFn: (this: ComponentType, context: ComponentType) => void | Promise<void>) {
+    this.postRenderFn = postRenderFn as any
     return this as this & { wPostRenderFn: never }
   }
 
@@ -105,7 +102,7 @@ export class ComponentBwilder<
         if (builder.shadowDOM !== 'none')
           this.root = this.attachShadow({mode: builder.shadowDOM})
         else
-          this.root = this
+          this.root = this as any
 
         // if (this.onSlotChange)
         //    this.onSlotChange = this.onSlotChange.bind(this);
@@ -126,21 +123,15 @@ export class ComponentBwilder<
 
       connectedCallback() {
         console.log(`Component <${builder.tagName}> connected to DOM.`)
-        const context = this as unknown as RenderingContext
+
         const rendered = this.render()
 
-        const callPostMount = () => {
-          if (!builder.postMountFn) return
-          return builder.postMountFn.call(context, context)
-        }
+        if (!builder.postMountFn) return rendered
 
-        if (isPromiseLike(rendered)) {
-          return Promise.resolve(rendered).then(() => callPostMount())
-        }
-
-        const postMountResult = callPostMount()
-        if (isPromiseLike(postMountResult))
-          return postMountResult
+        const context = this as unknown as ComponentType
+        return isPromiseLike(rendered)
+          ? rendered.then(() => builder.postMountFn!.call(context, context))
+          : builder.postMountFn!.call(context, context)
       }
 
       render() {
@@ -174,7 +165,7 @@ export class ComponentBwilder<
           }
 
           if (builder.postRenderFn)
-            return builder.postRenderFn.call(context, context)
+            return builder.postRenderFn.call(context as any, context as any)
         }
 
         if (isPromiseLike(renderResult)) {
@@ -190,7 +181,7 @@ export class ComponentBwilder<
 
     for (let a in builder.observedAttrs)
       Object.defineProperty(elementClass.prototype, a, {
-        get: function() {
+        get: function(this: HTMLElement) {
           return this.getAttribute(a)
         },
         enumerable: true,
@@ -199,32 +190,25 @@ export class ComponentBwilder<
 
     for (let a in builder.unobservedAttrs)
       Object.defineProperty(elementClass.prototype, a, {
-        get: function() {
+        get: function(this: HTMLElement) {
           return this.getAttribute(a) ?? builder.unobservedAttrs[a];
         },
         enumerable: true,
         configurable: true
       });
 
-    // Register and Return
     if (this.tagName)
       customElements.define(this.tagName, elementClass)
 
     return elementClass as unknown as ConstructorOf<BuiltComponentInstance<RenderingContext, SubElements>>
-    //
-    // return elementClass as unknown as {
-    //   prototype: HTMLElement & { connectedCallback(): Promise<void> | void, root: ShadowRoot | HTMLElement };
-    //   new(): HTMLElement & { connectedCallback(): Promise<void> | void, root: ShadowRoot | HTMLElement };
-    // };
-
   }
 }
 
 type ConstructorOf<T> = new (...args: any[]) => T;
 type BuiltComponentInstance<
-  TContext extends RenderContext = RenderContext,
-  TSubElements extends SubElementsMap = {}
-> = HTMLElement & TContext & {
+  TComponent,
+  TSubElements extends SubElementsMap
+> = TComponent & HTMLElement &{
   connectedCallback(): Promise<void> | void
   render(): Promise<void> | void
   root: ShadowRoot | HTMLElement

@@ -7,6 +7,7 @@ import {strict as assert} from 'node:assert'
 import {type RenderContext} from './render.ts'
 
 let tagCounter = 0
+
 function nextTag(prefix: string): TagName {
   tagCounter += 1
   const tagName = `${prefix}-${Date.now().toString(36)}-${tagCounter.toString(36)}`
@@ -41,7 +42,7 @@ describe('ComponentBwilder basic tests', () => {
 
     const MyBuilder =
       new ComponentBwilder()
-        .wTagName('another-component')
+        .wTagName('another-component' as TagName)
         .wCSS('.my-class { color: blue; }')
         .wShadowDOM('open')
         .wRender(function () {
@@ -58,7 +59,7 @@ describe('ComponentBwilder basic tests', () => {
   test('without css and shadowDOM', () => {
     const MyBuilder =
       new ComponentBwilder()
-        .wTagName('simple-component')
+        .wTagName('simple-component' as TagName)
         .wRender(stubRender)
     const MyComponent = MyBuilder.build()
 
@@ -69,7 +70,7 @@ describe('ComponentBwilder basic tests', () => {
 
   test('with closed shadowDOM', () => {
     const MyBuilder = new ComponentBwilder()
-      .wTagName('closed-component')
+      .wTagName('closed-component' as TagName)
       .wShadowDOM('closed')
       .wRender(stubRender)
     const MyComponent = MyBuilder.build()
@@ -81,7 +82,7 @@ describe('ComponentBwilder basic tests', () => {
   test('with no shadowDOM', () => {
     const MyBuilder =
       new ComponentBwilder()
-        .wTagName('no-shadow-component')
+        .wTagName('no-shadow-component' as TagName)
         .wShadowDOM('none')
         .wRender(stubRender)
     const MyComponent = MyBuilder.build()
@@ -97,7 +98,7 @@ describe('ComponentBwilder observed attributes', () => {
   test('basic definition', () => {
     const MyBuilder =
       new ComponentBwilder()
-        .wTagName('observed-attrs-component')
+        .wTagName('observed-attrs-component' as TagName)
         .wObservedAttr('data-id', ({newValue, oldValue}) => {
           console.log(`data-id changed from ${oldValue} to ${newValue}`)
         })
@@ -129,7 +130,7 @@ describe('ComponentBwilder observed attributes', () => {
     let dataParms = null as null | { newValue: unknown, oldValue: unknown }
 
     const MyComponentClass = new ComponentBwilder()
-      .wTagName('observed-attrs-callback-component')
+      .wTagName('observed-attrs-callback-component' as TagName)
       .wObservedAttr('data-id', function ({newValue, oldValue}) {
         dataParms = {newValue, oldValue}
       })
@@ -193,7 +194,7 @@ describe('ComponentBwilder observed attributes', () => {
 describe('ComponentBwilder render', () => {
   test('with render function', () => {
     const MyComponentClass = new ComponentBwilder()
-      .wTagName('rendered-component-with-render-fn')
+      .wTagName('rendered-component-with-render-fn' as TagName)
       .wShadowDOM('none')
       .wRender(function (this: RenderContext) {
         this.root.innerHTML = '<div class="content">Hello, world!</div>'
@@ -210,7 +211,7 @@ describe('ComponentBwilder render', () => {
   test('without render function', () => {
     assert.throws(() => {
       new ComponentBwilder()
-        .wTagName('rendered-component-without-render-fn')
+        .wTagName('rendered-component-without-render-fn' as TagName)
         .wShadowDOM('none')
         .build()
     }, /No render function provided to component/)
@@ -220,7 +221,7 @@ describe('ComponentBwilder render', () => {
     let unobservedValue: string | null = null;
 
     const MyComponentClass = new ComponentBwilder()
-      .wTagName('rendered-component-with-unobs-attr')
+      .wTagName('rendered-component-with-unobs-attr' as TagName)
       .wShadowDOM('none')
       .wAttr('data-info')
       .wRender(function () {
@@ -254,7 +255,7 @@ describe('ComponentBwilder render', () => {
     let unobservedValue: string | null = 'initial';
 
     const MyComponentClass = new ComponentBwilder()
-      .wTagName('rendered-component-with-unobs-attr-null')
+      .wTagName('rendered-component-with-unobs-attr-null' as TagName)
       .wShadowDOM('none')
       .wAttr('data-info')
       .wRender(function () {
@@ -274,7 +275,7 @@ describe('ComponentBwilder render', () => {
 
   test('unobserved attribute can have default value', () => {
     const MyComponentClass = new ComponentBwilder()
-      .wTagName('rendered-component-with-unobs-attr-default')
+      .wTagName('rendered-component-with-unobs-attr-default' as TagName)
       .wShadowDOM('none')
       .wAttr('data-info', 'a default value')
       .wRender(function () {
@@ -317,7 +318,7 @@ describe('ComponentBwilder render', () => {
     let observedValue: string | null = null;
 
     const MyComponentClass = new ComponentBwilder()
-      .wTagName('rendered-component-with-attr')
+      .wTagName('rendered-component-with-attr' as TagName)
       .wShadowDOM('none')
       .wObservedAttr('data-name')
       .wRender(function () {
@@ -342,7 +343,7 @@ describe('ComponentBwilder render', () => {
   test('defaults to adopted CSS mode in open shadow DOM', () => {
     const css = `.test-class { color: red; }`;
     const MyComponentClass = new ComponentBwilder()
-      .wTagName('styled-component')
+      .wTagName('styled-component' as TagName)
       .wShadowDOM('open')
       .wCSS(css)
       .wRender(function (this: RenderContext) {
@@ -462,7 +463,7 @@ describe('ComponentBwilder render', () => {
     assert.equal(c.querySelector('div')!.innerHTML, 'DestructureStyle')
   })
 
-  test('wPostMountFn runs once after initial render', () => {
+  test('wPostMountFn runs once after initial render', async () => {
     const events: string[] = []
     let mountCount = 0
 
@@ -482,7 +483,7 @@ describe('ComponentBwilder render', () => {
       .build()
 
     const c = new MyComponentClass()
-    c.connectedCallback()
+    await c.connectedCallback()
 
     assert.equal(mountCount, 1)
     assert.deepEqual(events, ['render', 'postMount'])
@@ -493,7 +494,7 @@ describe('ComponentBwilder render', () => {
     assert.deepEqual(events, ['render', 'postMount', 'render'])
   })
 
-  test('wPostMountFn receives context as first argument', () => {
+  test('wPostMountFn receives context as first argument', async () => {
     let sameContextObject = false
 
     const MyComponentClass = new ComponentBwilder()
@@ -508,7 +509,7 @@ describe('ComponentBwilder render', () => {
       .build()
 
     const c = new MyComponentClass()
-    c.connectedCallback()
+    await c.connectedCallback()
 
     assert.equal(sameContextObject, true)
   })
@@ -1071,12 +1072,3 @@ describe('ComponentBwilder render', () => {
     }, /Invalid constructor|not part of the custom element registry/)
   })
 })
-
-
-const b = new ComponentBwilder()
-let a2 = b.wObservedAttr('data-id')
-let a3 = a2.wObservedAttr('role')
-let a4 = a3.wObservedAttr('role2')
-  .wObservedAttr('role3')
-  .wObservedAttr('role4')
-

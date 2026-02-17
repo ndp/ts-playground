@@ -56,4 +56,4 @@ npm run typecheck              # run TypeScript checks
 ## Alternatives / inspiration
 
 - Hybrids: https://hybrids.js.org/ — similar philosophy for small components
-- Lit: https://lit.dev/ — template-focused and feature-rich
+- Lit: https://lit.dev/ 
