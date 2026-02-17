@@ -17,7 +17,7 @@ rerender on specified events
 
  */
 
-import type { IsEmptyObject } from '../util/typescript.ts'
+type IsEmptyObject<T extends {}> = keyof T extends never ? true : false
 
 /*
 The context object "this" passed to render functions.
