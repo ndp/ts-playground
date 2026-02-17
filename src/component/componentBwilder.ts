@@ -19,7 +19,7 @@ export class ComponentBwilder<
   RenderingContext extends RenderContext<{}, SubElementsMap> = RenderContext<AttrsRecord, SubElements>,
   ComponentType = HTMLElement & RenderingContext> {
 
-  private tagName?: string
+  private tagName?: string | null
   private css: { text: string, requestedMode: CSSMode } | undefined
   private shadowDOM: 'open' | 'closed' | 'none' = 'open'
   private observedAttrs: Record<string, ((args: { name: string, newValue: unknown, oldValue: unknown }) => void) | null> = {}
@@ -32,7 +32,7 @@ export class ComponentBwilder<
   constructor() {
   }
 
-  wTagName<T extends string>(tagName: TagNameLiteral<T> | TagName) {
+  wTagName<T extends string>(tagName: TagNameLiteral<T> | TagName | null) {
     this.tagName = tagName
     return this as this & { wTagName: never }
   }
@@ -87,6 +87,7 @@ export class ComponentBwilder<
   build() {
 
     if (!this.renderFn) throw new Error('No render function provided to component')
+    if (this.tagName === undefined) throw new Error('tagName must be explicitly set to a string or null')
 
     const renderFn: ComponentBwilderRenderer<RenderingContext, SubElements> = this.renderFn
 
@@ -197,7 +198,7 @@ export class ComponentBwilder<
         configurable: true
       });
 
-    if (this.tagName)
+    if (this.tagName !== null)
       customElements.define(this.tagName, elementClass)
 
     return elementClass as unknown as ConstructorOf<BuiltComponentInstance<RenderingContext, SubElements>>

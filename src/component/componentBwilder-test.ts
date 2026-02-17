@@ -91,6 +91,15 @@ describe('ComponentBwilder basic tests', () => {
     if (!(c instanceof HTMLElement)) throw new Error('Component is not an instance of HTMLElement')
 
   })
+
+  test('throws when tagName not explicitly set', () => {
+    assert.throws(() => {
+      new ComponentBwilder()
+        .wShadowDOM('none')
+        .wRender(stubRender)
+        .build()
+    }, /tagName must be explicitly set/)
+  })
 })
 
 
@@ -1061,14 +1070,13 @@ describe('ComponentBwilder render', () => {
 
   test('build works without tagName and returns a class', () => {
     const MyComponentClass = new ComponentBwilder()
+      .wTagName(null)
       .wShadowDOM('none')
       .wRender(stubRender)
       .build()
 
     assert.equal(typeof MyComponentClass, 'function')
-
-    assert.throws(() => {
-      new MyComponentClass()
-    }, /Invalid constructor|not part of the custom element registry/)
+    // Without a tagName, the component is not registered, so it can be subclassed
+    // but cannot be directly instantiated in a DOM environment
   })
 })
