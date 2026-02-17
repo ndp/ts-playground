@@ -1,10 +1,25 @@
 {
-  "name": "@ts-playground/component",
+  "name": "@ndp-software/component-bwilder",
+  "version": "0.1.0",
   "private": true,
+  "description": "Typed web-component builder with render lifecycle helpers",
+  "license": "ISC",
   "type": "module",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
   "scripts": {
     "build": "npm run clean && npm run build:js && npm run build:types",
-    "build:js": "esbuild ./componentBwilder.ts --bundle --format=esm --platform=browser --target=es2022 --sourcemap --outfile=../../build/component/componentBwilder.js",
+    "build:js": "esbuild ./index.ts --bundle --format=esm --platform=browser --target=es2022 --sourcemap --outfile=./dist/index.js",
     "build:js:watch": "npm run build:js -- --watch",
     "build:types": "tsc -p ./tsconfig.types.json",
     "typecheck": "tsc -p ./tsconfig.check.json --noEmit",
@@ -13,6 +28,7 @@
     "test:watch": "node --test --watch -r ../../test/setup-jsdom.js './**/*test.ts'",
     "dev": "sh -c 'npm run test:watch & npm run typecheck:watch & npm run build:js:watch & wait'",
     "verify": "npm run typecheck && npm run test",
-    "clean": "rimraf ../../build/component"
+    "clean": "rimraf ./dist",
+    "pack:dry-run": "npm pack --dry-run"
   }
 }

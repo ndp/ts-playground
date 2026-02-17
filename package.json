@@ -4,6 +4,9 @@
   "description": "",
   "main": "index.js",
   "type": "module",
+  "workspaces": [
+    "src/component"
+  ],
   "scripts": {
     "build": "npm run clean && npm run build:world && npm run build:component",
     "build:world": "esbuild --outdir=./build/world/ --public-path=/ts-playground/ ./src/world/*.ts",
@@ -40,6 +43,7 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@ndp-software/component-bwilder": "workspace:*",
     "vexflow": "^4.1.0"
   }
 }
