@@ -436,7 +436,7 @@ class WorldMap extends HTMLElement {
 }
 
 
-WorldMap.stylesheetPromise = maybeFetchText(new URL('../../src/world/world-map.css', import.meta.url))
+WorldMap.stylesheetPromise = maybeFetchText(new URL('../world-map.css', import.meta.url))
 
 customElements.define("world-map", WorldMap);
 

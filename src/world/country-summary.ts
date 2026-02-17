@@ -1,7 +1,6 @@
-import {type ISO2CountryCode, type OfficialLanguages, teenyDb} from '../../world/teeny-db.ts';
-import {ComponentBwilder} from '../componentBwilder.ts';
-import {assertValidTagName} from '../TagName.ts'
-import {maybeFetchText} from '../../world/util.ts'
+import {type ISO2CountryCode, type OfficialLanguages, teenyDb} from './teeny-db.ts';
+import {ComponentBwilder, assertValidTagName } from '@ndp-software/component-bwilder';
+import {maybeFetchText} from './util.ts'
 
 
 function panel(name: string) {
@@ -151,7 +150,7 @@ panel('time')
   .build()
 
   
-const stylesheetPromise = maybeFetchText(new URL('../../src/world/country-summary.css', import.meta.url))
+const stylesheetPromise = maybeFetchText(new URL('../country-summary.css', import.meta.url))
 
 export default new ComponentBwilder()
   .wTagName('country-summary')

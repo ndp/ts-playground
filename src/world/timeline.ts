@@ -133,7 +133,7 @@ class Timeline extends HTMLElement {
     }
 }
 
-Timeline.stylesheetPromise = maybeFetchText(new URL('../../src/world/timeline.css', import.meta.url))
+Timeline.stylesheetPromise = maybeFetchText(new URL('../timeline.css', import.meta.url))
 
 customElements.define('locale-timeline', Timeline);
 

@@ -1,32 +1,34 @@
 // typescript
 import {maybeFetchText} from './util.js';
-import {ComponentBwilder} from '../component/componentBwilder.ts'
+import {ComponentBwilder} from '@ndp-software/component-bwilder'
 
-const css = await maybeFetchText(new URL('../../src/world/segmented-buttons.css', import.meta.url));
+const css = await maybeFetchText(new URL('../segmented-buttons.css', import.meta.url));
 
-class SegmentedButtons extends (
-  new ComponentBwilder()
-    .wTagName('base-segmented-button')
-    .wShadowDOM('open')
-    .wCSS(css)
-    .wElement('slotEl')
-    .wRender(function (this: { root: HTMLElement }) {
-      const slotEl = document.createElement('slot')
-      slotEl.setAttribute('name', 'option');
-      this.root.appendChild(slotEl);
 
-      // Initialize selected element from option element, if any
-      const selectedEl = this.root.querySelector('[data-value][selected]') as HTMLElement | null;
-      if (selectedEl) {
-        selectedEl.removeAttribute('selected');
-        selectedEl.classList.add('selected');
-        const val = selectedEl.getAttribute('data-value');
-        this.root.setAttribute('data-value', val || '');
-      }
+const Base = new ComponentBwilder()
+  .wTagName('base-segmented-button')
+  .wShadowDOM('open')
+  .wCSS(css)
+  .wElement('slotEl')
+  .wRender(function (this: { root: HTMLElement }) {
+    const slotEl = document.createElement('slot')
+    slotEl.setAttribute('name', 'option');
+    this.root.appendChild(slotEl);
 
-      return {selectedEl, slotEl};
-    })
-    .build()) {
+    // Initialize selected element from option element, if any
+    const selectedEl = this.root.querySelector('[data-value][selected]') as HTMLElement | null;
+    if (selectedEl) {
+      selectedEl.removeAttribute('selected');
+      selectedEl.classList.add('selected');
+      const val = selectedEl.getAttribute('data-value');
+      this.root.setAttribute('data-value', val || '');
+    }
+
+    return {selectedEl, slotEl};
+  })
+  .build()
+
+class SegmentedButtons extends Base {
   private slotEl: HTMLSlotElement | null = null;
   private selectedEl: HTMLElement | null = null;
   private assignedListeners = new Map<Element, EventListener>();
