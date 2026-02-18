@@ -1,0 +1,24 @@
+{
+  "name": "@ndp-software/util",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared utilities for ts-playground",
+  "license": "ISC",
+  "type": "module",
+  "files": [
+    "build"
+  ],
+  "main": "./build/index.js",
+  "types": "./build/types/index.d.ts",
+  "sideEffects": false,
+  "scripts": {
+    "typecheck": "tsc -p ./tsconfig.check.json",
+    "test": "node --test  './**/*test.ts'",
+    "test:watch": "node --test --watch './**/*test.ts'",
+    "verify": "npm run typecheck && npm run test",
+    "clean": "rimraf ./build",
+    "build": "npm run clean && npm run build:js && npm run build:types",
+    "build:types": "tsc -p ./tsconfig.types.json",
+    "build:js": "esbuild --bundle --format=esm --platform=browser --target=es2022 --sourcemap --outdir=./build ./index.ts"
+  }
+}
