@@ -9,15 +9,20 @@
   ],
   "sideEffects": false,
   "scripts": {
-    "build": "npm run clean && npm run build:js && npm run build:types",
-    "build:js": "esbuild --outdir=./build/ --public-path=/ts-playground/build/ ./*.ts",
-    "build:js:watch": "npm run build:js -- --watch",
+
     "typecheck": "tsc -p config/tsconfig.check.json --noEmit",
-    "typecheck:watch": "tsc -p config/tsconfig.check.json --noEmit --watch",
     "test": "node --test -r ../../test/setup-jsdom.js './**/*test.ts'",
     "test:watch": "node --test --watch -r ../../test/setup-jsdom.js './**/*test.ts'",
-    "dev": "sh -c 'npm run test:watch & npm run typecheck:watch & npm run build:js:watch & wait'",
     "verify": "npm run typecheck && npm run test",
+
+    "build": "npm run clean && npm run build:js && npm run build:types",
+    "build:js": "esbuild --outdir=./build/ --public-path=/ts-playground/build/ ./*.ts",
+    "deprecated:build:types": "tsc -p ./tsconfig.types.json",
+
+
+    "dev": "concurrently 'npm run build:js -- --watch' 'npm run typecheck -- --watch' 'npm run test:watch'",
+
     "clean": "rimraf ./build"
+
   }
 }
