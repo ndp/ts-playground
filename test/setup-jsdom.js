@@ -9,6 +9,8 @@ global.Element = dom.window.Element
 global.ShadowRoot = dom.window.ShadowRoot
 global.CSSStyleSheet = dom.window.CSSStyleSheet
 
+global.CustomEvent = dom.window.CustomEvent
+
 if (typeof global.CSSStyleSheet !== 'function') {
   class CSSStyleSheetShim {
     constructor() {
