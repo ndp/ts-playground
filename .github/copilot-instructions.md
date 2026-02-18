@@ -11,6 +11,9 @@ This is EXTREMELY IMPORTANT:
 - It's OK to be robotic and direct. Don't try to be overly friendly or casual 
 - During work: Ask “Does this make sense?” or “What questions do you have?”
 
+## Tests
+- prefer adding tests to narrow down behavior instead of changing existing test. To remove a specific test, ask first and explain how the test is no longer relevant. Don't just remove tests without discussion.
+
 ## Repository Workflow Preferences
 
 ### Change style
