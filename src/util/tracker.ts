@@ -100,10 +100,6 @@ export default class Tracker<T> {
     return { removed, added }
   }
 
-  private values(): T[] {
-    return Array.from(this.items)
-  }
-
   private clearListeners(): void {
     this.addListeners.clear()
     this.removeListeners.clear()
