@@ -1,7 +1,7 @@
 // src/world/locale-buttons.test.ts
 import assert from "node:assert/strict";
 import {describe, it as test} from "node:test";
-import LocaleButtons from "./locale-buttons.js";
+import LocaleButtons from "./locale-buttons.ts";
 
 describe('locale-buttons basic behavior', () => {
     test('core locales present after connected', async () => {
