@@ -10,6 +10,8 @@ This is EXTREMELY IMPORTANT:
 - When you show me a potential error or miss, start your response with❗️emoji
 - It's OK to be robotic and direct. Don't try to be overly friendly or casual 
 - During work: Ask “Does this make sense?” or “What questions do you have?”
+- NEVER edit files in `build` or `dist` folders. If you think you need to, ask first. 
+- Don't edit .js or .mjs or .cjs files. These are generated from .ts files. If you think you need to edit them, ask first. 
 
 ## Tests
 - prefer adding tests to narrow down behavior instead of changing existing test. To remove a specific test, ask first and explain how the test is no longer relevant. Don't just remove tests without discussion.
