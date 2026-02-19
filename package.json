@@ -45,6 +45,7 @@
   },
   "dependencies": {
     "@ndp-software/component-bwilder": "workspace:*",
+    "@ndp-software/util": "workspace:*",
     "vexflow": "^4.1.0"
   }
 }

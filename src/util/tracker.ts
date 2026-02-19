@@ -1,29 +1,22 @@
 /**
- * Generic Tracker - tracks a set of items and notifies listeners on add/remove.
+ * Generic Tracker - tracks items, lets add listeners return cleanups, and runs those cleanups on removal.
  */
-export type TrackerListener<T> = (item: T) => void
+export type TrackerAddListener<T> = (item: T) => void | (() => void)
 
-export default class Tracker<T> {
-  private items: Set<T>
-  private addListeners: Set<TrackerListener<T>> = new Set()
-  private removeListeners: Set<TrackerListener<T>> = new Set()
+export class Tracker<T> {
+  private readonly items: Set<T>
+  private readonly addListeners: Set<TrackerAddListener<T>> = new Set()
+  private readonly cleanups: Map<T, Set<() => void>> = new Map()
 
   constructor(initial?: Iterable<T>) {
-    this.items = new Set(initial)
+    this.items = new Set(initial || [])
   }
 
   // Subscribe to adds; returns an unsubscribe function
-  onAdd(fn: TrackerListener<T>): () => void {
+  onAdd(fn: TrackerAddListener<T>): () => void {
     this.addListeners.add(fn)
     return () => { this.addListeners.delete(fn) }
   }
-
-  // Subscribe to removes; returns an unsubscribe function
-  onRemove(fn: TrackerListener<T>): () => void {
-    this.removeListeners.add(fn)
-    return () => { this.removeListeners.delete(fn) }
-  }
-
 
   get size(): number {
     return this.items.size
@@ -33,7 +26,7 @@ export default class Tracker<T> {
   add(item: T): boolean
   add(items: Iterable<T>): T[]
   add(itemOrItems: T | Iterable<T>): boolean | T[] {
-    const isIter = itemOrItems != null && typeof (itemOrItems as any)[Symbol.iterator] === 'function'
+    const isIter = typeof (itemOrItems as any)[Symbol.iterator] === 'function'
     // Treat strings as single items (strings are iterable but usually represent T itself)
     if (!isIter || typeof itemOrItems === 'string') {
       const item = itemOrItems as T
@@ -57,39 +50,37 @@ export default class Tracker<T> {
 
   remove(item: T): boolean {
     if (!this.items.has(item)) return false
-    this.items.delete(item)
-    this.notifyRemove(item)
+    this._remove(item)
     return true
   }
 
   removeAll(): T[] {
     const removed = Array.from(this.items)
-    for (const it of removed) this.notifyRemove(it)
+    for (const item of removed) {
+      this._remove(item)
+    }
     this.items.clear()
     return removed
   }
 
   /**
-   * Replace current set with provided iterable. Notifications: removes first, then adds.
-   * Returns an object with arrays of removed and added items.
+   * Replace current set with provided iterable. Removals (with cleanups) happen before additions.
    */
   setAll(items: Iterable<T>): { removed: T[]; added: T[] } {
-    const newSet = new Set(items)
+    const next = new Set(items)
     const removed: T[] = []
     const added: T[] = []
 
     for (const it of Array.from(this.items)) {
-      if (!newSet.has(it)) removed.push(it)
+      if (!next.has(it)) removed.push(it)
     }
 
-    for (const it of Array.from(newSet)) {
+    for (const it of Array.from(next)) {
       if (!this.items.has(it)) added.push(it)
     }
 
-    // Apply removals then additions
-    for (const it of removed) {
-      this.items.delete(it)
-      this.notifyRemove(it)
+    for (const item of removed) {
+      this._remove(item)
     }
 
     for (const it of added) {
@@ -100,25 +91,37 @@ export default class Tracker<T> {
     return { removed, added }
   }
 
-  private clearListeners(): void {
-    this.addListeners.clear()
-    this.removeListeners.clear()
-  }
-
-  private dispose(): void {
-    this.clearListeners()
-    this.items.clear()
-  }
-
   private notifyAdd(item: T) {
     for (const fn of Array.from(this.addListeners)) {
-      try { fn(item) } catch (e) { /* swallow listener errors */ }
+      try {
+        const cleanup = fn(item)
+        if (typeof cleanup === 'function')
+          this.recordCleanup(item, cleanup)
+      } catch {
+        // swallow listener errors
+      }
     }
   }
 
-  private notifyRemove(item: T) {
-    for (const fn of Array.from(this.removeListeners)) {
-      try { fn(item) } catch (e) { /* swallow listener errors */ }
+  private recordCleanup(item: T, cleanup: () => void) {
+    const set = this.cleanups.get(item) ?? new Set<() => void>()
+    set.add(cleanup)
+    this.cleanups.set(item, set)
+  }
+
+  private _remove(item: T) {
+    this.runCleanups(item)
+    this.cleanups.delete(item)
+    this.items.delete(item)
+  }
+
+  private runCleanups(item: T) {
+    const cleanups = this.cleanups.get(item)
+    if (!cleanups) return
+    for (const fn of Array.from(cleanups)) {
+      try { fn() } catch { /* swallow cleanup errors */ }
     }
   }
 }
+
+export default Tracker

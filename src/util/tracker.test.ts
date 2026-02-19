@@ -19,25 +19,36 @@ describe('Tracker', () => {
   })
 
   test('remove returns false when item missing and true when removed', () => {
-    const t = new Tracker<string>(['a', 'b'])
-    assert.equal(t.remove('c'), false)
+    const t = new Tracker<string>()
+    const log: string[] = []
+    t.onAdd((n) => () => log.push(`cleanup:${n}`))
+    t.add(['a', 'b'])
+    t.add('c')
+    assert.equal(t.remove('d'), false)
     assert.equal(t.remove('b'), true)
-    assert.equal(t.size, 1)
+    assert.equal(t.size, 2)
+    assert.deepEqual(log, ['cleanup:b'])
   })
 
   test('removeAll clears items and returns past values', () => {
     const t = new Tracker<string>(['x', 'y'])
+    const log: string[] = []
+    t.onAdd((n) => () => log.push(`cleanup:${n}`))
+    t.add('z')
     const removed = t.removeAll()
-    assert.deepEqual(new Set(removed), new Set(['x', 'y']))
+    assert.deepEqual(new Set(removed), new Set(['x', 'y', 'z']))
     assert.equal(t.size, 0)
+    assert.deepEqual(new Set(log), new Set(['cleanup:z']))
   })
 
-  test('listeners called on add/remove and unsubscribe', () => {
+  test('listeners called on add and cleanup on remove; unsubscribe stops future adds', () => {
     const t = new Tracker<number>()
-    let adds: number[] = []
-    let removes: number[] = []
-    const unsubA = t.onAdd((n) => adds.push(n))
-    const unsubR = t.onRemove((n) => removes.push(n))
+    const adds: number[] = []
+    const cleanups: string[] = []
+    const unsubA = t.onAdd((n) => {
+      adds.push(n)
+      return () => cleanups.push(`cleanup:${n}`)
+    })
 
     t.add(1)
     t.add(2)
@@ -48,35 +59,42 @@ describe('Tracker', () => {
     assert.deepEqual(adds, [1, 2], 'unsubscribed add should not be called')
 
     t.remove(2)
-    assert.deepEqual(removes, [2])
-    unsubR()
-    t.remove(1)
-    assert.deepEqual(removes, [2], 'unsubscribed remove should not be called')
+    assert.deepEqual(cleanups, ['cleanup:2'])
   })
 
-  test('setAll replaces and notifies removals then additions', () => {
-    const t = new Tracker<number>([1, 2, 3])
+  test('setAll runs cleanups before adds', () => {
+    const t = new Tracker<number>()
     const seq: string[] = []
-    t.onRemove((n) => seq.push(`r:${n}`))
-    t.onAdd((n) => seq.push(`a:${n}`))
+    t.onAdd((n) => {
+      seq.push(`a:${n}`)
+      return () => seq.push(`r:${n}`)
+    })
 
+    t.add([1, 2, 3])
     const {removed, added} = t.setAll([2, 4])
     assert.deepEqual(new Set(removed), new Set([1, 3]))
     assert.deepEqual(new Set(added), new Set([4]))
-    // removals should occur before additions
-    assert.equal(seq[0].startsWith('r:'), true)
-    assert.equal(seq.includes('a:4'), true)
+    // cleanups for removed items should appear before .adds for new items
+    const firstCleanupIndex = seq.indexOf('r:1')
+    const addIndex = seq.indexOf('a:4')
+    assert.ok(firstCleanupIndex > -1 && addIndex > -1 && firstCleanupIndex < addIndex)
   })
 
-  test('removeAll plus unsubscribe prevents future listener calls', () => {
-    const t = new Tracker<string>(['x'])
+  test('removeAll plus unsubscribe prevents future listener calls but keeps existing cleanups', () => {
+    const t = new Tracker<string>()
     let seen = 0
-    const unsub = t.onAdd(() => seen++)
+    let cleaned = 0
+    const unsub = t.onAdd(() => {
+      seen++
+      return () => { cleaned++; }
+    })
+    t.add('x')
     unsub()
     const removed = t.removeAll()
     assert.deepEqual(new Set(removed), new Set(['x']))
     assert.equal(t.size, 0)
+    assert.equal(cleaned, 1)
     t.add('y')
-    assert.equal(seen, 0)
+    assert.equal(seen, 1)
   })
 })
