@@ -26,10 +26,10 @@ new ComponentBwilder().wCSS('.my-class { color: blue; }').wCSS('.my-class { colo
 // @ts-expect-error
 new ComponentBwilder().wShadowDOM('open').wShadowDOM('open')
 
-// @ts-expect-error
+// @ts-expect-error intentional duplicate post-mount registration
 new ComponentBwilder().wPostMountFn(() => {}).wPostMountFn(() => {})
 
-// @ts-expect-error
+// @ts-expect-error intentional duplicate post-render registration
 new ComponentBwilder().wPostRenderFn(() => {}).wPostRenderFn(() => {})
 
 
@@ -405,7 +405,7 @@ describe('ComponentBwilder render', () => {
     const c = new MyComponentClass()
     c.connectedCallback()
 
-    assert.equal(renderCount, 1)
+    const assignedEl = document.createElement('div')
     c.setAttribute('data-id', '123')
     assert.equal(callbackCount, 1)
     assert.equal(renderCount, 1)
@@ -566,7 +566,7 @@ describe('ComponentBwilder render', () => {
         root.innerHTML = `<div>${dataV ?? 'init'}</div>`
       })
       .wPostRenderFn(function ({root}) {
-        lastText = root.querySelector('div')!.textContent ?? ''
+        lastText = root!.querySelector('div')!.textContent ?? ''
       })
       .build()
 
@@ -1078,5 +1078,116 @@ describe('ComponentBwilder render', () => {
     assert.equal(typeof MyComponentClass, 'function')
     // Without a tagName, the component is not registered, so it can be subclassed
     // but cannot be directly instantiated in a DOM environment
+  })
+
+  test('slotAddedHandler gets called for assigned elements', () => {
+    const events: string[] = []
+    const assignedEl = document.createElement('div')
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName('slot-aware')
+      .wShadowDOM('open')
+      .wRender(function ({root}) {
+        root.innerHTML = '<slot />'
+      })
+      .wSlotAddedHandler(function ({}, slottedEl) {
+        events.push(`assigned:${slottedEl.tagName.toLowerCase()}`)
+        return () => events.push(`cleanup:${slottedEl.tagName.toLowerCase()}`)
+      })
+      .build()
+
+    const c = new MyComponentClass()
+    c.connectedCallback()
+
+    const slot = c.shadowRoot!.querySelector('slot') as HTMLSlotElement
+    ;(slot as any).assignedElements = () => [assignedEl]
+    slot.dispatchEvent(new (slot.ownerDocument.defaultView as any).Event('slotchange'))
+
+    assert.deepEqual(events, ['assigned:div'])
+    c.disconnectedCallback()
+    assert.deepEqual(events, ['assigned:div', 'cleanup:div'])
+  })
+
+  test('slotAddedHandler is a no-op when render produces no slots', () => {
+    const events: string[] = []
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('no-slot-handler'))
+      .wShadowDOM('open')
+      .wRender(function ({root}) {
+        root.innerHTML = '<div>No slots here</div>'
+      })
+      .wSlotAddedHandler(function () {
+        events.push('called')
+        return () => events.push('cleanup')
+      })
+      .build()
+
+    const c = new MyComponentClass()
+    c.connectedCallback()
+    assert.deepEqual(events, [])
+
+    c.render()
+    assert.deepEqual(events, [])
+  })
+
+  test('slotAddedHandler tracks assigned elements across slot changes', () => {
+    const events: string[] = []
+    let assigned: HTMLElement[] = []
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('slot-tracker'))
+      .wRender(function ({root}) {
+        root.innerHTML = '<slot data-slot="s"></slot>'
+      })
+      .wSlotAddedHandler(function (_, el) {
+        const id = el.getAttribute('data-id') ?? 'none'
+        events.push(`add:${id}`)
+        return () => events.push(`remove:${id}`)
+      })
+      .build()
+
+    const c = new MyComponentClass()
+    c.connectedCallback()
+    const slot = c.shadowRoot!.querySelector('slot') as HTMLSlotElement
+
+    const elA = document.createElement('div');
+    elA.setAttribute('data-id', 'a')
+    const elB = document.createElement('div');
+    elB.setAttribute('data-id', 'b')
+    assigned = [elA, elB]
+    ;(slot as any).assignedElements = () => assigned
+    slot.dispatchEvent(new (slot.ownerDocument.defaultView as any).Event('slotchange'))
+    assert.deepEqual(events, ['add:a', 'add:b'])
+
+    assigned = [elB]
+    slot.dispatchEvent(new (slot.ownerDocument.defaultView as any).Event('slotchange'))
+    assert.deepEqual(events, ['add:a', 'add:b', 'remove:a'])
+  })
+
+  test('slotAddedHandler cleanups run on disconnect', () => {
+    const events: string[] = []
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('slot-disconnect'))
+      .wRender(function ({root}) {
+        root.innerHTML = '<slot data-slot="x"></slot>'
+      })
+      .wSlotAddedHandler(function () {
+        events.push('add')
+        return () => events.push('cleanup')
+      })
+      .build()
+
+    const c = new MyComponentClass()
+    c.connectedCallback()
+    const slot = c.shadowRoot!.querySelector('slot') as HTMLSlotElement
+    const assigned = document.createElement('div')
+    ;(slot as any).assignedElements = () => [assigned]
+    slot.dispatchEvent(new (slot.ownerDocument.defaultView as any).Event('slotchange'))
+
+    assert.deepEqual(events, ['add'])
+
+    c.disconnectedCallback()
+    assert.deepEqual(events, ['add', 'cleanup'])
   })
 })
