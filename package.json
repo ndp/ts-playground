@@ -5,7 +5,9 @@
   "main": "index.js",
   "type": "module",
   "workspaces": [
-    "src/component"
+    "src/component",
+    "src/util",
+    "src/world"
   ],
   "scripts": {
     "build": "npm run clean && npm run build:world && npm run build:component",
@@ -36,16 +38,13 @@
     "@types/node": "^25",
     "chai": "^6.2",
     "concurrently": "^9.2.1",
-    "esbuild": "^0.27.2",
-    "eslint": "^9.3",
-    "jsdom": "^27",
+    "esbuild": "^0.27.3",
+    "eslint": "^10.0",
+    "jsdom": "^28",
     "nodemon": "*",
-    "rimraf": "^5",
+    "rimraf": "^6",
     "typescript": "^5"
   },
   "dependencies": {
-    "@ndp-software/component-bwilder": "workspace:*",
-    "@ndp-software/util": "workspace:*",
-    "vexflow": "^4.1.0"
   }
 }
