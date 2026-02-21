@@ -14,11 +14,14 @@ const SegmentedButtons = new ComponentBwilder()
   .wTagName('segmented-buttons')
   .wShadowDOM('open')
   .wCSS(css)
-  .wObservedAttr('data-value', function () {
-    applySelectedClasses(this as unknown as HTMLElement)
+  .wObservedAttr('data-value', function (this: SegmentedContext) {
+    applySelectedClasses(this)
   })
-  .wObservedAttr('required', function () {
-    enforceRequired(this as unknown as HTMLElement & SegmentedContext)
+  .wObservedAttr('required', function (this: SegmentedContext) {
+    enforceRequired(this)
+  })
+  .wObservedAttr('multi', function (this: SegmentedContext) {
+    normalizeSelectionForMode(this)
   })
   .wElement('slotEl')
   .wRender(function (this: SegmentedContext) {
@@ -29,28 +32,32 @@ const SegmentedButtons = new ComponentBwilder()
     return {slotEl}
   })
   .wPostMountFn(function (this: HTMLElement & SegmentedContext) {
-    // Search light DOM (the host, not shadow root) for a slotted element pre-marked as selected
-    const selectedEl = this.querySelector('[data-value][selected]') as HTMLElement | null
-    if (selectedEl) {
-      selectedEl.removeAttribute('selected')
-      selectedEl.classList.add('selected')
-      const val = selectedEl.getAttribute('data-value')
-      if (val !== null) this.setAttribute('data-value', val)
+    // Search light DOM (the host, not shadow root) for any slotted elements pre-marked as selected
+    const preselected = Array.from(this.querySelectorAll('[data-value][selected]')) as HTMLElement[]
+    if (preselected.length > 0) {
+      const values: string[] = []
+      preselected.forEach((el) => {
+        el.removeAttribute('selected')
+        el.classList.add('selected')
+        const val = el.getAttribute('data-value')
+        if (val !== null) values.push(val)
+      })
+      setSelectedValues(this, values, {emitChange: false})
     }
     mountedHosts.add(this)
     enforceRequired(this)
   })
-  .wSlotAddedHandler(function (this: HTMLElement & SegmentedContext, _, el) {
+  .wSlotAddedHandler(function (context: SegmentedContext, el: HTMLElement) {
     const handler = (ev: Event) => {
       ev.stopPropagation()
-      handleSelect(this, el)
+      handleSelect(context, el)
     }
     if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0')
     el.addEventListener('click', handler)
     // Only enforce after mount so we don't interfere with the initial `selected` attribute scan.
     // Pass `el` as a fallback for environments where assignedElements() may be empty at this point.
-    if (mountedHosts.has(this)) enforceRequired(this, el)
-    applySelectedClasses(this)
+    if (mountedHosts.has(context)) enforceRequired(context, el)
+    applySelectedClasses(context)
     return () => el.removeEventListener('click', handler)
   })
   .wPostRenderFn(function (this: HTMLElement & SegmentedContext) {
@@ -62,22 +69,32 @@ export default SegmentedButtons
 
 function handleSelect(host: HTMLElement & SegmentedContext, el: HTMLElement) {
   const val = el.getAttribute('data-value')
-  const oldVal = host.getAttribute('data-value')
+  if (val === null) return
 
-  if (oldVal === val) {
-    // When required, clicking the selected option does nothing
-    if (host.hasAttribute('required')) return
-    host.removeAttribute('data-value')
-    emitChange(host, null, oldVal)
-    applySelectedClasses(host)
+  if (isMulti(host)) {
+    const selected = getSelectedValues(host)
+    const has = selected.includes(val)
+
+    if (has) {
+      if (host.hasAttribute('required') && selected.length === 1) return
+      setSelectedValues(host, selected.filter((v) => v !== val))
+      return
+    }
+
+    setSelectedValues(host, [...selected, val])
     return
   }
 
-  if (val !== null) host.setAttribute('data-value', val)
-  else host.removeAttribute('data-value')
+  const current = getSelectedValues(host)[0] ?? null
 
-  if (oldVal !== val) emitChange(host, val, oldVal)
-  applySelectedClasses(host)
+  if (current === val) {
+    // When required, clicking the selected option does nothing
+    if (host.hasAttribute('required')) return
+    setSelectedValues(host, [])
+    return
+  }
+
+  setSelectedValues(host, [val])
 }
 
 /**
@@ -88,7 +105,7 @@ function handleSelect(host: HTMLElement & SegmentedContext, el: HTMLElement) {
  */
 function enforceRequired(host: HTMLElement & SegmentedContext, fallback?: HTMLElement) {
   if (!host.hasAttribute('required')) return
-  if (host.hasAttribute('data-value')) return
+  if (getSelectedValues(host).length > 0) return
 
   const slot = host.subElements?.slotEl
   const assigned = (slot?.assignedElements({flatten: true}) ?? []) as HTMLElement[]
@@ -99,26 +116,80 @@ function enforceRequired(host: HTMLElement & SegmentedContext, fallback?: HTMLEl
 
   if (!first) return
   const val = first.getAttribute('data-value')!
-  host.setAttribute('data-value', val)
-  applySelectedClasses(host)
+  setSelectedValues(host, [val], {emitChange: false})
   // No change event here — this is an automatic enforcement, not user interaction
 }
 
-function applySelectedClasses(host: HTMLElement & SegmentedContext) {
+function applySelectedClasses(host: SegmentedContext) {
   const slot = host.subElements?.slotEl
-  const value = host.getAttribute('data-value')
+  const selectedValues = getSelectedValues(host)
   const assigned = slot?.assignedElements({flatten: true}) ?? []
 
   assigned.forEach((node) => {
     if (!(node instanceof HTMLElement)) return
-    node.classList.toggle('selected', value !== null && node.getAttribute('data-value') === value)
+    const nodeValue = node.getAttribute('data-value')
+    node.classList.toggle('selected', nodeValue !== null && selectedValues.includes(nodeValue))
   })
 }
 
-function emitChange(host: HTMLElement, value: string | null, oldValue: string | null) {
-  const changed = oldValue !== value
-  if (!changed) return
+function normalizeSelectionForMode(host: HTMLElement & SegmentedContext) {
+  // Re-apply data-value in the correct shape when toggling multi on/off without emitting
+  setSelectedValues(host, getSelectedValues(host), {emitChange: false})
+  enforceRequired(host)
+}
+
+function setSelectedValues(host: HTMLElement & SegmentedContext, values: string[], options?: {emitChange?: boolean}) {
+  const unique = dedupe(values)
+  const multi = isMulti(host)
+  const normalized = multi ? unique : unique.slice(0, 1)
+  const prev = getSelectedValues(host)
+
+  if (normalized.length === 0) host.removeAttribute('data-value')
+  else host.setAttribute('data-value', multi ? normalized.join(',') : normalized[0])
+
+  const newValue = multi ? normalized : normalized[0] ?? null
+  const oldValue = multi ? prev : prev[0] ?? null
+
+  if (options?.emitChange !== false) emitChange(host, newValue, oldValue)
+  applySelectedClasses(host)
+}
+
+function getSelectedValues(host: HTMLElement) {
+  const raw = host.getAttribute('data-value')
+  if (!raw) return []
+  return dedupe(
+    raw
+      .split(',')
+      .map((v) => v.trim())
+      .filter(Boolean)
+  )
+}
+
+function dedupe(values: string[]) {
+  const seen = new Set<string>()
+  const result: string[] = []
+  values.forEach((val) => {
+    if (seen.has(val)) return
+    seen.add(val)
+    result.push(val)
+  })
+  return result
+}
+
+function isMulti(host: HTMLElement) {
+  return host.hasAttribute('multi')
+}
+
+function emitChange(host: HTMLElement, value: string | string[] | null, oldValue: string | string[] | null) {
+  if (selectionsEqual(value, oldValue)) return
   host.dispatchEvent(new CustomEvent('change', {bubbles: true, detail: {value}}))
+}
+
+function selectionsEqual(a: string | string[] | null, b: string | string[] | null) {
+  const arrA = Array.isArray(a) ? a : a === null ? [] : [a]
+  const arrB = Array.isArray(b) ? b : b === null ? [] : [b]
+  if (arrA.length !== arrB.length) return false
+  return arrA.every((val, idx) => val === arrB[idx])
 }
 
 export async function maybeFetchText(url: URL) {

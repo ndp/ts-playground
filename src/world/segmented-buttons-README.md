@@ -35,7 +35,8 @@ Example:
 - *size* — controls padding/font-size. Values: small, (default), large.
 - *appearance* — visual style. Values: outline (outline-only), (default filled).
 - *required* — when present, one option is always selected (see [Required](#required)).
-- *data-value* on the host will reflect the currently selected option's data-value.
+- *multi* — allow multiple options to be selected; `data-value` becomes a comma-separated list.
+- *data-value* on the host will reflect the currently selected option's data-value(s).
 
 ## CSS variables (customize look)
 - `--base-color` (required) — primary color controlling fills/tints.
@@ -55,8 +56,8 @@ Example:
 
 ## Events / API
 
-`change` — dispatched on the host when selection changes. Bubbles. `event.detail` is `{ value: string | null }`.
-`value` is `null` when selection is cleared.
+`change` — dispatched on the host when selection changes. Bubbles. `event.detail` is `{ value: string | string[] | null }`.
+`value` is `null` when selection is cleared, a string in single-select mode, or an array in `multi` mode.
 Programmatic: read/write host `data-value` attribute to query or set state (setting programmatically may not toggle classes — prefer user interaction or extend the component).
 
 Example:
@@ -89,6 +90,22 @@ Behavior:
 - No `change` event is emitted for automatic enforcement selections — only for user-initiated switches.
 
 Gotcha: `required` enforcement happens silently. If you programmatically remove the selected option without updating `data-value`, re-attaching any slot element will trigger re-enforcement.
+
+## Multi-selection
+
+Add the `multi` attribute to allow multiple options to be selected at once:
+
+    <segmented-buttons multi>
+      <button slot="option" data-value="grid" selected>Grid</button>
+      <button slot="option" data-value="list">List</button>
+      <button slot="option" data-value="table">Table</button>
+    </segmented-buttons>
+
+Behavior:
+- `data-value` becomes a comma-separated list (e.g., `"grid,list"`).
+- `change.detail.value` is an array of strings.
+- Clicking a selected option toggles it off; when `required` is also present, the last remaining selection cannot be toggled off.
+- Multiple options can be pre-marked with `selected` in markup and will be honored in multi mode.
 
 ## Disabled
 
