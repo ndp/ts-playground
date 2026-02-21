@@ -6,17 +6,11 @@
   <script type="importmap">
     {
       "imports": {
-      "/ts-playground/src/world/build/teeny-db.ts": "/ts-playground/build/world/teeny-db.js",
-      "/ts-playground/src/world/build/util.ts": "/ts-playground/build/world/util.js",
-      "@ndp-software/component-bwilder": "/ts-playground/src/component/dist/index.js"
       }
     }
   </script>
   <script type="module">
-    import "./build/world-map.js";
-    import "./build/timeline.js";
-    import "./build/country-summary.js";
-    import "./build/segmented-buttons.js";
+    import "./build/components.js";
   </script>
   <style>
     @import url(https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap);
@@ -95,7 +89,7 @@
 <script type="module">
   let gLocale = document.documentElement.lang || 'en-US';
   let gCountryIso2 = null
-  import {teenyDb} from '../../build/world/teeny-db.js'
+  import {teenyDb} from './build/teeny-db.js'
 
 
   const wm = document.getElementById("world-map");
