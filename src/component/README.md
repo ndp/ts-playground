@@ -8,7 +8,19 @@ This package exposes a small, TypeScript-first API for defining custom elements 
 
 - Focus: small APIs and tight TypeScript ergonomics for library/internal components.
 - Predictability: explicit `render`, `postRender` and `postMount` lifecycle hooks.
-- Convenience: fluent builder (`ComponentBwilder`) to declare attributes, sub-elements and rendering logic.
+- Convenience: fluent builder (`ComponentBwilder`) to declare attributes, sub-elements and rendering logic
+  to create type-safe components with minimal boilerplate.
+- Guiding principles:
+  - Explicit is better than implicit: no magic lifecycle methods or auto-wiring.
+  - Type safety: strong typing for attributes, sub-elements, and render context.
+  - Minimalism: only the essential features for defining components, no extra abstractions.
+  - Flexibility: allow custom renderers and manual DOM manipulation when needed.
+  - Performance: avoid unnecessary re-renders and optimize for common patterns.
+  - Developer experience: clear APIs, good error messages, and helpful TypeScript types.
+  - Use the language. React subverts normal patterns: functions get called repeatedly,
+    and perhaps mysteriously; variables don't work like variables, and you must use specific 
+    patterns to save state or plug into the lifecycle. This library attempt to stick to
+    normal Javascript and Web Component patterns as much as possible.
 
 ## Quick example
 
@@ -39,9 +51,9 @@ See the implementation for full types and helpers.
 
 ## Files of interest
 
-- Implementation: [src/component/componentBwilder.ts](src/component/componentBwilder.ts)
-- Public exports: [src/component/index.ts](src/component/index.ts)
-- Tests and examples: [src/component/*-test.ts](src/component)
+- Implementation: [./componentBwilder.ts](./componentBwilder.ts)
+- Public exports: [./index.ts](./index.ts)
+- Tests and examples: [./*-test.ts](.)
 
 ## Build & test
 
