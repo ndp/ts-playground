@@ -24,8 +24,7 @@ panel('name')
     const name = teenyDb.countryName(iso2, lang);
     this.root.innerHTML = `
       <div class="flag">${teenyDb.flagEmoji(iso2)}</div>
-      <h2>Name</h2>
-      <p>${nameEng}</p>
+      <h2>${nameEng}</h2>
       ${name && name !== nameEng ? `<h3>Name [${lang}]</h3><p>${name}</p>` : ''}
       <h3>ISO-3166</h3>
       <p>${listFormat.format([teenyDb.misc(iso2, 'ISO3166-1-Alpha-2')!, teenyDb.misc(iso2, 'ISO3166-1-Alpha-3')!])}</p>
@@ -43,8 +42,7 @@ panel('language')
     const langs = teenyDb.langs(iso2) || [];
     const langsStr = listFormat.format(langs);
     this.root.innerHTML = `
-      <h2>Name</h2>
-      <p>${nameEng}</p>
+      <h2>${nameEng}</h2>
       <h3>Official Language${langs.length > 1 ? 's' : ''}</h3>
       <p>${langsStr}</p>
     `;
@@ -65,8 +63,7 @@ panel('currency')
     }).format(1234));
     const asDollar = new Intl.NumberFormat(locale, {style: 'currency', currency: 'USD'}).format(1234);
     this.root.innerHTML = `
-      <h2>Name</h2>
-      <p>${nameEng}</p>
+      <h2>${nameEng}</h2>
       <h3>Currency</h3>
       ${codes.map((code, idx) => `<p>${code}</p><p>&ldquo;${names[idx] ?? names[0]}&rdquo;</p>`).join('')}
       <h3>Local Currency</h3>
@@ -97,8 +94,7 @@ panel('numbers')
     }).format(89.5);
 
     this.root.innerHTML = `
-      <h2>Name</h2>
-      <p>${nameEng}</p>
+      <h2>${nameEng}</h2>
       <h3>Number</h3>
       <p>${formattedNum1}<p>
       <h3>Meters</h3>
@@ -116,8 +112,7 @@ panel('tech')
     const iso2 = this['data-iso2'] as ISO2CountryCode;
     const nameEng = teenyDb.countryName(iso2);
     this.root.innerHTML = `
-      <h2>Name</h2>
-      <p>${nameEng}</p>
+      <h2>${nameEng}</h2>
       <h3>Dial</h3>
       <p>+${teenyDb.misc(iso2, 'Dial')}</p>
       <h3>TLD</h3>
@@ -133,8 +128,7 @@ panel('time')
     const nameEng = teenyDb.countryName(iso2);
     const date = new Date()
     this.root.innerHTML = `
-      <h2>Name</h2>
-      <p>${nameEng}</p>
+      <h2>${nameEng}</h2>
       <h3>Time</h3>
       <p>${date.toLocaleTimeString(this.locale, {timeStyle: 'short'})}</p>
       <p>${date.toLocaleTimeString(this.locale, {timeStyle: 'medium'})}</p>

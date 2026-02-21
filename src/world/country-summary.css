@@ -20,7 +20,7 @@
   max-width: 260px;
 }
 
-h3, p {
+h2, h3, p {
   margin: 0;
   padding: 0 3em 0 0;
   line-height: 1.3;
@@ -34,12 +34,4 @@ h3 {
   word-wrap: break-word;
   font-weight: 100;
   font-style: italic;
-}
-
-h2 {
-  /* heading of boxes, for name */
-  display: none;
-}
-h2+p {
-  text-decoration: underline;
 }
