@@ -144,7 +144,7 @@ export class ComponentBwilder<
       }
 
       connectedCallback() {
-        console.log(`Component <${builder.tagName}> connected to DOM.`)
+        // console.log(`Component <${builder.tagName}> connected to DOM.`)
 
         const rendered = this.render()
 

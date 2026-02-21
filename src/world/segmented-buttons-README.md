@@ -34,6 +34,7 @@ Example:
 ## Host attributes
 - *size* — controls padding/font-size. Values: small, (default), large.
 - *appearance* — visual style. Values: outline (outline-only), (default filled).
+- *required* — when present, one option is always selected (see [Required](#required)).
 - *data-value* on the host will reflect the currently selected option's data-value.
 
 ## CSS variables (customize look)
@@ -69,6 +70,25 @@ Example:
 
 An option can be marked with selected in markup; the component will adopt this as the initial selection.
 Clicking a selected option toggles it off (clears selection).
+
+## Required
+
+Add the `required` attribute to the host to enforce that exactly one option is always selected:
+
+    <segmented-buttons required style="--base-color: #00897b;">
+      <button slot="option" data-value="day">Day</button>
+      <button slot="option" data-value="week">Week</button>
+      <button slot="option" data-value="month">Month</button>
+    </segmented-buttons>
+
+Behavior:
+- If no option carries `selected` on mount, the first non-disabled option is auto-selected.
+- Clicking the currently selected option does **not** deselect it (and no `change` event fires).
+- Switching to another option works normally and fires a `change` event.
+- If new slotted options are added at runtime and nothing is selected, the first non-disabled option is auto-selected.
+- No `change` event is emitted for automatic enforcement selections — only for user-initiated switches.
+
+Gotcha: `required` enforcement happens silently. If you programmatically remove the selected option without updating `data-value`, re-attaching any slot element will trigger re-enforcement.
 
 ## Disabled
 

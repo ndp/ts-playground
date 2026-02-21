@@ -18,3 +18,7 @@ Things to change:
 - locale
 - currency
 - units (meters, kilometers, miles, feet, inches, etc)
+
+
+
+"Who needs a map when you have an astrolabe?" - @sindresorhus @purplepeterson

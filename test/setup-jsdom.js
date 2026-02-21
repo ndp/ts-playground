@@ -7,6 +7,7 @@ global.customElements = dom.window.customElements;
 global.HTMLElement = dom.window.HTMLElement
 global.Element = dom.window.Element
 global.ShadowRoot = dom.window.ShadowRoot
+global.Event = dom.window.Event
 global.CSSStyleSheet = dom.window.CSSStyleSheet
 
 global.CustomEvent = dom.window.CustomEvent
