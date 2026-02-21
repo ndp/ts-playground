@@ -1,3 +1,5 @@
+import {isIterableNonString} from './typescript.ts'
+
 /**
  * Generic Tracker - tracks items, lets add listeners return cleanups, and runs those cleanups on removal.
  */
@@ -26,9 +28,7 @@ export class Tracker<T> {
   add(item: T): boolean
   add(items: Iterable<T>): T[]
   add(itemOrItems: T | Iterable<T>): boolean | T[] {
-    const isIter = typeof (itemOrItems as any)[Symbol.iterator] === 'function'
-    // Treat strings as single items (strings are iterable but usually represent T itself)
-    if (!isIter || typeof itemOrItems === 'string') {
+    if (!isIterableNonString(itemOrItems)) {
       const item = itemOrItems as T
       if (this.items.has(item)) return false
       this.items.add(item)
