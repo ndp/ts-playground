@@ -59,3 +59,9 @@ export type ExpectValidArgs<FUNC extends (...args: any[]) => any, ARGS extends a
   : false
 
 export type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (k: infer I) => void ? I : never
+
+export function isIterableNonString<T>(value: any): value is Iterable<T> {
+  return value != null
+    && typeof value[Symbol.iterator] === 'function'
+    && typeof value !== 'string'
+}
