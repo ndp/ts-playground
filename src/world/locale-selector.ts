@@ -13,6 +13,7 @@ const LocaleSelector = (new ComponentBwilder())
     const newLocale = addCountryLocales(newValue as ISO2CountryCode);
     if (!newLocale) return
     this.root.querySelector('segmented-buttons')!.setAttribute('data-value', newLocale)
+    this.root.dispatchEvent(new CustomEvent('change', {bubbles: true, detail: {value: newLocale}}))
   })
   .wRender(function () {
     // console.log('rendering locale buttons with  languages:', gLanguages.peek(), this)

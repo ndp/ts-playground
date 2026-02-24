@@ -104,25 +104,37 @@
   wm.addEventListener("country-click", (ev) => {
     const detail = ev.detail
     if (gCountryIso2 === detail.iso2) {
-      gLocale = null
       gCountryIso2 = null
       wm.selectCountry(null);
     } else {
       gCountryIso2 = detail.iso2;
-      gLocale = teenyDb.langs(detail.iso2)[0] || 'en-US';
       wm.selectCountry(detail.iso2);
+      document.getElementsByTagName('locale-selector')[0].setAttribute('data-country', gCountryIso2 || '');
     }
-    document.getElementsByTagName('locale-timeline')[0].setAttribute('locale', gLocale);
-    updateListFormat(gLocale);
-    updateCurrentLocale(gCountryIso2);
+    const countrySummaryEl1 = document.getElementById("country-summary");
+    countrySummaryEl1.setAttribute('data-iso2', gCountryIso2 || '');
 ``
     const countrySummaryEl = document.getElementById("country-summary");
     countrySummaryEl.setAttribute('data-country', gCountryIso2 || '');
-    countrySummaryEl.setAttribute('locale', gLocale);
-
-    document.getElementsByTagName('locale-selector')[0].setAttribute('data-country', gCountryIso2 || '');
 
   });
+
+  document.getElementsByTagName('locale-selector')[0].addEventListener('change', (e)=> {
+    console.log('Locale selector changed=', e.detail.value);
+
+    if (!e.detail.value) return // ignore clearing of locale
+
+    gLocale = e.detail.value;
+
+    updateListFormat(gLocale);
+
+    const countrySummaryEl = document.getElementById("country-summary");
+    countrySummaryEl.setAttribute('locale', gLocale);
+
+    document.getElementsByTagName('locale-timeline')[0].setAttribute('locale', gLocale);
+
+  });
+
 
 
   document.getElementById('country-overlay-mode').addEventListener('change', (ev) => {
@@ -138,11 +150,6 @@
     document.body.setAttribute('data-mode', ev.detail.value || 'name');
   });
 
-
-  function updateCurrentLocale(iso2) {
-    const countrySummaryEl = document.getElementById("country-summary");
-    countrySummaryEl.setAttribute('data-iso2', iso2 || '');
-  }
 
   function updateListFormat(gLocale) {
     if (!gLocale) return;

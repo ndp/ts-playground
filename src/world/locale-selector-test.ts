@@ -61,4 +61,24 @@ describe('locale-selector component', () => {
     const frOption = inner.querySelector('[data-value="fr-FR"]');
     assert.ok(frOption, '"fr-FR" option should appear after setting data-country="FR"');
   });
+
+  it('fires a change event when data-country changes the locale', () => {
+    // teenyDb.langs('JP') => ['ja']
+    let detail: {value: string} | null = null;
+    host.addEventListener('change', (e) => { detail = (e as CustomEvent).detail });
+    host.setAttribute('data-country', 'JP');
+    assert.ok(detail, 'change event should have fired');
+    assert.strictEqual((detail as unknown as {value: string}).value, 'ja');
+  });
+
+  it('change event from inner segmented-buttons bubbles to locale-selector', () => {
+    // In a real browser, user clicks on a language option cause segmented-buttons to
+    // fire change (bubbles:true), which reaches locale-selector. Verify the path.
+    const inner = host.querySelector('segmented-buttons') as HTMLElement;
+    let detail: unknown = null;
+    host.addEventListener('change', (e) => { detail = (e as CustomEvent).detail });
+    inner.dispatchEvent(new CustomEvent('change', {bubbles: true, detail: {value: 'en'}}));
+    assert.ok(detail, 'change event should bubble up from inner segmented-buttons');
+    assert.strictEqual((detail as {value: string}).value, 'en');
+  });
 });
