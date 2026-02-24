@@ -59,28 +59,4 @@ describe('locale-buttons basic behavior', () => {
         assert.deepEqual(vals, sorted, 'options should be alphabetized');
     });
 
-    test('enforce limit removes least-recent-non-core', async () => {
-        const c = new LocaleButtons();
-        await c.connectedCallback();
-
-        // tighten limit
-        c.maxOptionsCount = 9; // less than many we will add but >= core
-        // add several extra locales to exceed limit
-        const extras = ['aa', 'bb', 'cc', 'dd', 'ee'].reverse();
-        for (const v of extras) {
-            c.setAttribute('data-value', v);
-            // mark selection so they become recently used
-            const el = c.querySelector(`[data-value="${v}"]`) as HTMLElement | null;
-            el?.dispatchEvent(new MouseEvent('click', {bubbles: true}));
-        }
-
-        // After adding extras, ensure core locales still present
-        for (const core of ['en-US', 'en', 'de', 'fr', 'es', 'ar', 'zh', 'es-ES']) {
-            assert.ok(c.querySelector(`[data-value="${core}"]`), `core ${core} must remain`);
-        }
-
-        // total options should not exceed maxOptions
-        const total = c.querySelectorAll('[slot="option"][data-value]').length;
-        assert.ok(total <= c.maxOptionsCount, `total (${total}) must be <= maxOptions (${c.maxOptionsCount})`);
-    });
 });

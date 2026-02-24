@@ -6,8 +6,6 @@
   "exclude": [
     "node_modules",
     "build",
-    "dist",
-    "./locale-buttons.ts",
-    "./locale-buttons-test.ts",
+    "dist"
   ]
 }

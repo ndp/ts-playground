@@ -47,7 +47,12 @@
       width: 100%;
       bottom: 0;
     }
-
+    locale-buttons {
+      position: fixed;
+      top: 5px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
   </style>
 </head>
 <body>
@@ -77,6 +82,7 @@
   <div slot="option" data-value="time" title='Time & Date'>⌚</div>
   <div slot="option" data-value="tech" title='Technical'>⚙</div>
 </segmented-buttons>
+<locale-buttons></locale-buttons>
 <segmented-buttons id='country-overlay-mode' style="position: fixed; top: 5px; right: 5px;">
   <div slot="option" data-value='' selected>-</div>
   <div slot="option" data-value="iso2">AZ</div>
@@ -113,6 +119,8 @@
     const countrySummaryEl = document.getElementById("country-summary");
     countrySummaryEl.setAttribute('data-country', gCountryIso2 || '');
     countrySummaryEl.setAttribute('locale', gLocale);
+
+    document.getElementsByTagName('locale-buttons')[0].setAttribute('data-country', gCountryIso2 || '');
 
   });
 

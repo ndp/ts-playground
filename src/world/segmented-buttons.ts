@@ -2,10 +2,14 @@ import {ComponentBwilder} from '@ndp-software/component-bwilder'
 
 const css = await maybeFetchText(new URL('../segmented-buttons.css', import.meta.url))
 
-type SegmentedContext = HTMLElement & {
-  root: HTMLElement
-  subElements: { slotEl: HTMLSlotElement | null }
+type HTMLElementWithSubElements = HTMLElement  & {
+  subElements?: { slotEl: HTMLSlotElement | null }
 }
+
+type SegmentedButtonsContext = HTMLElementWithSubElements & {
+  root: HTMLElement
+}
+
 
 /** Tracks which host elements have completed post-mount (initial selected-attr processing done). */
 const mountedHosts = new WeakSet<HTMLElement>()
@@ -14,24 +18,24 @@ const SegmentedButtons = new ComponentBwilder()
   .wTagName('segmented-buttons')
   .wShadowDOM('open')
   .wCSS(css)
-  .wObservedAttr('data-value', function (this: SegmentedContext) {
+  .wObservedAttr('data-value', function (this: SegmentedButtonsContext) {
     applySelectedClasses(this)
   })
-  .wObservedAttr('required', function (this: SegmentedContext) {
+  .wObservedAttr('required', function (this: SegmentedButtonsContext) {
     enforceRequired(this)
   })
-  .wObservedAttr('multi', function (this: SegmentedContext) {
+  .wObservedAttr('multi', function (this: SegmentedButtonsContext) {
     normalizeSelectionForMode(this)
   })
-  .wElement('slotEl')
-  .wRender(function (this: SegmentedContext) {
+  .wElement<'slotEl', HTMLSlotElement>('slotEl')
+  .wRender(function () {
     const slotEl = document.createElement('slot')
     slotEl.setAttribute('name', 'option')
     this.root.appendChild(slotEl)
 
     return {slotEl}
   })
-  .wPostMountFn(function (this: HTMLElement & SegmentedContext) {
+  .wPostMountFn(function () {
     // Search light DOM (the host, not shadow root) for any slotted elements pre-marked as selected
     const preselected = Array.from(this.querySelectorAll('[data-value][selected]')) as HTMLElement[]
     if (preselected.length > 0) {
@@ -45,9 +49,9 @@ const SegmentedButtons = new ComponentBwilder()
       setSelectedValues(this, values, {emitChange: false})
     }
     mountedHosts.add(this)
-    enforceRequired(this)
+    enforceRequired(this as HTMLElementWithSubElements)
   })
-  .wSlotAddedHandler(function (context: SegmentedContext, el: HTMLElement) {
+  .wSlotAddedHandler(function<T extends HTMLElement> (context: T, el: HTMLElement) {
     const handler = (ev: Event) => {
       ev.stopPropagation()
       handleSelect(context, el)
@@ -60,14 +64,14 @@ const SegmentedButtons = new ComponentBwilder()
     applySelectedClasses(context)
     return () => el.removeEventListener('click', handler)
   })
-  .wPostRenderFn(function (this: HTMLElement & SegmentedContext) {
+  .wPostRenderFn(function (this: HTMLElementWithSubElements) {
     applySelectedClasses(this)
   })
   .build()
 
 export default SegmentedButtons
 
-function handleSelect(host: HTMLElement & SegmentedContext, el: HTMLElement) {
+function handleSelect(host: HTMLElementWithSubElements, el: HTMLElement) {
   const val = el.getAttribute('data-value')
   if (val === null) return
 
@@ -103,7 +107,7 @@ function handleSelect(host: HTMLElement & SegmentedContext, el: HTMLElement) {
  * @param fallback - optional element to consider when `assignedElements()` is empty
  *                   (e.g. in JSDOM where slot assignment may lag behind DOM insertion)
  */
-function enforceRequired(host: HTMLElement & SegmentedContext, fallback?: HTMLElement) {
+function enforceRequired(host: HTMLElementWithSubElements, fallback?: HTMLElement) {
   if (!host.hasAttribute('required')) return
   if (getSelectedValues(host).length > 0) return
 
@@ -120,7 +124,7 @@ function enforceRequired(host: HTMLElement & SegmentedContext, fallback?: HTMLEl
   // No change event here — this is an automatic enforcement, not user interaction
 }
 
-function applySelectedClasses(host: SegmentedContext) {
+function applySelectedClasses(host: HTMLElementWithSubElements) {
   const slot = host.subElements?.slotEl
   const selectedValues = getSelectedValues(host)
   const assigned = slot?.assignedElements({flatten: true}) ?? []
@@ -132,13 +136,13 @@ function applySelectedClasses(host: SegmentedContext) {
   })
 }
 
-function normalizeSelectionForMode(host: HTMLElement & SegmentedContext) {
+function normalizeSelectionForMode(host: HTMLElementWithSubElements) {
   // Re-apply data-value in the correct shape when toggling multi on/off without emitting
   setSelectedValues(host, getSelectedValues(host), {emitChange: false})
   enforceRequired(host)
 }
 
-function setSelectedValues(host: HTMLElement & SegmentedContext, values: string[], options?: {emitChange?: boolean}) {
+function setSelectedValues(host: HTMLElementWithSubElements, values: string[], options?: {emitChange?: boolean}) {
   const unique = dedupe(values)
   const multi = isMulti(host)
   const normalized = multi ? unique : unique.slice(0, 1)

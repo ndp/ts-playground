@@ -18,9 +18,11 @@
     "clean": "rimraf ./build"
   },
   "dependencies": {
+    "@ndp-software/component-bwilder": "*"
   },
   "sideEffects": [
     "./country-summary.ts",
+    "./locale-buttons.ts",
     "./segmented-buttons.ts",
     "./timeline.ts",
     "./world-map.ts"
