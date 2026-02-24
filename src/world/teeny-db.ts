@@ -1,4 +1,7 @@
-const countryCodes = await fetch('./country-codes.json').then(res => res.json())
+// const countryCodes = await fetch('./country-codes.json').then(res => res.json())
+import {default as countryCodes} from './country-codes.json' with { type: 'json' };
+
+// console.log('*********', countryCodes);
 
 type Letter = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z';
 export type ISO2CountryCode = `${Letter}${Letter}`;
@@ -25,7 +28,7 @@ class TeenyDB {
     }
 
     langs(countryCode: ISO2CountryCode): string[] {
-        return this.misc(countryCode, 'Languages')?.split(',') || [];
+        return this.misc(countryCode, 'Languages')?.split(',') ?? []
     }
 
     countryName(iso2Code: ISO2CountryCode, locale: OfficialLanguages = 'en'): string | null {
@@ -58,7 +61,7 @@ class TeenyDB {
     }
 
     misc(countryCode: ISO2CountryCode, field: MiscKeys|NameKeys|ISOCodeKeys): string | null {
-        return this.byCountryCode[countryCode]![field] as string || null;
+        return this.byCountryCode[countryCode]?.[field] as string || null;
     }
 }
 

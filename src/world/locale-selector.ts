@@ -1,4 +1,3 @@
-// src/world/locale-buttons.ts
 import {type ISO2CountryCode, teenyDb} from './teeny-db.ts';
 import {RiggedQueue} from '@ndp-software/util';
 import {ComponentBwilder, type TagName} from '@ndp-software/component-bwilder';
@@ -6,7 +5,7 @@ import {ComponentBwilder, type TagName} from '@ndp-software/component-bwilder';
 const gLanguages = new RiggedQueue<string>(10, ['en', navigator.language]);
 
 
-const LocaleChooser = (new ComponentBwilder())
+const LocaleSelector = (new ComponentBwilder())
   .wTagName('locale-buttons' as TagName)
   .wShadowDOM('none')
   .wObservedAttr('data-country', function (this: {root: HTMLElement}, {newValue}) {
@@ -17,7 +16,7 @@ const LocaleChooser = (new ComponentBwilder())
     this.root.querySelector('segmented-buttons')!.setAttribute('data-value', newLocale)
   })
   .wRender(function () {
-    console.log('rendering locale buttons with  languages:', gLanguages.peek(), this)
+    // console.log('rendering locale buttons with  languages:', gLanguages.peek(), this)
     if (!this.root.querySelector('segmented-buttons'))
       this.root.innerHTML = '<segmented-buttons />'
     const buttons = this.root.firstChild as HTMLElement
@@ -39,4 +38,4 @@ function addCountryLocales(countryCode: ISO2CountryCode) {
 }
 
 
-export default LocaleChooser;
+export default LocaleSelector;
