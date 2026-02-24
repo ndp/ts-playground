@@ -1,4 +1,12 @@
 
+export type RiggedQueueChangeEvent<T> = {
+  added: T[]
+  removed: T[]
+  items: T[]
+}
+
+export type RiggedQueueChangeListener<T> = (event: RiggedQueueChangeEvent<T>) => void
+
 /*
   A special form of priority queue that allows:
   - user can add items to the front of the list
@@ -16,6 +24,7 @@ export class RiggedQueue<T> {
   private winners: Set<T>
   private items: Array<T>|null = null
   private usages: Array<T> = []
+  private readonly listeners: Set<RiggedQueueChangeListener<T>> = new Set()
 
   constructor(
     maxSize: number,
@@ -26,10 +35,19 @@ export class RiggedQueue<T> {
     this.winners = new Set(winners)
   }
 
+  // Register a listener that fires after each add() batch when peek() actually changes.
+  // Returns an unsubscribe function.
+  onChange(listener: RiggedQueueChangeListener<T>): () => void {
+    this.listeners.add(listener)
+    return () => { this.listeners.delete(listener) }
+  }
+
   // Add some items at the front of the list, which will prioritize them over other non-winner items
   add(...moreItems: T[]) {
+    const before = this.peek().slice()
     for (let i = moreItems.length - 1; i >=0; --i)
       this.addOne(moreItems[i])
+    this.notifyChange(before)
   }
 
   private addOne(item: T) {
@@ -58,6 +76,20 @@ export class RiggedQueue<T> {
       if (this.items.length >= this.maxSize) break
       if (!this.items.includes(item))
         this.items.push(item)
+    }
+  }
+
+  private notifyChange(before: T[]): void {
+    if (this.listeners.size === 0) return
+    const after = this.peek()
+    const beforeSet = new Set(before)
+    const afterSet = new Set(after)
+    const added = after.filter(x => !beforeSet.has(x))
+    const removed = before.filter(x => !afterSet.has(x))
+    if (added.length === 0 && removed.length === 0) return
+    const event: RiggedQueueChangeEvent<T> = { added, removed, items: after }
+    for (const listener of Array.from(this.listeners)) {
+      try { listener(event) } catch { /* swallow listener errors */ }
     }
   }
 }

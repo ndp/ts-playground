@@ -121,4 +121,83 @@ describe('RiggedQueue', () => {
     const q = new RiggedQueue(5, ['w1'])
     assert.deepEqual(q.peek(), ['w1'])
   })
+
+  // --- onChange() listeners ---
+
+  test('onChange() listener fires after add() with correct added/removed/items', () => {
+    const q = new RiggedQueue(5, [], ['a', 'b'])
+    const events: { added: string[], removed: string[], items: string[] }[] = []
+    q.onChange(e => events.push({ added: [...e.added], removed: [...e.removed], items: [...e.items] }))
+    q.add('c')
+    assert.equal(events.length, 1)
+    assert.deepEqual(events[0].added, ['c'])
+    assert.deepEqual(events[0].removed, [])
+    assert.deepEqual(events[0].items, ['c', 'a', 'b'])
+  })
+
+  test('onChange() fires once per add() call, even when multiple items passed', () => {
+    const q = new RiggedQueue(10, [], [])
+    let callCount = 0
+    q.onChange(() => { callCount++ })
+    q.add('x', 'y', 'z')
+    assert.equal(callCount, 1)
+  })
+
+  test('onChange() reports removed items when cap is exceeded', () => {
+    const q = new RiggedQueue(3, ['w1'], ['a', 'b'])
+    // peek is currently: w1, a, b (at cap)
+    const events: { added: string[], removed: string[] }[] = []
+    q.onChange(e => events.push({ added: [...e.added], removed: [...e.removed] }))
+    q.add('c')
+    assert.equal(events.length, 1)
+    assert.deepEqual(events[0].added, ['c'])
+    assert.deepEqual(events[0].removed, ['b'])
+  })
+
+  test('onChange() does NOT fire when add() changes nothing in peek()', () => {
+    const q = new RiggedQueue(5, [], ['a', 'b', 'c'])
+    let callCount = 0
+    q.onChange(() => { callCount++ })
+    q.add('a') // 'a' already in nonWinners, peek() unchanged
+    assert.equal(callCount, 0)
+  })
+
+  test('onChange() does NOT fire when adding a winner (no change to peek)', () => {
+    const q = new RiggedQueue(5, ['w1'], ['a'])
+    let callCount = 0
+    q.onChange(() => { callCount++ })
+    q.add('w1')
+    assert.equal(callCount, 0)
+  })
+
+  test('onChange() unsubscribe stops future notifications', () => {
+    const q = new RiggedQueue(5, [], [])
+    let callCount = 0
+    const unsub = q.onChange(() => { callCount++ })
+    q.add('a')
+    assert.equal(callCount, 1)
+    unsub()
+    q.add('b')
+    assert.equal(callCount, 1)
+  })
+
+  test('onChange() multiple listeners all receive the same event', () => {
+    const q = new RiggedQueue(5, [], [])
+    const results: string[][] = []
+    q.onChange(e => results.push(['L1', ...e.added]))
+    q.onChange(e => results.push(['L2', ...e.added]))
+    q.add('x')
+    assert.equal(results.length, 2)
+    assert.deepEqual(results[0], ['L1', 'x'])
+    assert.deepEqual(results[1], ['L2', 'x'])
+  })
+
+  test('onChange() listener error does not prevent other listeners from firing', () => {
+    const q = new RiggedQueue(5, [], [])
+    let secondCalled = false
+    q.onChange(() => { throw new Error('boom') })
+    q.onChange(() => { secondCalled = true })
+    q.add('x')
+    assert.equal(secondCalled, true)
+  })
 })
