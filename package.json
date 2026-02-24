@@ -11,6 +11,7 @@
   ],
   "scripts": {
     "build": "npm run clean && npm run build:world && npm run build:component",
+    "build:all": "npm run  --prefix ./src/util build && npm run component:build && npm run build:world",
     "build:world": "esbuild --outdir=./build/world/ --public-path=/ts-playground/ ./src/world/*.ts",
     "build:typecheck": "tsc -p tsconfig.json --declaration --noEmit --allowImportingTsExtensions --module nodenext --outDir ./build/",
     "build:typecheck:watch": "tsc --watch --declaration --no-emit --allowImportingTsExtensions --module nodenext --outDir ./build/ -p .",
