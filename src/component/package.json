@@ -1,5 +1,5 @@
 {
-  "name": "@ndpsoftware/component-bwilder",
+  "name": "@ndp-software/component-bwilder",
   "version": "0.1.0",
   "private": true,
   "description": "Typed web-component builder with render lifecycle helpers",

@@ -1,4 +1,4 @@
-# @ndpsoftware/component-bwilder
+# @ndp-software/component-bwilder
 
 Typed, minimal helpers for building compact Web Components used in this repository.
 

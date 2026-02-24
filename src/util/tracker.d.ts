@@ -3,9 +3,9 @@
  */
 export type TrackerAddListener<T> = (item: T) => void | (() => void);
 export declare class Tracker<T> {
-    private items;
-    private addListeners;
-    private cleanups;
+    private readonly items;
+    private readonly addListeners;
+    private readonly cleanups;
     constructor(initial?: Iterable<T>);
     onAdd(fn: TrackerAddListener<T>): () => void;
     get size(): number;
@@ -22,6 +22,7 @@ export declare class Tracker<T> {
     };
     private notifyAdd;
     private recordCleanup;
+    private _remove;
     private runCleanups;
 }
 export default Tracker;

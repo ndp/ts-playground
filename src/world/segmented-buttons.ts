@@ -1,4 +1,4 @@
-import {ComponentBwilder} from '@ndpsoftware/component-bwilder'
+import {ComponentBwilder} from '@ndp-software/component-bwilder'
 
 const css = await maybeFetchText(new URL('../segmented-buttons.css', import.meta.url))
 

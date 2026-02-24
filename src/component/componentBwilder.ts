@@ -1,6 +1,6 @@
 import {type RenderContext, type SubElementInputMap, type SubElementsMap} from './render.ts'
 import {type TagName, type TagNameLiteral} from './TagName.ts'
-import {Tracker} from '../util/tracker.ts'
+import {Tracker} from '@ndp-software/util'
 
 type ExtendableStringTuple = readonly [string?, string?, string?, string?, string?, string?, string?, string?]
 type ExtendableStringTuple3 = readonly [...ExtendableStringTuple, ...ExtendableStringTuple, ...ExtendableStringTuple]

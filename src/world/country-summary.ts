@@ -1,5 +1,5 @@
 import {type ISO2CountryCode, type OfficialLanguages, teenyDb} from './teeny-db.ts';
-import {ComponentBwilder, assertValidTagName} from '@ndpsoftware/component-bwilder';
+import {ComponentBwilder, assertValidTagName} from '@ndp-software/component-bwilder';
 import {maybeFetchText} from './util.ts'
 
 type PanelContext = {root: HTMLElement, 'data-iso2': string, locale: string}
