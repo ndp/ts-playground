@@ -6,10 +6,9 @@ const gLanguages = new RiggedQueue<string>(10, ['en', navigator.language]);
 
 
 const LocaleSelector = (new ComponentBwilder())
-  .wTagName('locale-buttons' as TagName)
+  .wTagName('locale-selector' as TagName)
   .wShadowDOM('none')
   .wObservedAttr('data-country', function (this: {root: HTMLElement}, {newValue}) {
-    console.log('data-country changed: ', newValue)
     if (!newValue) return
     const newLocale = addCountryLocales(newValue as ISO2CountryCode);
     if (!newLocale) return
@@ -31,7 +30,7 @@ const LocaleSelector = (new ComponentBwilder())
 
 function addCountryLocales(countryCode: ISO2CountryCode) {
   const countryLocales = teenyDb.langs(countryCode);
-  console.log(` got country locales for ${countryCode}:`, countryLocales)
+  // console.log(` got country locales for ${countryCode}:`, countryLocales)
   if (!countryLocales) return
   gLanguages.add(...countryLocales)
   return countryLocales[0]

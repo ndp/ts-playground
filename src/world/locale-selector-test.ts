@@ -1,62 +1,64 @@
-// src/world/locale-buttons.test.ts
-import assert from "node:assert/strict";
-import {describe, it as test} from "node:test";
-import LocaleButtons from "./locale-selector.ts";
+import assert from 'node:assert/strict';
+import { describe, it, beforeEach } from 'node:test';
+import './locale-selector.ts'
 
-describe('locale-buttons basic behavior', () => {
-    test('core locales present after connected', async () => {
-        const c = new LocaleButtons();
-        // simulate connected lifecycle
-        await c.connectedCallback();
-        for (const core of ['en-US', 'en', 'de', 'fr', 'es', 'ar', 'zh', 'es-ES']) {
-            const el = c.querySelector(`[data-value="${core}"]`);
-            assert.ok(el, `core locale ${core} should exist`);
-        }
-    });
+describe('locale-selector component', () => {
+  let host: HTMLElement;
 
-    test('setting data-value selects or adds value', async () => {
-        const c = new LocaleButtons();
-        await c.connectedCallback();
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    host = document.createElement('locale-selector');
+    document.body.appendChild(host);
+  });
 
-        // add and select a new locale not in core
-        c.setAttribute('data-value', 'pt-BR');
-        const newEl = c.querySelector('[data-value="pt-BR"]') as HTMLElement | null;
-        assert.ok(newEl, 'pt-BR should be added as an option');
-        assert.equal(c.getAttribute('data-value'), 'pt-BR');
+  it('renders a segmented-buttons child on connect', () => {
+    const inner = host.querySelector('segmented-buttons');
+    assert.ok(inner, 'segmented-buttons child should exist after connect');
+  });
 
-        // click should toggle off
-        let fired = false;
-        c.addEventListener('change', (e: any) => {
-            fired = true;
-            assert.strictEqual(e.detail.value, null);
-        });
-        // clicking selected element toggles off
-        newEl!.dispatchEvent(new MouseEvent('click', {bubbles: true}));
-        assert.ok(fired, 'change should have fired on toggle off');
-    });
+  it('renders "en" as a default language option', () => {
+    // 'en' is a RiggedQueue winner and is always present in gLanguages
+    const inner = host.querySelector('segmented-buttons') as HTMLElement;
+    const enOption = inner.querySelector('[data-value="en"]');
+    assert.ok(enOption, '"en" option should be rendered by default');
+  });
 
-    test('suggested attribute adds bolded options', async () => {
-        const c = new LocaleButtons();
-        await c.connectedCallback();
-        c.setAttribute('suggested', 'ja,ko,en-GB');
+  it('data-country sets data-value on inner segmented-buttons to first lang', () => {
+    // teenyDb.langs('US') => ['en-US', 'es-US', 'haw', 'fr']
+    host.setAttribute('data-country', 'US');
+    const inner = host.querySelector('segmented-buttons') as HTMLElement;
+    assert.strictEqual(inner.getAttribute('data-value'), 'en-US');
+  });
 
-        // suggested should exist and have class 'suggested'
-        for (const s of ['ja', 'ko', 'en-GB']) {
-            const el = c.querySelector(`[data-value="${s}"]`) as HTMLElement | null;
-            assert.ok(el, `suggested ${s} should be present`);
-            assert.ok(el!.classList.contains('suggested'), `${s} should have suggested class`);
-        }
-    });
+  it('data-country adds the country languages as options', () => {
+    // teenyDb.langs('DE') => ['de']
+    host.setAttribute('data-country', 'DE');
+    const inner = host.querySelector('segmented-buttons') as HTMLElement;
+    const deOption = inner.querySelector('[data-value="de"]');
+    assert.ok(deOption, '"de" option should appear after setting data-country="DE"');
+  });
 
-    test('alphabetical ordering maintained', async () => {
-        const c = new LocaleButtons();
-        await c.connectedCallback();
-        c.setAttribute('suggested', 'zz,aa,mm');
-        // get values order
-        const opts = Array.from(c.querySelectorAll('[slot="option"][data-value]')) as HTMLElement[];
-        const vals = opts.map(o => o.getAttribute('data-value') || '');
-        const sorted = [...vals].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
-        assert.deepEqual(vals, sorted, 'options should be alphabetized');
-    });
+  it('data-country with empty string is a no-op', () => {
+    const inner = host.querySelector('segmented-buttons') as HTMLElement;
+    const valueBefore = inner.getAttribute('data-value');
+    host.setAttribute('data-country', '');
+    assert.strictEqual(inner.getAttribute('data-value'), valueBefore,
+      'empty data-country should not change inner segmented-buttons data-value');
+  });
 
+  it('data-country with unknown country code does not set inner data-value', () => {
+    // teenyDb.langs('XX') => [] — addCountryLocales returns undefined, observer returns early
+    host.setAttribute('data-country', 'XX');
+    const inner = host.querySelector('segmented-buttons') as HTMLElement;
+    assert.strictEqual(inner.getAttribute('data-value'), null,
+      'unknown country should not set data-value on inner segmented-buttons');
+  });
+
+  it('component rerenders options when a new country is added', () => {
+    // teenyDb.langs('FR') => ['fr-FR', 'frp', 'br', 'co', 'ca', 'eu', 'oc']
+    host.setAttribute('data-country', 'FR');
+    const inner = host.querySelector('segmented-buttons') as HTMLElement;
+    const frOption = inner.querySelector('[data-value="fr-FR"]');
+    assert.ok(frOption, '"fr-FR" option should appear after setting data-country="FR"');
+  });
 });

@@ -22,7 +22,7 @@
   },
   "sideEffects": [
     "./country-summary.ts",
-    "./locale-buttons.ts",
+    "./locale-selector.ts",
     "./segmented-buttons.ts",
     "./timeline.ts",
     "./world-map.ts"
