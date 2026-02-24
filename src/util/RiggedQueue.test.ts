@@ -136,7 +136,7 @@ describe('RiggedQueue', () => {
   })
 
   test('onChange() fires once per add() call, even when multiple items passed', () => {
-    const q = new RiggedQueue(10, [], [])
+    const q = new RiggedQueue<string>(10, [], [])
     let callCount = 0
     q.onChange(() => { callCount++ })
     q.add('x', 'y', 'z')
@@ -171,7 +171,7 @@ describe('RiggedQueue', () => {
   })
 
   test('onChange() unsubscribe stops future notifications', () => {
-    const q = new RiggedQueue(5, [], [])
+    const q = new RiggedQueue<string>(5, [], [])
     let callCount = 0
     const unsub = q.onChange(() => { callCount++ })
     q.add('a')
@@ -182,7 +182,7 @@ describe('RiggedQueue', () => {
   })
 
   test('onChange() multiple listeners all receive the same event', () => {
-    const q = new RiggedQueue(5, [], [])
+    const q = new RiggedQueue<string>(5, [], [])
     const results: string[][] = []
     q.onChange(e => results.push(['L1', ...e.added]))
     q.onChange(e => results.push(['L2', ...e.added]))
@@ -193,7 +193,7 @@ describe('RiggedQueue', () => {
   })
 
   test('onChange() listener error does not prevent other listeners from firing', () => {
-    const q = new RiggedQueue(5, [], [])
+    const q = new RiggedQueue<string>(5, [], [])
     let secondCalled = false
     q.onChange(() => { throw new Error('boom') })
     q.onChange(() => { secondCalled = true })

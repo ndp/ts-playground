@@ -12,6 +12,7 @@
   "types": "./build/types/index.d.ts",
   "sideEffects": false,
   "scripts": {
+    "dev": "npm run clean && clear && concurrently 'npm run build:js -- --watch' 'npm run build:types -- --watch' 'npm run test:watch' 'npm run typecheck -- --watch'",
     "typecheck": "tsc -p ./tsconfig.check.json",
     "test": "node --test  './**/*test.ts'",
     "test:watch": "node --test --watch './**/*test.ts'",
