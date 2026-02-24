@@ -28,7 +28,7 @@
     "build:types": "tsc -p ./tsconfig.types.json",
     "build:js": "esbuild ./index.ts --bundle --format=esm --platform=browser --target=es2022 --sourcemap --outfile=./dist/index.js",
 
-    "dev": "concurrently 'npm run build:types -- --watch' 'npm run build:js -- --watch' 'npm run typecheck -- --watch' 'npm run test:watch'",
+    "dev": "npm run clean && concurrently 'npm run build:types -- --watch' 'npm run build:js -- --watch' 'npm run typecheck -- --watch' 'npm run test:watch'",
 
     "clean": "rimraf ./dist",
 

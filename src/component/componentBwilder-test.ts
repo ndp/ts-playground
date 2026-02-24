@@ -1190,4 +1190,41 @@ describe('ComponentBwilder render', () => {
     c.disconnectedCallback()
     assert.deepEqual(events, ['add', 'cleanup'])
   })
+
+  test('render function is bound to this context', () => {
+    let foundThis = undefined
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('render-this-context'))
+      .wShadowDOM('none')
+      .wRender(function () {
+        foundThis = this
+      })
+      .build()
+
+    const c = new MyComponentClass()
+    c.connectedCallback()
+
+    assert.equal(foundThis, c)
+  })
+
+  test('rerender function is bound to this context in wPostMountFn functions', () => {
+    let foundThis = undefined
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('render-this-context'))
+      .wShadowDOM('none')
+      .wRender(function () {
+        foundThis = this
+      })
+      .wPostMountFn(function () {
+        foundThis = null
+        this.rerender()
+      })
+      .build()
+
+    const c = new MyComponentClass()
+    c.connectedCallback()
+
+    assert.equal(foundThis, c)
+  })
+
 })

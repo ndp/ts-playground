@@ -18,7 +18,7 @@ export class ComponentBwilder<
   AllAttrs extends ExtendableStringTuple3 = [...ObservedAttrs, ...UnobservedAttrs],
   AttrsRecord extends {} = AllAttrs[number] extends string ? Record<AllAttrs[number], string> : {},
   RenderingContext extends RenderContext<{}, SubElementsMap> = RenderContext<AttrsRecord, SubElements>,
-  ComponentType = HTMLElement & RenderingContext> {
+  ComponentType = HTMLElement & RenderingContext & {rerender: () => void|Promise<void>}> {
 
   private tagName?: string | null
   private css: { text: string, requestedMode: CSSMode } | undefined
@@ -69,10 +69,10 @@ export class ComponentBwilder<
     return this as unknown as ComponentBwilder<[...ObservedAttrs, A]>;
   }
 
-  wElement<A extends string>(elementName: A) {
+  wElement<A extends string, T extends HTMLElement = HTMLElement>(elementName: A) {
     this.subElementNames.push(elementName);
     // @ts-ignore TS2344
-    return this as unknown as ComponentBwilder<ObservedAttrs, UnobservedAttrs, SubElementsMap<A | keyof SubElements>>;
+    return this as unknown as ComponentBwilder<ObservedAttrs, UnobservedAttrs, {[k in keyof SubElements]: SubElements[k]} & Record<A, T | null>>;
   }
 
   wRender(renderFn: ComponentBwilderRenderer<RenderingContext, SubElements>) {
@@ -85,7 +85,7 @@ export class ComponentBwilder<
     return this as this & { wPostMountFn: never }
   }
 
-  wPostRenderFn(postRenderFn: (this: ComponentType, context: ComponentType) => void | Promise<void>) {
+  wPostRenderFn(postRenderFn: (this: ComponentType & {render: never}, context: ComponentType & {rerender: never}) => void | Promise<void>) {
     this.postRenderFn = postRenderFn as any
     return this as this & { wPostRenderFn: never }
   }
@@ -121,6 +121,9 @@ export class ComponentBwilder<
 
       constructor() {
         super()
+
+        this.rerender = this.rerender.bind(this)
+
         if (builder.shadowDOM !== 'none')
           this.root = this.attachShadow({mode: builder.shadowDOM})
         else
@@ -155,13 +158,17 @@ export class ComponentBwilder<
         const runPostMount = () => builder.postMountFn!.call(context, context)
 
         return isPromiseLike(rendered)
-          ? rendered.then(() => runPostMount())
+          ? rendered.then(runPostMount)
           : runPostMount()
       }
 
       disconnectedCallback() {
         if (builder.slotAddedHandler)
           this.teardownSlotHandlers()
+      }
+
+      rerender() {
+        return this.render()
       }
 
       render() {
