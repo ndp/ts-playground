@@ -277,4 +277,190 @@ describe('segmented-buttons component', () => {
             assert.strictEqual(host.getAttribute('data-value'), 'c,b,a');
         });
     });
+
+    describe('suggested attribute', () => {
+
+        beforeEach(() => {
+            document.body.innerHTML = '';
+            host = document.createElement('segmented-buttons');
+            host.appendChild(makeOption('a', 'A'));
+            host.appendChild(makeOption('b', 'B'));
+            host.appendChild(makeOption('c', 'C'));
+            document.body.appendChild(host);
+        });
+
+        it('applies suggested class to matching options', () => {
+            host.setAttribute('suggested', 'a,c');
+            const a = host.querySelector('[data-value="a"]') as HTMLElement;
+            const b = host.querySelector('[data-value="b"]') as HTMLElement;
+            const c = host.querySelector('[data-value="c"]') as HTMLElement;
+            assert.ok(a.classList.contains('suggested'), 'a should have suggested class');
+            assert.ok(!b.classList.contains('suggested'), 'b should not have suggested class');
+            assert.ok(c.classList.contains('suggested'), 'c should have suggested class');
+        });
+
+        it('removes suggested class when attribute is updated', () => {
+            host.setAttribute('suggested', 'a,b');
+            host.setAttribute('suggested', 'b');
+            const a = host.querySelector('[data-value="a"]') as HTMLElement;
+            const b = host.querySelector('[data-value="b"]') as HTMLElement;
+            assert.ok(!a.classList.contains('suggested'), 'a should lose suggested class');
+            assert.ok(b.classList.contains('suggested'), 'b should still have suggested class');
+        });
+
+        it('clears all suggested classes when attribute is removed', () => {
+            host.setAttribute('suggested', 'a,b,c');
+            host.removeAttribute('suggested');
+            for (const val of ['a', 'b', 'c']) {
+                const el = host.querySelector(`[data-value="${val}"]`) as HTMLElement;
+                assert.ok(!el.classList.contains('suggested'), `${val} should not have suggested class`);
+            }
+        });
+
+        it('suggested class does not affect selection behavior', () => {
+            host.setAttribute('suggested', 'a');
+            const a = host.querySelector('[data-value="a"]') as HTMLElement;
+            a.click();
+            assert.ok(a.classList.contains('selected'), 'a should be selected after click');
+            assert.ok(a.classList.contains('suggested'), 'a should still have suggested class when selected');
+        });
+    });
+
+    describe('lockable attribute', () => {
+
+        beforeEach(() => {
+            document.body.innerHTML = '';
+            host = document.createElement('segmented-buttons');
+            host.setAttribute('lockable', '');
+            host.appendChild(makeOption('a', 'A'));
+            host.appendChild(makeOption('b', 'B'));
+            host.appendChild(makeOption('c', 'C'));
+            document.body.appendChild(host);
+        });
+
+        it('cycles a button through unselected → selected → locked → unselected', () => {
+            const a = host.querySelector('[data-value="a"]') as HTMLElement;
+
+            // unselected → selected
+            a.click();
+            assert.ok(a.classList.contains('selected'), 'a should be selected');
+            assert.strictEqual(host.getAttribute('data-value'), 'a');
+            assert.ok(!a.classList.contains('locked'), 'a should not be locked yet');
+
+            // selected → locked
+            a.click();
+            assert.ok(!a.classList.contains('selected'), 'a should not be selected after second click');
+            assert.ok(a.classList.contains('locked'), 'a should have locked class');
+            assert.ok(a.hasAttribute('locked'), 'a should have locked attr');
+            assert.ok(host.hasAttribute('locked'), 'host should have locked attr');
+            assert.strictEqual(host.getAttribute('data-locked'), 'a');
+            assert.strictEqual(host.getAttribute('data-value'), null);
+
+            // locked → unselected
+            a.click();
+            assert.ok(!a.classList.contains('locked'), 'a should not be locked after third click');
+            assert.ok(!a.hasAttribute('locked'), 'a should not have locked attr');
+            assert.ok(!host.hasAttribute('locked'), 'host locked attr should be removed');
+            assert.strictEqual(host.getAttribute('data-locked'), null);
+        });
+
+        it('buttons cycle independently of each other', () => {
+            const a = host.querySelector('[data-value="a"]') as HTMLElement;
+            const b = host.querySelector('[data-value="b"]') as HTMLElement;
+
+            a.click(); // a: selected
+            b.click(); // b: selected — a stays selected
+            assert.ok(a.classList.contains('selected'), 'a should still be selected');
+            assert.ok(b.classList.contains('selected'), 'b should be selected too');
+            assert.strictEqual(host.getAttribute('data-value'), 'a,b');
+
+            a.click(); // a: locked — b stays selected
+            assert.ok(a.classList.contains('locked'), 'a should be locked');
+            assert.ok(b.classList.contains('selected'), 'b should remain selected');
+            assert.strictEqual(host.getAttribute('data-locked'), 'a');
+            assert.strictEqual(host.getAttribute('data-value'), 'b');
+        });
+
+        it('data-locked and data-value track their respective states', () => {
+            const a = host.querySelector('[data-value="a"]') as HTMLElement;
+            const b = host.querySelector('[data-value="b"]') as HTMLElement;
+            const c = host.querySelector('[data-value="c"]') as HTMLElement;
+
+            a.click(); a.click(); // a → locked
+            b.click();            // b → selected
+            // c stays unselected
+
+            assert.strictEqual(host.getAttribute('data-locked'), 'a');
+            assert.strictEqual(host.getAttribute('data-value'), 'b');
+            assert.ok(!c.classList.contains('selected'));
+            assert.ok(!c.classList.contains('locked'));
+        });
+
+        it('required prevents cycling the last selected button to locked', () => {
+            host.setAttribute('required', '');
+            const a = host.querySelector('[data-value="a"]') as HTMLElement;
+
+            a.click(); // a: selected (only selection)
+            assert.strictEqual(host.getAttribute('data-value'), 'a');
+
+            // Try to move a from selected → locked: should be blocked
+            a.click();
+            assert.ok(a.classList.contains('selected'), 'a should stay selected');
+            assert.strictEqual(host.getAttribute('data-value'), 'a');
+            assert.ok(!host.hasAttribute('locked'), 'nothing should be locked');
+        });
+
+        it('required allows selected → locked when another button is also selected', () => {
+            host.setAttribute('required', '');
+            const a = host.querySelector('[data-value="a"]') as HTMLElement;
+            const b = host.querySelector('[data-value="b"]') as HTMLElement;
+
+            a.click(); // a: selected
+            b.click(); // b: selected
+
+            // Now move a to locked — b is still selected so this is allowed
+            a.click();
+            assert.ok(a.classList.contains('locked'), 'a should be locked');
+            assert.ok(b.classList.contains('selected'), 'b should still be selected');
+            assert.strictEqual(host.getAttribute('data-value'), 'b');
+        });
+
+        it('locked → unselected is always allowed even with required', () => {
+            host.setAttribute('required', '');
+            const a = host.querySelector('[data-value="a"]') as HTMLElement;
+            const b = host.querySelector('[data-value="b"]') as HTMLElement;
+
+            b.click(); // b: selected (satisfies required)
+            a.click(); a.click(); // a: locked
+
+            // Unlock a — b still satisfies required
+            a.click();
+            assert.ok(!a.classList.contains('locked'), 'a should be unlocked');
+            assert.ok(!a.hasAttribute('locked'), 'a should not have locked attr');
+            assert.ok(b.classList.contains('selected'), 'b still selected');
+        });
+
+        it('host locked attr is removed when last locked button is unlocked', () => {
+            const a = host.querySelector('[data-value="a"]') as HTMLElement;
+            a.click(); a.click(); // a: locked
+            assert.ok(host.hasAttribute('locked'));
+
+            a.click(); // a: unselected
+            assert.ok(!host.hasAttribute('locked'), 'host locked attr should be gone');
+        });
+
+        it('works with multi attribute: multiple selected and locked independently', () => {
+            host.setAttribute('multi', '');
+            const a = host.querySelector('[data-value="a"]') as HTMLElement;
+            const b = host.querySelector('[data-value="b"]') as HTMLElement;
+            const c = host.querySelector('[data-value="c"]') as HTMLElement;
+
+            a.click(); b.click(); // a, b: selected
+            c.click(); c.click(); // c: locked
+
+            assert.strictEqual(host.getAttribute('data-value'), 'a,b');
+            assert.strictEqual(host.getAttribute('data-locked'), 'c');
+            assert.ok(host.hasAttribute('locked'));
+        });
+    });
 });

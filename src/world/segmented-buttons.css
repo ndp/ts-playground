@@ -124,3 +124,25 @@
   color: var(--base-color);
   box-shadow: none;
 }
+
+/* Suggested: subtle highlight for recommended options */
+::slotted([data-value].suggested) {
+  background: var(--suggested-bg, color-mix(in oklch, var(--base-color) 6%, transparent 94%));
+  font-style: italic;
+}
+::slotted([data-value].suggested.selected) {
+  background: var(--base-color);
+  font-style: normal;
+}
+
+/* Locked state */
+::slotted([data-value].locked) {
+  background: var(--locked-bg, color-mix(in oklch, var(--base-color) 18%, white 82%));
+  color: var(--locked-text, var(--text));
+  cursor: pointer;
+  box-shadow: inset 0 0 0 2px color-mix(in oklch, var(--base-color) 40%, transparent 60%);
+}
+::slotted([data-value].locked:hover) {
+  background: var(--locked-bg-hover, color-mix(in oklch, var(--base-color) 26%, white 74%));
+  transform: translateY(-1px);
+}

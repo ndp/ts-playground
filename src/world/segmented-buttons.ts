@@ -27,6 +27,15 @@ const SegmentedButtons = new ComponentBwilder()
   .wObservedAttr('multi', function (this: SegmentedButtonsContext) {
     normalizeSelectionForMode(this)
   })
+  .wObservedAttr('suggested', function (this: SegmentedButtonsContext) {
+    applySuggestedClasses(this)
+  })
+  .wObservedAttr('lockable', function (this: SegmentedButtonsContext) {
+    applyLockedAttrs(this)
+  })
+  .wObservedAttr('data-locked', function (this: SegmentedButtonsContext) {
+    applyLockedAttrs(this)
+  })
   .wElement<'slotEl', HTMLSlotElement>('slotEl')
   .wRender(function () {
     const slotEl = document.createElement('slot')
@@ -50,6 +59,8 @@ const SegmentedButtons = new ComponentBwilder()
     }
     mountedHosts.add(this)
     enforceRequired(this as HTMLElementWithSubElements)
+    applySuggestedClasses(this)
+    applyLockedAttrs(this)
   })
   .wSlotAddedHandler(function<T extends HTMLElement> (context: T, el: HTMLElement) {
     const handler = (ev: Event) => {
@@ -62,10 +73,14 @@ const SegmentedButtons = new ComponentBwilder()
     // Pass `el` as a fallback for environments where assignedElements() may be empty at this point.
     if (mountedHosts.has(context)) enforceRequired(context, el)
     applySelectedClasses(context)
+    applySuggestedClasses(context)
+    applyLockedAttrs(context)
     return () => el.removeEventListener('click', handler)
   })
   .wPostRenderFn(function (this: HTMLElementWithSubElements) {
     applySelectedClasses(this)
+    applySuggestedClasses(this)
+    applyLockedAttrs(this)
   })
   .build()
 
@@ -74,6 +89,25 @@ export default SegmentedButtons
 function handleSelect(host: HTMLElementWithSubElements, el: HTMLElement) {
   const val = el.getAttribute('data-value')
   if (val === null) return
+
+  if (isLockable(host)) {
+    const locked = getLockedValues(host)
+    const selected = getSelectedValues(host)
+
+    if (locked.includes(val)) {
+      // locked → unselected: always allowed
+      setLockedValues(host, locked.filter(v => v !== val))
+    } else if (selected.includes(val)) {
+      // selected → locked: blocked by required if this is the last selected
+      if (host.hasAttribute('required') && selected.length === 1) return
+      setSelectedValues(host, selected.filter(v => v !== val), {emitChange: true, keepMultiFormat: true})
+      setLockedValues(host, [...locked, val])
+    } else {
+      // unselected → selected: always independent (multi-like in lockable mode)
+      setSelectedValues(host, [...selected, val], {emitChange: true, keepMultiFormat: true})
+    }
+    return
+  }
 
   if (isMulti(host)) {
     const selected = getSelectedValues(host)
@@ -142,9 +176,9 @@ function normalizeSelectionForMode(host: HTMLElementWithSubElements) {
   enforceRequired(host)
 }
 
-function setSelectedValues(host: HTMLElementWithSubElements, values: string[], options?: {emitChange?: boolean}) {
+function setSelectedValues(host: HTMLElementWithSubElements, values: string[], options?: {emitChange?: boolean, keepMultiFormat?: boolean}) {
   const unique = dedupe(values)
-  const multi = isMulti(host)
+  const multi = options?.keepMultiFormat || isMulti(host)
   const normalized = multi ? unique : unique.slice(0, 1)
   const prev = getSelectedValues(host)
 
@@ -182,6 +216,57 @@ function dedupe(values: string[]) {
 
 function isMulti(host: HTMLElement) {
   return host.hasAttribute('multi')
+}
+
+function isLockable(host: HTMLElement) {
+  return host.hasAttribute('lockable')
+}
+
+function getLockedValues(host: HTMLElement) {
+  const raw = host.getAttribute('data-locked')
+  if (!raw) return []
+  return dedupe(raw.split(',').map(v => v.trim()).filter(Boolean))
+}
+
+function setLockedValues(host: HTMLElementWithSubElements, values: string[]) {
+  const unique = dedupe(values)
+  if (unique.length === 0) {
+    host.removeAttribute('data-locked')
+  } else {
+    host.setAttribute('data-locked', unique.join(','))
+  }
+  applyLockedAttrs(host)
+}
+
+function applyLockedAttrs(host: HTMLElementWithSubElements) {
+  const slot = host.subElements?.slotEl
+  const lockedValues = getLockedValues(host)
+  const assigned = slot?.assignedElements({flatten: true}) ?? []
+
+  assigned.forEach((node) => {
+    if (!(node instanceof HTMLElement)) return
+    const nodeValue = node.getAttribute('data-value')
+    const locked = nodeValue !== null && lockedValues.includes(nodeValue)
+    node.classList.toggle('locked', locked)
+    if (locked) node.setAttribute('locked', '')
+    else node.removeAttribute('locked')
+  })
+
+  if (lockedValues.length > 0) host.setAttribute('locked', '')
+  else host.removeAttribute('locked')
+}
+
+function applySuggestedClasses(host: HTMLElementWithSubElements) {
+  const slot = host.subElements?.slotEl
+  const raw = host.getAttribute('suggested') ?? ''
+  const suggested = raw.split(',').map(v => v.trim()).filter(Boolean)
+  const assigned = slot?.assignedElements({flatten: true}) ?? []
+
+  assigned.forEach((node) => {
+    if (!(node instanceof HTMLElement)) return
+    const nodeValue = node.getAttribute('data-value')
+    node.classList.toggle('suggested', nodeValue !== null && suggested.includes(nodeValue))
+  })
 }
 
 function emitChange(host: HTMLElement, value: string | string[] | null, oldValue: string | string[] | null) {
