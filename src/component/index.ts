@@ -15,10 +15,8 @@ export type {
 
 export {
   assertValidTagName,
-  isValidTagName
 } from './TagName.ts'
 
 export type {
-  TagName,
-  TagNameLiteral
+  TagName
 } from './TagName.ts'
