@@ -97,6 +97,11 @@ function handleSelect(host: HTMLElementWithSubElements, el: HTMLElement) {
     const isSelected = selected.includes(val)
 
     if (isSelected && isLocked) {
+      // required + not multi: can't deselect, so just unlock
+      if (host.hasAttribute('required') && !isMulti(host)) {
+        setLockedValues(host, locked.filter(v => v !== val))
+        return
+      }
       // selected+locked → unselected: requires removing from both
       if (host.hasAttribute('required') && selected.length === 1) return
       setLockedValues(host, locked.filter(v => v !== val))

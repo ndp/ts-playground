@@ -338,7 +338,7 @@ describe('segmented-buttons component', () => {
             document.body.appendChild(host);
         });
 
-        it('cycles unselected → selected → selected+locked → unselected', () => {
+        it('cycles unselected → selected → selected+locked → selected (unlock)', () => {
             const a = host.querySelector('[data-value="a"]') as HTMLElement;
 
             // 1st click: unselected → selected
@@ -400,30 +400,36 @@ describe('segmented-buttons component', () => {
             assert.ok(!b.classList.contains('locked'), 'b should not be locked');
         });
 
-        it('required blocks selected+locked → unselected when it is the only selection', () => {
-            host.setAttribute('required', '');
+        it('required + not multi: clicking locked button unlocks it (stays selected)', () => {
+            host.setAttribute('required', '');  // enforceRequired auto-selects 'a'
             const a = host.querySelector('[data-value="a"]') as HTMLElement;
 
-            a.click(); // a: selected
-            a.click(); // a: selected+locked (still selected, required satisfied)
+            // 'a' already selected by enforceRequired
+            a.click(); // a: selected → selected+locked
             assert.ok(a.classList.contains('selected'), 'a should be selected+locked');
-            assert.ok(a.classList.contains('locked'));
-
-            // 3rd click would go to unselected — blocked by required
-            a.click();
-            assert.ok(a.classList.contains('selected'), 'a should remain selected+locked');
-            assert.ok(a.classList.contains('locked'), 'a should remain locked');
+            assert.ok(a.classList.contains('locked'), 'a should be locked');
             assert.strictEqual(host.getAttribute('data-value'), 'a');
+
+            // clicking locked: can't deselect (required + not multi), so just unlock
+            a.click(); // a: selected+locked → selected
+            assert.ok(a.classList.contains('selected'), 'a should remain selected after unlock');
+            assert.ok(!a.classList.contains('locked'), 'a should be unlocked');
+            assert.strictEqual(host.getAttribute('data-value'), 'a', 'a still selected');
+            assert.strictEqual(host.getAttribute('data-locked'), null);
         });
 
-        it('required: selected → selected+locked is always allowed (still selected)', () => {
-            host.setAttribute('required', '');
+        it('required + multi: selected+locked → unselected is blocked when last selection', () => {
+            host.setAttribute('required', '');  // enforceRequired auto-selects 'a'
+            host.setAttribute('multi', '');
             const a = host.querySelector('[data-value="a"]') as HTMLElement;
 
-            a.click(); // a: selected
-            a.click(); // a: selected+locked — allowed because a is still in data-value
-            assert.ok(a.classList.contains('selected'), 'a should be selected');
+            a.click(); // a: selected → selected+locked
             assert.ok(a.classList.contains('locked'), 'a should be locked');
+
+            // 3rd click would deselect a — blocked by required (only selection)
+            a.click();
+            assert.ok(a.classList.contains('selected'), 'a should remain selected');
+            assert.ok(a.classList.contains('locked'), 'a should remain locked');
             assert.strictEqual(host.getAttribute('data-value'), 'a');
         });
 
