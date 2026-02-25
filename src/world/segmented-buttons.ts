@@ -3,7 +3,7 @@ import {ComponentBwilder, type TagName} from '@ndp-software/component-bwilder'
 const css = await maybeFetchText(new URL('../segmented-buttons.css', import.meta.url))
 
 type HTMLElementWithSubElements = HTMLElement  & {
-  subElements?: { slotEl: HTMLSlotElement | null }
+  subElements: { slotEl: HTMLSlotElement | null }
 }
 
 /** Tracks which host elements have completed post-mount (initial selected-attr processing done). */
@@ -57,7 +57,7 @@ const SegmentedButtons = new ComponentBwilder()
     applySuggestedClasses(this)
     applyLockedAttrs(this)
   })
-  .wSlotAddedHandler(function<T extends HTMLElement> (context: T, el: HTMLElement) {
+  .wSlotAddedHandler(function(context, el: HTMLElement) {
     const handler = (ev: Event) => {
       ev.stopPropagation()
       handleSelect(context, el)
@@ -247,7 +247,7 @@ function setLockedValues(host: HTMLElementWithSubElements, values: string[]) {
 }
 
 function applyLockedAttrs(host: HTMLElementWithSubElements) {
-  const slot = host.subElements?.slotEl
+  const slot = host.subElements.slotEl
   const lockedValues = getLockedValues(host)
   const assigned = slot?.assignedElements({flatten: true}) ?? []
 
@@ -265,7 +265,7 @@ function applyLockedAttrs(host: HTMLElementWithSubElements) {
 }
 
 function applySuggestedClasses(host: HTMLElementWithSubElements) {
-  const slot = host.subElements?.slotEl
+  const slot = host.subElements.slotEl
   const raw = host.getAttribute('suggested') ?? ''
   const suggested = raw.split(',').map(v => v.trim()).filter(Boolean)
   const assigned = slot?.assignedElements({flatten: true}) ?? []

@@ -1074,7 +1074,7 @@ describe('ComponentBwilder render', () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('subelements-post-mount'))
       .wElement('content')
-      .wShadowDOM('none')
+      .wShadowDOM('open')
       .wRender(function () {
         this.root.innerHTML = '<div id="content">Mounted Content</div>'
         return {
@@ -1084,6 +1084,14 @@ describe('ComponentBwilder render', () => {
       .wPostMountFn(function ({subElements}) {
         assert.equal(subElements.content?.textContent, 'Mounted Content')
         assert.equal(this.subElements.content?.textContent, 'Mounted Content')
+      })
+      .wObservedAttr('data-update', function() {
+        assert.equal(this.subElements.content?.textContent, 'Mounted Content')
+      })
+      .wElement<'more', HTMLSlotElement>('more')
+      .wObservedAttr('data-more', function() {
+        assert.equal(this.subElements.content?.textContent, 'Mounted Content')
+        assert.equal(this.subElements.more, null)
       })
       .build()
   })
