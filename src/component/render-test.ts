@@ -15,7 +15,7 @@ describe('makeComponentRendererFromString', () => {
   it('should return a function that sets root innerHTML to the provided string', () => {
     const renderer =
       makeComponentRendererFromString('Hello, world!');
-    const context = {root: document.createElement('div')};
+    const context = makeAContext();
 
     renderer.call(context, context);
 
@@ -26,7 +26,7 @@ describe('makeComponentRendererFromString', () => {
   it('should return a function that maps subElements', async () => {
     const renderer =
       makeComponentRendererFromString('<div id="test">Hello, world!</div>', {test: '#test'});
-    const context = {root: document.createElement('div')};
+    const context = makeAContext();
 
     const result = await renderer.call(context, context);
 
@@ -38,7 +38,7 @@ describe('makeComponentRendererFromString', () => {
     const renderer =
       makeComponentRendererFromString('<div></div>', {missing: '#nope'});
 
-    const context = {root: document.createElement('div')};
+    const context = makeAContext();
     const result = renderer.call(context, context) as any;
 
     assert.ok(result.hasOwnProperty('missing'));
@@ -52,7 +52,7 @@ describe('makeComponentRendererFromFn', () => {
   it('should return a function that sets root innerHTML to the result of the provided function', () => {
     const renderer =
       makeComponentRendererFromFn(() => 'Hello, world!');
-    const context = {root: document.createElement('div')};
+    const context = makeAContext();
 
     renderer.call(context, context);
 
@@ -65,10 +65,18 @@ describe('makeComponentRendererFromFn', () => {
       makeComponentRendererFromFn(({name}: RenderContext<{ name: string }>) => {
         return `<div id="greet">Hello, ${name}</div>`;
       });
-    const context = {root: document.createElement('div'), name: 'Mars'};
+    const context = {root: document.createElement('div'), name: 'Mars', subElements: {}};
 
     renderer.call(context, context);
 
     assert.equal(context.root.querySelector('#greet')!.innerHTML, 'Hello, Mars');
   });
 });
+
+
+function makeAContext(inRoot?: HTMLElement) {
+  return {
+    root: inRoot ?? document.createElement('div'),
+    subElements: {}
+  }
+}

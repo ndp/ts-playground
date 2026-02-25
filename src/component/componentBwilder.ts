@@ -57,16 +57,16 @@ export class ComponentBwilder<
   wAttr<A extends string>(attr: A, defaultValue?: string) {
     this.unobservedAttrs[attr] = defaultValue ?? null
     // @ts-ignore TS2344
-    return this as unknown as ComponentBwilder<ObservedAttrs, [...UnobservedAttrs, A]>;
+    return this as unknown as ComponentBwilder<ObservedAttrs, [...UnobservedAttrs, A], SubElements>;
   }
 
   wObservedAttr<A extends string>(attr: A,
-                                  onChange?: (args: { name: string, newValue: unknown, oldValue: unknown }) => void) {
+                                  onChange?: (this: ComponentType, args: { name: string, newValue: unknown, oldValue: unknown }) => void) {
     if (attr in this.observedAttrs)
       throw new Error(`Attr "${attr}" is already observed.`)
     this.observedAttrs[attr] = onChange ?? null
     // @ts-ignore TS2344
-    return this as unknown as ComponentBwilder<[...ObservedAttrs, A]>;
+    return this as unknown as ComponentBwilder<[...ObservedAttrs, A], UnobservedAttrs, SubElements>;
   }
 
   wElement<A extends string, T extends HTMLElement = HTMLElement>(elementName: A) {

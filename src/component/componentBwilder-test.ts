@@ -1068,6 +1068,26 @@ describe('ComponentBwilder render', () => {
     assert.equal(c.subElements.title?.textContent, 'Direct Element')
   })
 
+  test('subElements are provided to methods following their declaration', () => {
+    let postMountContent = ''
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('subelements-post-mount'))
+      .wElement('content')
+      .wShadowDOM('none')
+      .wRender(function () {
+        this.root.innerHTML = '<div id="content">Mounted Content</div>'
+        return {
+          content: '#content'
+        }
+      })
+      .wPostMountFn(function ({subElements}) {
+        assert.equal(subElements.content?.textContent, 'Mounted Content')
+        assert.equal(this.subElements.content?.textContent, 'Mounted Content')
+      })
+      .build()
+  })
+
   test('build works without tagName and returns a class', () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(null)

@@ -25,7 +25,7 @@ Includes the root element and any attributes that are defined on the class
  */
 export type RenderContext<Attrs extends {} = {}, TSubElements extends SubElementsMap = {}> = {
   root: HTMLElement
-  subElements?: TSubElements
+  subElements: TSubElements
 } & { [k in keyof Attrs]: Attrs[k] }
 
 /*
