@@ -47,16 +47,16 @@ export class RiggedQueue<T> {
     const before = this.peek().slice()
     for (let i = moreItems.length - 1; i >=0; --i)
       this.addOne(moreItems[i])
+    this.items = null
     this.notifyChange(before)
   }
 
   private addOne(item: T) {
     if (this.winners.has(item)) return; // Winners are already at the front of the list, so we don't need to add them again
 
+    this.use(item)
     if (!this.nonWinners.includes(item))
       this.nonWinners.unshift(item)
-    this.use(item)
-    this.items = null
   }
 
   // Record usage of an item, which will prioritize it over other non-winner items
