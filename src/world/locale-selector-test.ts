@@ -16,11 +16,11 @@ describe('locale-selector component', () => {
     assert.ok(inner, 'segmented-buttons child should exist after connect');
   });
 
-  it('renders "en" as a default language option', () => {
+  it('renders "en-US" as a default language option', () => {
     // 'en' is a RiggedQueue winner and is always present in gLanguages
     const inner = host.querySelector('segmented-buttons') as HTMLElement;
-    const enOption = inner.querySelector('[data-value="en"]');
-    assert.ok(enOption, '"en" option should be rendered by default');
+    const enOption = inner.querySelector('[data-value="en-US"]');
+    assert.ok(enOption, '"en-US" option should be rendered by default');
   });
 
   it('data-country sets data-value on inner segmented-buttons to first lang', () => {

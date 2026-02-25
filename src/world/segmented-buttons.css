@@ -5,22 +5,32 @@
   display: inline-flex;
   align-items: center;
   gap: 0;
-  border-radius: var(--radius, 8px);
   overflow: hidden;
+  --border-radius: var(--radius, 8px);
   --base-color: #6200ee; /* caller sets this */
-  --surface: #ffffff;
-  --outline: rgba(0,0,0,0.12);
   --text: #111827;
-  --font-size: 14px;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-  box-sizing: border-box;
-  -webkit-font-smoothing: antialiased;
-}
 
-/* Host border to define the control boundary like Material */
-:host {
+  /*--selected-color: color-mix(in oklch, var(--base-color) 70%, white 30%);*/
+  --selected-color: var(--base-color);
+  --selected-text: white;
+
+  --locked-color: color-mix(in oklch, var(--base-color) 90%, white 20%);
+  --locked-text: white;
+  --locked-color: black;
+
+  --hover-color: color-mix(in oklch, var(--base-color) 8%, transparent 92%);
+
+  --surface: #ffffff;
+  --outline: rgba(0, 0, 0, 0.12);
+  --font-size: 14px;
+
+  box-sizing: border-box;
+  border-radius: var(--border-radius);
   border: 1px solid var(--outline);
   background: var(--surface);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  -webkit-font-smoothing: antialiased;
+  /* Host border to define the control boundary like Material */
 }
 
 /* Basic slotted item layout */
@@ -50,14 +60,14 @@
 /* Remove divider on first child for clean edge */
 ::slotted([data-value]:first-child) {
   border-left: none;
-  border-top-left-radius: var(--radius);
-  border-bottom-left-radius: var(--radius);
+  border-top-left-radius: var(--border-radius);
+  border-bottom-left-radius: var(--border-radius);
 }
 
 /* Rounded end on last child */
 ::slotted([data-value]:last-child) {
-  border-top-right-radius: var(--radius);
-  border-bottom-right-radius: var(--radius);
+  border-top-right-radius: var(--border-radius);
+  border-bottom-right-radius: var(--border-radius);
 }
 
 /* Reset internal element radii (host handles rounding) */
@@ -80,9 +90,9 @@
 
 /* Selected (filled) state: strong base-color fill with high contrast text */
 ::slotted([data-value].selected) {
-  background: var(--base-color);
-  color: color-contrast(var(--base-color) vs white, black);
-  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.08);
+  background: var(--selected-color);
+  color: color-contrast(var(--selected-color) vs white, black);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.08);
   transform: translateY(0);
 }
 
@@ -108,6 +118,7 @@
   font-size: 12px;
   min-width: 36px;
 }
+
 :host([size="large"]) ::slotted([data-value]) {
   padding: 10px 18px;
   font-size: 16px;
@@ -119,6 +130,7 @@
   background: transparent;
   border-color: var(--outline);
 }
+
 :host([appearance="outline"]) ::slotted([data-value].selected) {
   background: color-mix(in oklch, var(--base-color) 12%, transparent 88%);
   color: var(--base-color);
@@ -127,22 +139,17 @@
 
 /* Suggested: subtle highlight for recommended options */
 ::slotted([data-value].suggested) {
-  background: var(--suggested-bg, color-mix(in oklch, var(--base-color) 6%, transparent 94%));
   font-style: italic;
-}
-::slotted([data-value].suggested.selected) {
-  background: var(--base-color);
-  font-style: normal;
+  /*font-weight: bold;*/
 }
 
 /* Locked state */
 ::slotted([data-value].locked) {
-  background: var(--locked-bg, color-mix(in oklch, var(--base-color) 18%, white 82%));
-  color: var(--locked-text, var(--text));
-  cursor: pointer;
-  box-shadow: inset 0 0 0 2px color-mix(in oklch, var(--base-color) 40%, transparent 60%);
+  background: var(--locked-color);
+  color: var(--locked-text, white);
 }
+
 ::slotted([data-value].locked:hover) {
-  background: var(--locked-bg-hover, color-mix(in oklch, var(--base-color) 26%, white 74%));
+  background: color-mix(in oklch, var(--locked-color) 26%, white 74%);
   transform: translateY(-1px);
 }

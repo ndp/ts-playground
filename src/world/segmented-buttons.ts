@@ -93,18 +93,27 @@ function handleSelect(host: HTMLElementWithSubElements, el: HTMLElement) {
   if (isLockable(host)) {
     const locked = getLockedValues(host)
     const selected = getSelectedValues(host)
+    const isLocked = locked.includes(val)
+    const isSelected = selected.includes(val)
 
-    if (locked.includes(val)) {
-      // locked → unselected: always allowed
-      setLockedValues(host, locked.filter(v => v !== val))
-    } else if (selected.includes(val)) {
-      // selected → locked: blocked by required if this is the last selected
+    if (isSelected && isLocked) {
+      // selected+locked → unselected: requires removing from both
       if (host.hasAttribute('required') && selected.length === 1) return
-      setSelectedValues(host, selected.filter(v => v !== val), {emitChange: true, keepMultiFormat: true})
+      setLockedValues(host, locked.filter(v => v !== val))
+      setSelectedValues(host, selected.filter(v => v !== val), {emitChange: true})
+    } else if (isSelected) {
+      // selected → selected+locked: button stays in data-value, gains lock
       setLockedValues(host, [...locked, val])
+      // data-value unchanged, no change event
     } else {
-      // unselected → selected: always independent (multi-like in lockable mode)
-      setSelectedValues(host, [...selected, val], {emitChange: true, keepMultiFormat: true})
+      // unselected → selected: follows multi rules
+      if (isMulti(host)) {
+        setSelectedValues(host, [...selected, val], {emitChange: true})
+      } else {
+        // Single-select: new button replaces current selection; clear stale locks
+        setLockedValues(host, [])
+        setSelectedValues(host, [val], {emitChange: true})
+      }
     }
     return
   }
@@ -176,9 +185,9 @@ function normalizeSelectionForMode(host: HTMLElementWithSubElements) {
   enforceRequired(host)
 }
 
-function setSelectedValues(host: HTMLElementWithSubElements, values: string[], options?: {emitChange?: boolean, keepMultiFormat?: boolean}) {
+function setSelectedValues(host: HTMLElementWithSubElements, values: string[], options?: {emitChange?: boolean}) {
   const unique = dedupe(values)
-  const multi = options?.keepMultiFormat || isMulti(host)
+  const multi = isMulti(host)
   const normalized = multi ? unique : unique.slice(0, 1)
   const prev = getSelectedValues(host)
 
@@ -190,6 +199,12 @@ function setSelectedValues(host: HTMLElementWithSubElements, values: string[], o
 
   if (options?.emitChange !== false) emitChange(host, newValue, oldValue)
   applySelectedClasses(host)
+  // In lockable mode, keep data-locked in sync: remove locks for deselected values
+  if (isLockable(host)) {
+    const currentLocked = getLockedValues(host)
+    const validLocked = currentLocked.filter(v => normalized.includes(v))
+    if (validLocked.length !== currentLocked.length) setLockedValues(host, validLocked)
+  }
 }
 
 function getSelectedValues(host: HTMLElement) {
