@@ -10,13 +10,8 @@
   --base-color: #6200ee; /* caller sets this */
   --text: #111827;
 
-  /*--selected-color: color-mix(in oklch, var(--base-color) 70%, white 30%);*/
   --selected-color: var(--base-color);
   --selected-text: white;
-
-  --locked-color: color-mix(in oklch, var(--base-color) 90%, white 20%);
-  --locked-text: white;
-  --locked-color: black;
 
   --hover-color: color-mix(in oklch, var(--base-color) 8%, transparent 92%);
 
@@ -78,7 +73,7 @@
 /* Hover for non-selected */
 ::slotted([data-value]:hover:not(.selected):not([disabled])) {
   /* subtle translucent tint of base color */
-  background: color-mix(in oklch, var(--base-color) 8%, transparent 92%);
+  background: var(--hover-color);
   transform: translateY(-1px);
 }
 
@@ -145,11 +140,11 @@
 
 /* Locked state */
 ::slotted([data-value].locked) {
-  background: var(--locked-color);
-  color: var(--locked-text, white);
-}
-
-::slotted([data-value].locked:hover) {
-  background: color-mix(in oklch, var(--locked-color) 26%, white 74%);
-  transform: translateY(-1px);
+  background: repeating-linear-gradient(
+    45deg,
+    var(--selected-color),
+    var(--selected-color) 3px,
+    #999 3px,
+    var(--selected-color) 6px
+  );
 }
