@@ -49,7 +49,7 @@ const LocaleSelector = (new ComponentBwilder())
   .wPostMountFn(function () {
     gLanguages.onChange(this.rerender)
   })
-  .build();
+  .bwild();
 
 
 export default LocaleSelector;

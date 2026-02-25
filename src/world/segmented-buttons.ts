@@ -77,7 +77,7 @@ const SegmentedButtons = new ComponentBwilder()
     applySuggestedClasses(this)
     applyLockedAttrs(this)
   })
-  .build()
+  .bwild()
 
 export default SegmentedButtons
 

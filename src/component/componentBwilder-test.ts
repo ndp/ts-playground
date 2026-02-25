@@ -48,7 +48,7 @@ describe('ComponentBwilder basic tests', () => {
         .wRender(function () {
           this.root.innerHTML = '<div>Stub</div>'
         })
-    const MyComponent = MyBuilder.build()
+    const MyComponent = MyBuilder.bwild()
 
     const c = new MyComponent()
     if (!(c instanceof HTMLElement)) {
@@ -61,7 +61,7 @@ describe('ComponentBwilder basic tests', () => {
       new ComponentBwilder()
         .wTagName('simple-component' as TagName)
         .wRender(stubRender)
-    const MyComponent = MyBuilder.build()
+    const MyComponent = MyBuilder.bwild()
 
     const c = new MyComponent()
     if (!(c instanceof HTMLElement)) throw new Error('Component is not an instance of HTMLElement')
@@ -73,7 +73,7 @@ describe('ComponentBwilder basic tests', () => {
       .wTagName('closed-component' as TagName)
       .wShadowDOM('closed')
       .wRender(stubRender)
-    const MyComponent = MyBuilder.build()
+    const MyComponent = MyBuilder.bwild()
 
     const c = new MyComponent()
     if (!(c instanceof HTMLElement)) throw new Error('Component is not an instance of HTMLElement')
@@ -85,7 +85,7 @@ describe('ComponentBwilder basic tests', () => {
         .wTagName('no-shadow-component' as TagName)
         .wShadowDOM('none')
         .wRender(stubRender)
-    const MyComponent = MyBuilder.build()
+    const MyComponent = MyBuilder.bwild()
 
     const c = new MyComponent()
     if (!(c instanceof HTMLElement)) throw new Error('Component is not an instance of HTMLElement')
@@ -97,7 +97,7 @@ describe('ComponentBwilder basic tests', () => {
       new ComponentBwilder()
         .wShadowDOM('none')
         .wRender(stubRender)
-        .build()
+        .bwild()
     }, /tagName must be explicitly set/)
   })
 })
@@ -114,7 +114,7 @@ describe('ComponentBwilder observed attributes', () => {
         .wObservedAttr('role')
         .wRender(stubRender)
 
-    const MyComponent = MyBuilder.build()
+    const MyComponent = MyBuilder.bwild()
 
     const c = new MyComponent()
     if (!(c instanceof HTMLElement)) throw new Error('Component is not an instance of HTMLElement')
@@ -144,7 +144,7 @@ describe('ComponentBwilder observed attributes', () => {
         dataParms = {newValue, oldValue}
       })
       .wRender(stubRender)
-      .build()
+      .bwild()
 
     const c = new MyComponentClass()
 
@@ -166,7 +166,7 @@ describe('ComponentBwilder observed attributes', () => {
         callbackArgs = args as { name: unknown, oldValue: unknown, newValue: unknown }
       })
       .wRender(stubRender)
-      .build()
+      .bwild()
 
     const c = new MyComponentClass()
     c.setAttribute('data-id', '42')
@@ -186,7 +186,7 @@ describe('ComponentBwilder observed attributes', () => {
         transitions.push({oldValue, newValue})
       })
       .wRender(stubRender)
-      .build()
+      .bwild()
 
     const c = new MyComponentClass()
     c.setAttribute('data-id', '7')
@@ -208,7 +208,7 @@ describe('ComponentBwilder render', () => {
       .wRender(function (this: RenderContext) {
         this.root.innerHTML = '<div class="content">Hello, world!</div>'
       })
-      .build()
+      .bwild()
 
     const c = new MyComponentClass()
     c.connectedCallback()
@@ -222,7 +222,7 @@ describe('ComponentBwilder render', () => {
       new ComponentBwilder()
         .wTagName('rendered-component-without-render-fn' as TagName)
         .wShadowDOM('none')
-        .build()
+        .bwild()
     }, /No render function provided to component/)
   })
 
@@ -237,7 +237,7 @@ describe('ComponentBwilder render', () => {
         unobservedValue = this['data-info']
         this.root.innerHTML = `<div>Info: ${unobservedValue}</div>`;
       })
-      .build();
+      .bwild();
 
     const c = new MyComponentClass();
     c.setAttribute('data-info', 'some info');
@@ -271,7 +271,7 @@ describe('ComponentBwilder render', () => {
         unobservedValue = this['data-info']
         this.root.innerHTML = `<div>Info: ${unobservedValue}</div>`;
       })
-      .build();
+      .bwild();
 
     const c = new MyComponentClass();
     // Note: not setting data-info attribute
@@ -290,7 +290,7 @@ describe('ComponentBwilder render', () => {
       .wRender(function () {
         this.root.innerHTML = `<div>Info: ${this['data-info']}</div>`;
       })
-      .build();
+      .bwild();
     const c = new MyComponentClass();
     // Note: not setting data-info attribute
 
@@ -308,7 +308,7 @@ describe('ComponentBwilder render', () => {
       .wRender(function () {
         this.root.innerHTML = `<div>Info: ${this['data-info']}</div>`
       })
-      .build()
+      .bwild()
 
     const c = new MyComponentClass()
     c.connectedCallback()
@@ -334,7 +334,7 @@ describe('ComponentBwilder render', () => {
         observedValue = this['data-name']
         this.root.innerHTML = `<div>Hello, ${observedValue}</div>`;
       })
-      .build();
+      .bwild();
 
     const c = new MyComponentClass();
     c.setAttribute('data-name', 'world!');
@@ -358,7 +358,7 @@ describe('ComponentBwilder render', () => {
       .wRender(function (this: RenderContext) {
         this.root.innerHTML = '<div class="test-class">Styled Text</div>';
       })
-      .build();
+      .bwild();
 
     const c = new MyComponentClass();
     c.connectedCallback();
@@ -380,7 +380,7 @@ describe('ComponentBwilder render', () => {
       .wObservedAttr('data-second')
       .wAttr('data-unobserved')
       .wRender(stubRender)
-      .build()
+      .bwild()
 
     assert.deepEqual((MyComponentClass as unknown as { observedAttributes: string[] }).observedAttributes,
       ['data-first', 'data-second'])
@@ -400,7 +400,7 @@ describe('ComponentBwilder render', () => {
         renderCount += 1
         this.root.innerHTML = `<div>${renderCount}</div>`
       })
-      .build()
+      .bwild()
 
     const c = new MyComponentClass()
     c.connectedCallback()
@@ -423,7 +423,7 @@ describe('ComponentBwilder render', () => {
         renderCount += 1
         this.root.innerHTML = `<div>${this['data-name']}</div>`
       })
-      .build()
+      .bwild()
 
     const c = new MyComponentClass()
     c.connectedCallback()
@@ -445,7 +445,7 @@ describe('ComponentBwilder render', () => {
         sameContextObject = this === context
         this.root.innerHTML = `<div>${context['data-name'] ?? 'none'}</div>`
       })
-      .build()
+      .bwild()
 
     const c = new MyComponentClass()
     c.setAttribute('data-name', 'ArgStyle')
@@ -463,7 +463,7 @@ describe('ComponentBwilder render', () => {
       .wRender(function ({root, 'data-name': dataName}) {
         root.innerHTML = `<div>${dataName ?? 'none'}</div>`
       })
-      .build()
+      .bwild()
 
     const c = new MyComponentClass()
     c.setAttribute('data-name', 'DestructureStyle')
@@ -489,7 +489,7 @@ describe('ComponentBwilder render', () => {
         events.push('postMount')
         assert.equal(this, c)
       })
-      .build()
+      .bwild()
 
     const c = new MyComponentClass()
     await c.connectedCallback()
@@ -515,7 +515,7 @@ describe('ComponentBwilder render', () => {
       .wPostMountFn(function (context) {
         sameContextObject = this === context
       })
-      .build()
+      .bwild()
 
     const c = new MyComponentClass()
     await c.connectedCallback()
@@ -539,7 +539,7 @@ describe('ComponentBwilder render', () => {
         postRenderCount += 1
         assert.equal(this, c)
       })
-      .build()
+      .bwild()
 
     const c = new MyComponentClass()
     c.connectedCallback()
@@ -568,7 +568,7 @@ describe('ComponentBwilder render', () => {
       .wPostRenderFn(function ({root}) {
         lastText = root!.querySelector('div')!.textContent ?? ''
       })
-      .build()
+      .bwild()
 
     const c = new MyComponentClass()
     c.connectedCallback()
@@ -602,7 +602,7 @@ describe('ComponentBwilder render', () => {
         const txt = root.querySelector('div')!.textContent
         events.push(`postMount-end:${txt}`)
       })
-      .build()
+      .bwild()
 
     const c = new MyComponentClass()
     await c.connectedCallback()
@@ -630,7 +630,7 @@ describe('ComponentBwilder render', () => {
         await Promise.resolve()
         postRenderDone = true
       })
-      .build()
+      .bwild()
 
     const c = new MyComponentClass()
     await c.render()
@@ -651,7 +651,7 @@ describe('ComponentBwilder render', () => {
       .wPostMountFn(function () {
         postMountCalled = true
       })
-      .build()
+      .bwild()
 
     const c = new MyComponentClass()
     await assert.rejects(() => Promise.resolve(c.connectedCallback()), /render failed/)
@@ -669,7 +669,7 @@ describe('ComponentBwilder render', () => {
         await Promise.resolve()
         throw new Error('postRender failed')
       })
-      .build()
+      .bwild()
 
     const c = new MyComponentClass()
     await assert.rejects(() => Promise.resolve(c.render()), /postRender failed/)
@@ -689,7 +689,7 @@ describe('ComponentBwilder render', () => {
         await Promise.resolve()
         throw new Error('postMount failed')
       })
-      .build()
+      .bwild()
 
     const c = new MyComponentClass()
     await assert.rejects(() => Promise.resolve(c.connectedCallback()), /postMount failed/)
@@ -703,7 +703,7 @@ describe('ComponentBwilder render', () => {
       .wRender(function () {
         throw new Error('render sync failed')
       })
-      .build()
+      .bwild()
 
     const c1 = new RenderThrowsClass()
     assert.throws(() => {
@@ -719,7 +719,7 @@ describe('ComponentBwilder render', () => {
       .wPostRenderFn(function () {
         throw new Error('postRender sync failed')
       })
-      .build()
+      .bwild()
 
     const c2 = new PostRenderThrowsClass()
     assert.throws(() => {
@@ -735,7 +735,7 @@ describe('ComponentBwilder render', () => {
       .wPostMountFn(function () {
         throw new Error('postMount sync failed')
       })
-      .build()
+      .bwild()
 
     const c3 = new PostMountThrowsClass()
     assert.throws(() => {
@@ -754,7 +754,7 @@ describe('ComponentBwilder render', () => {
       .wRender(function () {
         this.root.innerHTML = '<div class="single-style">Text</div>'
       })
-      .build()
+      .bwild()
 
     const c = new MyComponentClass()
     c.connectedCallback()
@@ -776,7 +776,7 @@ describe('ComponentBwilder render', () => {
       .wRender(function () {
         this.root.innerHTML = '<div class="single-style-shadow">Shadow Text</div>'
       })
-      .build()
+      .bwild()
 
     const c = new MyComponentClass()
     c.connectedCallback()
@@ -805,7 +805,7 @@ describe('ComponentBwilder render', () => {
         .wRender(function () {
           this.root.innerHTML = '<div class="fallback-style">Fallback</div>'
         })
-        .build()
+        .bwild()
 
       const c = new MyComponentClass()
       c.connectedCallback()
@@ -831,7 +831,7 @@ describe('ComponentBwilder render', () => {
       .wRender(function () {
         this.root.innerHTML = '<div class="inline-style">Inline</div>'
       })
-      .build()
+      .bwild()
 
     const c = new MyComponentClass()
     c.connectedCallback()
@@ -850,7 +850,7 @@ describe('ComponentBwilder render', () => {
       .wRender(function () {
         this.root.innerHTML = '<div class="shared-adopted">A</div>'
       })
-      .build()
+      .bwild()
 
     const ComponentB = new ComponentBwilder()
       .wTagName(nextTag('adopted-reuse-b'))
@@ -859,7 +859,7 @@ describe('ComponentBwilder render', () => {
       .wRender(function () {
         this.root.innerHTML = '<div class="shared-adopted">B</div>'
       })
-      .build()
+      .bwild()
 
     const a = new ComponentA()
     const b = new ComponentB()
@@ -885,7 +885,7 @@ describe('ComponentBwilder render', () => {
       .wRender(function () {
         this.root.innerHTML = '<div class="adopted-no-dup">Text</div>'
       })
-      .build()
+      .bwild()
 
     const c = new MyComponentClass()
     c.connectedCallback()
@@ -915,7 +915,7 @@ describe('ComponentBwilder render', () => {
         .wRender(function () {
           this.root.innerHTML = '<div class="adopted-no-warning">Text</div>'
         })
-        .build()
+        .bwild()
 
       const c = new MyComponentClass()
       c.connectedCallback()
@@ -938,7 +938,7 @@ describe('ComponentBwilder render', () => {
       .wRender(function () {
         this.root.innerHTML = `<style>${renderCss}</style><div class="render-style">Styled</div>`
       })
-      .build()
+      .bwild()
 
     const c = new MyComponentClass()
     c.connectedCallback()
@@ -954,7 +954,7 @@ describe('ComponentBwilder render', () => {
       .wRender(function () {
         this.root.innerHTML = '<div>Inside closed root</div>'
       })
-      .build()
+      .bwild()
 
     const c = new MyComponentClass()
     c.connectedCallback()
@@ -969,13 +969,13 @@ describe('ComponentBwilder render', () => {
     new ComponentBwilder()
       .wTagName(tag)
       .wRender(stubRender)
-      .build()
+      .bwild()
 
     assert.throws(() => {
       new ComponentBwilder()
         .wTagName(tag)
         .wRender(stubRender)
-        .build()
+        .bwild()
     }, /already.*used|already.*defined|already.*registered/i)
   })
 
@@ -985,7 +985,7 @@ describe('ComponentBwilder render', () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(tag)
       .wRender(stubRender)
-      .build()
+      .bwild()
 
     assert.equal(customElements.get(tag), MyComponentClass)
   })
@@ -995,7 +995,7 @@ describe('ComponentBwilder render', () => {
       new ComponentBwilder()
         .wTagName('invalidtag' as unknown as TagName)
         .wRender(stubRender)
-        .build()
+        .bwild()
     }, /valid custom element name|NotSupportedError|hyphen/i)
   })
 
@@ -1012,7 +1012,7 @@ describe('ComponentBwilder render', () => {
           content: this.root.querySelector('#content') as HTMLElement | null
         }
       })
-      .build()
+      .bwild()
 
     const c = new MyComponentClass()
     c.connectedCallback()
@@ -1039,7 +1039,7 @@ describe('ComponentBwilder render', () => {
       .wPostRenderFn(function ({subElements}) {
         postRenderTitle = subElements!.title?.textContent ?? ''
       })
-      .build()
+      .bwild()
 
     const c = new MyComponentClass()
     c.connectedCallback()
@@ -1060,7 +1060,7 @@ describe('ComponentBwilder render', () => {
           title: this.root.querySelector('#title') as HTMLElement | null
         }
       })
-      .build()
+      .bwild()
 
     const c = new MyComponentClass()
     c.connectedCallback()
@@ -1093,7 +1093,7 @@ describe('ComponentBwilder render', () => {
         assert.equal(this.subElements.content?.textContent, 'Mounted Content')
         assert.equal(this.subElements.more, null)
       })
-      .build()
+      .bwild()
   })
 
   test('build works without tagName and returns a class', () => {
@@ -1101,7 +1101,7 @@ describe('ComponentBwilder render', () => {
       .wTagName(null)
       .wShadowDOM('none')
       .wRender(stubRender)
-      .build()
+      .bwild()
 
     assert.equal(typeof MyComponentClass, 'function')
     // Without a tagName, the component is not registered, so it can be subclassed
@@ -1121,7 +1121,7 @@ describe('ComponentBwilder render', () => {
         events.push(`assigned:${slottedEl.tagName.toLowerCase()}`)
         return () => events.push(`cleanup:${slottedEl.tagName.toLowerCase()}`)
       })
-      .build()
+      .bwild()
 
     const c = new MyComponentClass()
     c.connectedCallback()
@@ -1148,7 +1148,7 @@ describe('ComponentBwilder render', () => {
         events.push('called')
         return () => events.push('cleanup')
       })
-      .build()
+      .bwild()
 
     const c = new MyComponentClass()
     c.connectedCallback()
@@ -1172,7 +1172,7 @@ describe('ComponentBwilder render', () => {
         events.push(`add:${id}`)
         return () => events.push(`remove:${id}`)
       })
-      .build()
+      .bwild()
 
     const c = new MyComponentClass()
     c.connectedCallback()
@@ -1204,7 +1204,7 @@ describe('ComponentBwilder render', () => {
         events.push('add')
         return () => events.push('cleanup')
       })
-      .build()
+      .bwild()
 
     const c = new MyComponentClass()
     c.connectedCallback()
@@ -1227,7 +1227,7 @@ describe('ComponentBwilder render', () => {
       .wRender(function () {
         foundThis = this
       })
-      .build()
+      .bwild()
 
     const c = new MyComponentClass()
     c.connectedCallback()
@@ -1247,7 +1247,7 @@ describe('ComponentBwilder render', () => {
         foundThis = null
         this.rerender()
       })
-      .build()
+      .bwild()
 
     const c = new MyComponentClass()
     c.connectedCallback()

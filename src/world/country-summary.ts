@@ -35,7 +35,7 @@ panel('name')
       <p>${teenyDb.misc(iso2, 'Capital')}</p>
    `;
   })
-  .build()
+  .bwild()
 
 panel('language')
   .wRender(function (context: PanelContext) {
@@ -50,7 +50,7 @@ panel('language')
       <p>${langsStr}</p>
     `;
   })
-  .build()
+  .bwild()
 
 panel('currency')
   .wRender(function (context: PanelContext) {
@@ -75,7 +75,7 @@ ${monies.map(money => `<p>${money}</p>`).join('')}
 <p>${asDollar}</p>
     `;
   })
-  .build()
+  .bwild()
 
 
 panel('numbers')
@@ -106,7 +106,7 @@ panel('numbers')
       <p>${kilos}</p>
     `;
   })
-  .build()
+  .bwild()
 
 
 
@@ -122,7 +122,7 @@ panel('tech')
       <p><i>&lt;domain&gt;</i>${teenyDb.misc(iso2, 'TLD')}</p>
     `;
   })
-  .build()
+  .bwild()
 
 
 panel('time')
@@ -144,7 +144,7 @@ panel('time')
       <p>${date.toLocaleDateString(context.locale, {dateStyle: 'full'})}</p>
     `;
   })
-  .build()
+  .bwild()
 
   
 const stylesheetPromise = maybeFetchText(new URL('../country-summary.css', import.meta.url))
@@ -199,5 +199,5 @@ export default new ComponentBwilder()
     }
     return
   })
-  .build()
+  .bwild()
 

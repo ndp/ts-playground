@@ -101,7 +101,7 @@ export class ComponentBwilder<
 
   }
 
-  build() {
+  bwild() {
 
     if (!this.renderFn) throw new Error('No render function provided to component')
     if (this.tagName === undefined) throw new Error('tagName must be explicitly set to a string or null')

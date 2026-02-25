@@ -12,7 +12,7 @@ This package exposes a small, TypeScript-first fluent API for defining custom el
 ## Overview
 - **Purpose**: provide a lightweight, predictable, TypeScript-friendly workflow for declaring custom elements without a large framework.
 - **Philosophy**: explicit lifecycle hooks (`render`, `postRender`, `postMount`), minimal runtime, strong typing for attributes/sub-elements, and a fluent builder syntax.
-- **Primary class**: `ComponentBwilder` — use its chained helpers (tag name, shadow DOM, CSS, attributes, sub-elements, render/lifecycle hooks) and call `.build()` to return (and register) the strongly-typed component class.
+- **Primary class**: `ComponentBwilder` — use its chained helpers (tag name, shadow DOM, CSS, attributes, sub-elements, render/lifecycle hooks) and call `.bwild()` to return (and register) the strongly-typed component class.
 
 ## Quick example
 
@@ -29,7 +29,7 @@ new ComponentBwilder()
 this.root.innerHTML = `<div><span>${this['name'] ?? 'world'}</span></div>`
 return { label: 'span' }
 })
-.build()
+.bwild()
 ```
 
 ## Feature highlights
@@ -52,7 +52,7 @@ new ComponentBwilder()
 .wRender(function () {
 this.root.innerHTML = `<div>Count: ${this['data-count'] ?? '0'}</div>`
 })
-.build()
+.bwild()
 ```
 
 ```ts
@@ -63,7 +63,7 @@ new ComponentBwilder()
 .wRender(function () {
 this.root.innerHTML = `<div>Info: ${this['info']}</div>`
 })
-.build()
+.bwild()
 ```
 // Manually call `instance.render()` after attribute changes to refresh output.
 
@@ -81,7 +81,7 @@ return { title: '#title', content: '#content' }
 .wPostRenderFn(function ({ subElements }) {
 // `subElements.title` and `subElements.content` are populated
 })
-.build()
+.bwild()
 ```
 
 ### 3. CSS modes and sharing
@@ -126,7 +126,7 @@ return () => assignedEl.removeEventListener('click', onClick)
 - `wPostRenderFn(fn)`
 - `wPostMountFn(fn)`
 - `wSlotAddedHandler(fn)`
-- `build()`
+- `bwild()`
 
 
 ## Development
