@@ -1,4 +1,4 @@
-import {ComponentBwilder} from '@ndp-software/component-bwilder'
+import {ComponentBwilder, type TagName} from '@ndp-software/component-bwilder'
 
 const css = await maybeFetchText(new URL('../segmented-buttons.css', import.meta.url))
 
@@ -6,37 +6,32 @@ type HTMLElementWithSubElements = HTMLElement  & {
   subElements?: { slotEl: HTMLSlotElement | null }
 }
 
-type SegmentedButtonsContext = HTMLElementWithSubElements & {
-  root: HTMLElement
-}
-
-
 /** Tracks which host elements have completed post-mount (initial selected-attr processing done). */
 const mountedHosts = new WeakSet<HTMLElement>()
 
 const SegmentedButtons = new ComponentBwilder()
-  .wTagName('segmented-buttons')
+  .wTagName('segmented-buttons' as TagName)
   .wShadowDOM('open')
   .wCSS(css)
-  .wObservedAttr('data-value', function (this: SegmentedButtonsContext) {
+  .wElement<'slotEl', HTMLSlotElement>('slotEl')
+  .wObservedAttr('data-value', function () {
     applySelectedClasses(this)
   })
-  .wObservedAttr('required', function (this: SegmentedButtonsContext) {
+  .wObservedAttr('required', function () {
     enforceRequired(this)
   })
-  .wObservedAttr('multi', function (this: SegmentedButtonsContext) {
+  .wObservedAttr('multi', function () {
     normalizeSelectionForMode(this)
   })
-  .wObservedAttr('suggested', function (this: SegmentedButtonsContext) {
+  .wObservedAttr('suggested', function () {
     applySuggestedClasses(this)
   })
-  .wObservedAttr('lockable', function (this: SegmentedButtonsContext) {
+  .wObservedAttr('lockable', function () {
     applyLockedAttrs(this)
   })
-  .wObservedAttr('data-locked', function (this: SegmentedButtonsContext) {
+  .wObservedAttr('data-locked', function () {
     applyLockedAttrs(this)
   })
-  .wElement<'slotEl', HTMLSlotElement>('slotEl')
   .wRender(function () {
     const slotEl = document.createElement('slot')
     slotEl.setAttribute('name', 'option')
@@ -224,14 +219,7 @@ function getSelectedValues(host: HTMLElement) {
 }
 
 function dedupe(values: string[]) {
-  const seen = new Set<string>()
-  const result: string[] = []
-  values.forEach((val) => {
-    if (seen.has(val)) return
-    seen.add(val)
-    result.push(val)
-  })
-  return result
+  return [...(new Set<string>(values))]
 }
 
 function isMulti(host: HTMLElement) {
