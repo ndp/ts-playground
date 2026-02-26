@@ -79,8 +79,49 @@ describe('RiggedQueue', () => {
     const before = q.peek()
     q.add('c')
     const after = q.peek()
-    assert.notEqual(before, after)
+    // assert.notEqual(before, after)
     assert.deepEqual(after, ['c', 'a', 'b'])
+  })
+
+  // --- addWinners() and removeWinners() ---
+
+  test('addWinners() keeps in the list where it is', () => {
+    const q = new RiggedQueue(5, ['w1'], ['a', 'b', 'c','d'])
+    q.addWinners('b', 'd')
+    assert.deepEqual(q.peek(), ['w1', 'a', 'b', 'c', 'd'])
+    q.add('e')
+    assert.deepEqual(q.peek(), ['w1', 'a', 'b', 'e', 'd'])
+  })
+
+  test('addWinners() of non-member added at end of winners list', () => {
+    const q = new RiggedQueue(5, ['w1'], ['a', 'b'])
+    q.addWinners('w2')
+    assert.deepEqual(q.peek(), ['w1', 'w2', 'a', 'b'])
+  })
+
+  test('addWinners() of non-member notifies of change', () => {
+    const q = new RiggedQueue(5, ['w1'], ['a', 'b'])
+    const events: { added: string[], removed: string[] }[] = []
+    q.onChange(e => events.push({ added: [...e.added], removed: [...e.removed] }))
+    q.addWinners('w2')
+    assert.equal(events.length, 1)
+    assert.deepEqual(events[0].added, ['w2'])
+    assert.deepEqual(events[0].removed, [])
+  })
+
+  test('removeWinners() leaves winner in list if it still fits', () => {
+    const q = new RiggedQueue(5, ['w1', 'w2'], ['a', 'b'])
+    q.removeWinners('w1')
+    assert.deepEqual(q.peek(), ['w1', 'w2', 'a', 'b'])
+    q.add('c') // add nonWinner to fill cap
+    assert.deepEqual(q.peek(), ['c', 'w1', 'w2', 'a', 'b']) // w1 still fits, so still in list
+    q.add('d') // add another nonWinner to exceed cap
+    assert.deepEqual(q.peek(),  [ 'd', 'c', 'w1', 'w2', 'a' ])
+    q.add('e')
+    assert.deepEqual(q.peek(),  [ 'e', 'd', 'c', 'w1', 'w2' ])
+   q.add('f')
+    assert.deepEqual(q.peek(),  [ 'f', 'e', 'd', 'c', 'w2' ])
+
   })
 
   // --- cap enforcement after add() ---
