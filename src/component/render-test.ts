@@ -65,7 +65,7 @@ describe('makeComponentRendererFromFn', () => {
       makeComponentRendererFromFn(({name}: RenderContext<{ name: string }>) => {
         return `<div id="greet">Hello, ${name}</div>`;
       });
-    const context = {root: document.createElement('div'), name: 'Mars', subElements: {}};
+    const context = {root: document.createElement('div'), name: 'Mars', subElements: {}, state: {}};
 
     renderer.call(context, context);
 
@@ -77,6 +77,7 @@ describe('makeComponentRendererFromFn', () => {
 function makeAContext(inRoot?: HTMLElement) {
   return {
     root: inRoot ?? document.createElement('div'),
-    subElements: {}
+    subElements: {},
+    state: {}
   }
 }

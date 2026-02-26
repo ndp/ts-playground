@@ -1391,3 +1391,145 @@ describe('ComponentBwilder render', () => {
   })
 
 })
+
+describe('wState', () => {
+
+  test('initial value is accessible in render via this.state', () => {
+    let stateVal: unknown = undefined
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('wstate-basic'))
+      .wShadowDOM('none')
+      .wState('count', 0)
+      .wRender(function () {
+        stateVal = this.state.count
+        this.root.innerHTML = `<div>${this.state.count}</div>`
+      })
+      .bwild()
+
+    const c = new MyComponentClass()
+    c.connectedCallback()
+
+    assert.equal(stateVal, 0)
+    assert.equal(c.querySelector('div')!.textContent, '0')
+  })
+
+  test('factory function is called once per instance, not shared', () => {
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('wstate-factory'))
+      .wShadowDOM('none')
+      .wState('items', () => [] as string[])
+      .wRender(function () {
+        this.root.innerHTML = `<div>${this.state.items.length}</div>`
+      })
+      .bwild()
+
+    const a = new MyComponentClass()
+    const b = new MyComponentClass()
+    a.connectedCallback()
+    b.connectedCallback()
+
+    // mutate a's state
+    a.state.items.push('x')
+
+    assert.deepEqual(a.state.items, ['x'])
+    assert.deepEqual(b.state.items, [], 'b should have its own independent array')
+  })
+
+  test('assigning to this.state triggers re-render with new value', () => {
+    let renderCount = 0
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('wstate-set'))
+      .wShadowDOM('none')
+      .wState('count', 0)
+      .wRender(function () {
+        renderCount += 1
+        this.root.innerHTML = `<div>${this.state.count}</div>`
+      })
+      .bwild()
+
+    const c = new MyComponentClass()
+    c.connectedCallback()
+    assert.equal(renderCount, 1)
+    assert.equal(c.querySelector('div')!.textContent, '0')
+
+    c.state.count = 42
+    assert.equal(renderCount, 2)
+    assert.equal(c.querySelector('div')!.textContent, '42')
+  })
+
+  test('two instances have independent state', () => {
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('wstate-independent'))
+      .wShadowDOM('none')
+      .wState('count', 0)
+      .wRender(function () {
+        this.root.innerHTML = `<div>${this.state.count}</div>`
+      })
+      .bwild()
+
+    const a = new MyComponentClass()
+    const b = new MyComponentClass()
+    a.connectedCallback()
+    b.connectedCallback()
+
+    a.state.count = 10
+    b.state.count = 99
+
+    assert.equal(a.state.count, 10)
+    assert.equal(b.state.count, 99)
+    assert.equal(a.querySelector('div')!.textContent, '10')
+    assert.equal(b.querySelector('div')!.textContent, '99')
+  })
+
+  test('multiple wState values are all accessible on this.state', () => {
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('wstate-multiple'))
+      .wShadowDOM('none')
+      .wState('name', 'Alice')
+      .wState('age', 30)
+      .wRender(function () {
+        this.root.innerHTML = `<div>${this.state.name}:${this.state.age}</div>`
+      })
+      .bwild()
+
+    const c = new MyComponentClass()
+    c.connectedCallback()
+
+    assert.equal(c.querySelector('div')!.textContent, 'Alice:30')
+
+    c.state.name = 'Bob'
+    assert.equal(c.querySelector('div')!.textContent, 'Bob:30')
+
+    c.state.age = 25
+    assert.equal(c.querySelector('div')!.textContent, 'Bob:25')
+  })
+
+  test('state is accessible in wPostMountFn and wPostRenderFn via context', () => {
+    let postMountVal: unknown
+    let postRenderVal: unknown
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('wstate-hooks'))
+      .wShadowDOM('none')
+      .wState('value', 'hello')
+      .wRender(function () {
+        this.root.innerHTML = '<div>ready</div>'
+      })
+      .wPostMountFn(function (context) {
+        postMountVal = context.state.value
+      })
+      .wPostRenderFn(function (context) {
+        postRenderVal = context.state.value
+      })
+      .bwild()
+
+    const c = new MyComponentClass()
+    c.connectedCallback()
+
+    assert.equal(postMountVal, 'hello')
+    assert.equal(postRenderVal, 'hello')
+  })
+
+})

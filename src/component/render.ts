@@ -23,9 +23,10 @@ type IsEmptyObject<T extends {}> = keyof T extends never ? true : false
 The context object "this" passed to render functions.
 Includes the root element and any attributes that are defined on the class
  */
-export type RenderContext<Attrs extends {} = {}, TSubElements extends SubElementsMap = {}> = {
+export type RenderContext<Attrs extends {} = {}, TSubElements extends SubElementsMap = {}, TState extends Record<string, unknown> = Record<string, unknown>> = {
   root: HTMLElement
   subElements: TSubElements
+  state: TState
 } & { [k in keyof Attrs]: Attrs[k] }
 
 /*

@@ -15,9 +15,10 @@ export class ComponentBwilder<
   ObservedAttrs extends ExtendableStringTuple = [],
   UnobservedAttrs extends ExtendableStringTuple = [],
   SubElements extends SubElementsMap = {},
+  StateRecord extends Record<string, unknown> = {},
   AllAttrs extends ExtendableStringTuple3 = [...ObservedAttrs, ...UnobservedAttrs],
   AttrsRecord extends {} = AllAttrs[number] extends string ? Record<AllAttrs[number], string> : {},
-  RenderingContext extends RenderContext<{}, SubElementsMap> = RenderContext<AttrsRecord, SubElements>,
+  RenderingContext extends RenderContext<{}, SubElementsMap> = RenderContext<AttrsRecord, SubElements, StateRecord>,
   ComponentType = HTMLElement & RenderingContext & {rerender: () => void|Promise<void>}> {
 
   private tagName?: string | null
@@ -30,6 +31,7 @@ export class ComponentBwilder<
   }) => void) | null> = {}
   private unobservedAttrs: Record<string, string | null> = {}
   private subElementNames: string[] = []
+  private stateDefinitions: Record<string, unknown | (() => unknown)> = {}
   private renderFn: ComponentBwilderRenderer<RenderingContext, SubElements> | undefined
   private postMountFn?: (this: ComponentType, context: ComponentType) => void | Promise<void>
   private postRenderFn?: (this: ComponentType, context: ComponentType) => void | Promise<void>
@@ -75,6 +77,12 @@ export class ComponentBwilder<
     return this as unknown as ComponentBwilder<ObservedAttrs, UnobservedAttrs, {[k in keyof SubElements]: SubElements[k]} & Record<A, T | null>>;
   }
 
+  wState<N extends string, T>(name: N, initial: T | (() => T)) {
+    this.stateDefinitions[name] = initial
+    // @ts-ignore TS2344
+    return this as unknown as ComponentBwilder<ObservedAttrs, UnobservedAttrs, SubElements, StateRecord & Record<N, T>>
+  }
+
   wRender(renderFn: ComponentBwilderRenderer<RenderingContext, SubElements>) {
     this.renderFn = renderFn
     return this as this & { wRender: never };
@@ -114,6 +122,7 @@ export class ComponentBwilder<
 
       readonly root: ShadowRoot | HTMLElement;
       subElements: SubElements = makeDefaultSubElements(builder.subElementNames) as SubElements
+      state: StateRecord = {} as StateRecord
       private slotTracker = builder.slotAddedHandler ? new Tracker<HTMLSlotElement>() : null
       private assignedTracker = builder.slotAddedHandler ? new Tracker<HTMLElement>() : null
       private slotAddUnsub?: () => void
@@ -129,9 +138,21 @@ export class ComponentBwilder<
         else
           this.root = this as any
 
-        // if (this.onSlotChange)
-        //    this.onSlotChange = this.onSlotChange.bind(this);
-
+        // Initialize per-instance state from builder definitions
+        const stateData: Record<string, unknown> = {}
+        for (const [key, initialOrFactory] of Object.entries(builder.stateDefinitions)) {
+          stateData[key] = typeof initialOrFactory === 'function'
+            ? (initialOrFactory as () => unknown)()
+            : initialOrFactory
+        }
+        const self = this
+        ;(this as any).state = new Proxy(stateData, {
+          set(target, prop, value) {
+            target[prop as string] = value
+            self.render()
+            return true
+          }
+        })
       }
 
       static get observedAttributes() {
@@ -301,6 +322,7 @@ type BuiltComponentInstance<
 > = TComponent & HTMLElement & {
   connectedCallback(): Promise<void> | void
   render(): Promise<void> | void
+  rerender(): Promise<void> | void
   disconnectedCallback(): void
   root: ShadowRoot | HTMLElement
   subElements: TSubElements
