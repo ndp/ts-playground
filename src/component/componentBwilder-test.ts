@@ -1255,4 +1255,139 @@ describe('ComponentBwilder render', () => {
     assert.equal(foundThis, c)
   })
 
+  test('wShadowDOM(none) sets root to the element itself', () => {
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('shadow-none-root'))
+      .wShadowDOM('none')
+      .wRender(stubRender)
+      .bwild()
+
+    const c = new MyComponentClass()
+    assert.equal(c.root, c)
+  })
+
+  test('wTagName(null) does not register the class in customElements', () => {
+    const tag = nextTag('null-tag-check')
+
+    new ComponentBwilder()
+      .wTagName(null)
+      .wRender(stubRender)
+      .bwild()
+
+    assert.equal(customElements.get(tag), undefined)
+  })
+
+  test('rerender() before connectedCallback() renders but does not run postMountFn', () => {
+    const events: string[] = []
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('rerender-pre-connect'))
+      .wShadowDOM('none')
+      .wRender(function () {
+        events.push('render')
+        this.root.innerHTML = '<div>content</div>'
+      })
+      .wPostMountFn(function () {
+        events.push('postMount')
+      })
+      .bwild()
+
+    const c = new MyComponentClass()
+    c.rerender()
+
+    assert.deepEqual(events, ['render'])
+    assert.equal(c.querySelector('div')!.textContent, 'content')
+  })
+
+  test('observed attr callback receives correct non-null oldValue on second setAttribute', () => {
+    const transitions: Array<{ oldValue: unknown, newValue: unknown }> = []
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('old-value-second'))
+      .wObservedAttr('data-val', ({oldValue, newValue}) => {
+        transitions.push({oldValue, newValue})
+      })
+      .wRender(stubRender)
+      .bwild()
+
+    const c = new MyComponentClass()
+    c.setAttribute('data-val', 'a')
+    c.setAttribute('data-val', 'b')
+
+    assert.equal(transitions.length, 2)
+    assert.equal(transitions[1].oldValue, 'a')
+    assert.equal(transitions[1].newValue, 'b')
+  })
+
+  test('wElement declared but render returns void leaves subElements entries as null', () => {
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('subelements-void'))
+      .wElement('myEl')
+      .wShadowDOM('none')
+      .wRender(function () {
+        this.root.innerHTML = '<div id="myEl">content</div>'
+        // intentionally returns nothing (void)
+      })
+      .bwild()
+
+    const c = new MyComponentClass()
+    c.connectedCallback()
+
+    assert.equal(c.subElements.myEl, null)
+  })
+
+  test('wSlotAddedHandler is called for elements assigned across multiple slots', () => {
+    const events: string[] = []
+
+    const elA = document.createElement('div')
+    elA.setAttribute('data-id', 'a')
+    const elB = document.createElement('span')
+    elB.setAttribute('data-id', 'b')
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('multi-slot-handler'))
+      .wShadowDOM('open')
+      .wRender(function ({root}) {
+        root.innerHTML = '<slot name="first"></slot><slot name="second"></slot>'
+      })
+      .wSlotAddedHandler(function ({}, slottedEl) {
+        events.push(`assigned:${slottedEl.tagName.toLowerCase()}:${slottedEl.getAttribute('data-id')}`)
+        return () => {}
+      })
+      .bwild()
+
+    const c = new MyComponentClass()
+    c.connectedCallback()
+
+    const [slot1, slot2] = Array.from(c.shadowRoot!.querySelectorAll('slot')) as HTMLSlotElement[]
+    ;(slot1 as any).assignedElements = () => [elA]
+    ;(slot2 as any).assignedElements = () => [elB]
+
+    slot1.dispatchEvent(new (slot1.ownerDocument.defaultView as any).Event('slotchange'))
+
+    assert.deepEqual(events, ['assigned:div:a', 'assigned:span:b'])
+  })
+
+  test('wSlotAddedHandler handler returning void does not throw on disconnect', () => {
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('slot-void-cleanup'))
+      .wRender(function ({root}) {
+        root.innerHTML = '<slot></slot>'
+      })
+      .wSlotAddedHandler(function () {
+        return undefined as any
+      })
+      .bwild()
+
+    const c = new MyComponentClass()
+    c.connectedCallback()
+
+    const slot = c.shadowRoot!.querySelector('slot') as HTMLSlotElement
+    const assignedEl = document.createElement('div')
+    ;(slot as any).assignedElements = () => [assignedEl]
+    slot.dispatchEvent(new (slot.ownerDocument.defaultView as any).Event('slotchange'))
+
+    assert.doesNotThrow(() => c.disconnectedCallback())
+  })
+
 })
