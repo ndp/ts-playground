@@ -140,11 +140,9 @@
 
 /* Locked state */
 ::slotted([data-value].locked) {
-  background: repeating-linear-gradient(
-    45deg,
-    var(--selected-color),
-    var(--selected-color) 3px,
-    #999 3px,
-    var(--selected-color) 6px
-  );
+  padding-inline: 5px;
+}
+
+::slotted(.locked)::after {
+  content: "🔒";
 }
