@@ -1037,7 +1037,7 @@ describe('ComponentBwilder render', () => {
         }
       })
       .wPostRenderFn(function ({subElements}) {
-        postRenderTitle = subElements!.title?.textContent ?? ''
+        postRenderTitle = subElements.title?.textContent ?? ''
       })
       .bwild()
 
