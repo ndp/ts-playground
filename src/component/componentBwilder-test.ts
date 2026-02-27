@@ -504,6 +504,55 @@ describe('ComponentBwilder render', () => {
     assert.equal(lastText, 'next')
   })
 
+  test('render() returns a Promise when renderFn is async and there is no postRenderFn', async () => {
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('async-render-no-postrender'))
+      .wShadowDOM('none')
+      .wRender(async function () {
+        await Promise.resolve()
+        this.root.innerHTML = '<div>async-done</div>'
+      })
+      .bwild()
+
+    const c = new MyComponentClass()
+    const promise = c.render()
+
+    assert.ok(promise instanceof Promise, 'render should return a Promise')
+    assert.equal(c.querySelector('div'), null, 'should not be rendered yet')
+
+    await promise
+
+    assert.equal(c.querySelector('div')!.textContent, 'async-done')
+  })
+
+  test('render() returns a Promise and runs postRenderFn after async renderFn', async () => {
+    const events: string[] = []
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('async-render-sync-postrender'))
+      .wShadowDOM('none')
+      .wRender(async function () {
+        events.push('render-start')
+        await Promise.resolve()
+        this.root.innerHTML = '<div>ready</div>'
+        events.push('render-end')
+      })
+      .wPostRenderFn(function () {
+        events.push('postRender')
+      })
+      .bwild()
+
+    const c = new MyComponentClass()
+    const promise = c.render()
+
+    assert.ok(promise instanceof Promise, 'render should return a Promise')
+    assert.deepEqual(events, ['render-start'])
+
+    await promise
+
+    assert.deepEqual(events, ['render-start', 'render-end', 'postRender'])
+  })
+
   test('supports async render and async post hooks', async () => {
     const events: string[] = []
 
@@ -620,6 +669,88 @@ describe('ComponentBwilder render', () => {
     const c = new MyComponentClass()
     await assert.rejects(() => Promise.resolve(c.connectedCallback()), /postMount failed/)
     assert.equal(renderCompleted, true)
+  })
+
+  test('connectedCallback returns a Promise when async render + sync postMountFn', async () => {
+    const events: string[] = []
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('async-render-sync-postmount'))
+      .wShadowDOM('none')
+      .wRender(async function () {
+        events.push('render-start')
+        await Promise.resolve()
+        this.root.innerHTML = '<div>ready</div>'
+        events.push('render-end')
+      })
+      .wPostMountFn(function () {
+        events.push('postMount')
+      })
+      .bwild()
+
+    const c = new MyComponentClass()
+    const promise = c.connectedCallback()
+
+    assert.ok(promise instanceof Promise, 'connectedCallback should return a Promise')
+    assert.deepEqual(events, ['render-start'])
+
+    await promise
+
+    assert.deepEqual(events, ['render-start', 'render-end', 'postMount'])
+  })
+
+  test('connectedCallback returns a Promise when async render + no postMountFn', async () => {
+    const events: string[] = []
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('async-render-no-postmount'))
+      .wShadowDOM('none')
+      .wRender(async function () {
+        events.push('render-start')
+        await Promise.resolve()
+        this.root.innerHTML = '<div>ready</div>'
+        events.push('render-end')
+      })
+      .bwild()
+
+    const c = new MyComponentClass()
+    const promise = c.connectedCallback()
+
+    assert.ok(promise instanceof Promise, 'connectedCallback should return a Promise')
+    assert.deepEqual(events, ['render-start'])
+
+    await promise
+
+    assert.deepEqual(events, ['render-start', 'render-end'])
+    assert.equal(c.querySelector('div')!.textContent, 'ready')
+  })
+
+  test('connectedCallback returns a Promise when sync render + async postMountFn', async () => {
+    const events: string[] = []
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('sync-render-async-postmount'))
+      .wShadowDOM('none')
+      .wRender(function () {
+        events.push('render')
+        this.root.innerHTML = '<div>ready</div>'
+      })
+      .wPostMountFn(async function () {
+        events.push('postMount-start')
+        await Promise.resolve()
+        events.push('postMount-end')
+      })
+      .bwild()
+
+    const c = new MyComponentClass()
+    const promise = c.connectedCallback()
+
+    assert.deepEqual(events, ['render', 'postMount-start'])
+    assert.ok(promise instanceof Promise, 'connectedCallback should return a Promise')
+
+    await promise
+
+    assert.deepEqual(events, ['render', 'postMount-start', 'postMount-end'])
   })
 
   test('sync throws in render and post hooks propagate synchronously', async () => {
@@ -1376,6 +1507,36 @@ describe('ComponentBwilder render', () => {
     await c.connectedCallback()
 
     assert.deepEqual(events, ['postMount', 'handler:pre'])
+  })
+
+  test('slotAddedHandler fires after async postMountFn resolves', async () => {
+    const events: string[] = []
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('pre-assigned-async-postmount'))
+      .wShadowDOM('open')
+      .wRender(function ({root}) {
+        root.innerHTML = '<slot></slot>'
+      })
+      .wPostMountFn(async function () {
+        events.push('postMount-start')
+        await Promise.resolve()
+        const slot = this.shadowRoot!.querySelector('slot') as HTMLSlotElement
+        const el = document.createElement('div')
+        el.setAttribute('data-id', 'pre')
+        ;(slot as any).assignedElements = () => [el]
+        events.push('postMount-end')
+      })
+      .wSlotAddedHandler(function ({}, slottedEl) {
+        events.push(`handler:${slottedEl.getAttribute('data-id')}`)
+        return () => {}
+      })
+      .bwild()
+
+    const c = new MyComponentClass()
+    await c.connectedCallback()
+
+    assert.deepEqual(events, ['postMount-start', 'postMount-end', 'handler:pre'])
   })
 
 })
