@@ -2,27 +2,23 @@ import {type ISO2CountryCode, teenyDb} from './teeny-db.ts';
 import {RiggedQueue} from '@ndp-software/util';
 import {ComponentBwilder, type TagName} from '@ndp-software/component-bwilder';
 
-const gLanguages = new RiggedQueue<string>(10, [navigator.language]);
-
-
 const LocaleSelector = (new ComponentBwilder())
   .wTagName('locale-selector' as TagName)
   .wShadowDOM('none')
   .wElement('segmentedButtons')
+  .wState('languages', () => new RiggedQueue<string>(10, [navigator.language]))
   .wObservedAttr('data-country', function ({newValue}) {
-    if (!newValue) return
+    if (!newValue) return // Don't change if they don't send any value
 
     const countryLocales = teenyDb.langs(newValue as ISO2CountryCode);
-    console.log(` got country locales for ${newValue}:`, countryLocales)
-    if (!countryLocales || countryLocales.length === 0) return
+    if (!countryLocales || countryLocales.length === 0) return // If we have no data, don't do anything
 
     const isLocked = this.subElements.segmentedButtons!.hasAttribute('locked')
     if (isLocked) {
       const lockedLocale = this.subElements.segmentedButtons!.getAttribute('data-locked')
-      console.log(`marking locked locale ${lockedLocale} as used in gLanguages`)
-      gLanguages.use(lockedLocale!)
+      this.state.languages.use(lockedLocale!)
     }
-    gLanguages.add(...countryLocales)
+    this.state.languages.add(...countryLocales)
     this.subElements.segmentedButtons!.setAttribute('suggested', countryLocales.join(','))
 
     if (countryLocales.length === 0 || isLocked) return
@@ -32,8 +28,6 @@ const LocaleSelector = (new ComponentBwilder())
 
   })
   .wRender(function () {
-    console.log('rendering locale buttons with  languages:', gLanguages.peek(), this)
-
     let segmentedButtons = this.subElements.segmentedButtons
     if (!segmentedButtons) {
       segmentedButtons = document.createElement('segmented-buttons')
@@ -41,13 +35,13 @@ const LocaleSelector = (new ComponentBwilder())
       segmentedButtons.setAttribute('required', '')
       this.root.appendChild(segmentedButtons)
     }
-    segmentedButtons.innerHTML = gLanguages.peek().map(lang =>
+    segmentedButtons.innerHTML = this.state.languages.peek().map(lang =>
       `<div slot='option' data-value="${lang}">${lang}</div>`
     ).join('')
     return {segmentedButtons}
   })
   .wPostMountFn(function () {
-    gLanguages.onChange(this.rerender)
+    this.state.languages.onChange(this.rerender)
   })
   .bwild();
 
