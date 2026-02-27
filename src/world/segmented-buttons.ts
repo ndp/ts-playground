@@ -6,9 +6,6 @@ type HTMLElementWithSubElements = HTMLElement  & {
   subElements: { slotEl: HTMLSlotElement | null }
 }
 
-/** Tracks which host elements have completed post-mount (initial selected-attr processing done). */
-const mountedHosts = new WeakSet<HTMLElement>()
-
 const SegmentedButtons = new ComponentBwilder()
   .wTagName('segmented-buttons' as TagName)
   .wShadowDOM('open')
@@ -52,7 +49,6 @@ const SegmentedButtons = new ComponentBwilder()
       })
       setSelectedValues(this, values, {emitChange: false})
     }
-    mountedHosts.add(this)
     enforceRequired(this as HTMLElementWithSubElements)
     applySuggestedClasses(this)
     applyLockedAttrs(this)
@@ -64,9 +60,7 @@ const SegmentedButtons = new ComponentBwilder()
     }
     if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0')
     el.addEventListener('click', handler)
-    // Only enforce after mount so we don't interfere with the initial `selected` attribute scan.
-    // Pass `el` as a fallback for environments where assignedElements() may be empty at this point.
-    if (mountedHosts.has(context)) enforceRequired(context, el)
+    enforceRequired(context, el)
     applySelectedClasses(context)
     applySuggestedClasses(context)
     applyLockedAttrs(context)

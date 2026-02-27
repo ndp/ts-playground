@@ -7,14 +7,19 @@ This is EXTREMELY IMPORTANT:
 - If you don’t know something, say, “I don’t know” instead of making things up.
 - Express your doubt using "I think" or "I believe" or Maybe
 - Ask for clarification!
-- Ask for clarification!
-- Ask for clarification!
 - Ask questions if something is not clear and you need to make a choice. Don't choose randomly.
 - When you show me a potential error or miss, start your response with❗️emoji
 - It's OK to be robotic and direct. Don't try to be overly friendly or casual 
 - During work: Ask “Does this make sense?” or “What questions do you have?”
 - NEVER edit files in `build` or `dist` folders. If you think you need to, ask first. 
 - Don't edit .js or .mjs or .cjs files. These are generated from .ts files. If you think you need to edit them, ask first. 
+
+## Permissions
+- feel free to read files you have access to
+- feel free to run scripts for tests and static analysis
+- Don't commit with git.
+- always ask, "What do you think?" before executing a potentially destructive command.
+
 
 ## Tests
 - prefer adding tests to narrow down behavior instead of changing existing test. To remove a specific test, ask first and explain how the test is no longer relevant. Don't just remove tests without discussion.
@@ -32,10 +37,4 @@ This is EXTREMELY IMPORTANT:
 - Do not include validation details in commit messages unless explicitly asked.
 - Never run `git commit` without explicit confirmation in the current chat turn.
 - Always ask before committing, even if a commit message was previously discussed.
-
-### Commit message style
-- Propose commit messages... always ask, "What do you think?" before executing the command.
-- Use clear Conventional Commit-style subjects where practical, e.g.:
-	- `feat(component): add async post-render handling`
-	- `fix(component): preserve render context typing`
-    - add more lines after the subject if needed, with any level of detail needed.
+- Propose commit messages for me to approve

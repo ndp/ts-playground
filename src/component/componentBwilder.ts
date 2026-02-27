@@ -136,6 +136,7 @@ export class ComponentBwilder<
       private assignedTracker = builder.slotAddedHandler ? new Tracker<HTMLElement>() : null
       private slotAddUnsub?: () => void
       private assignedAddUnsub?: () => void
+      private postMountComplete = false
 
       constructor() {
         super()
@@ -181,11 +182,17 @@ export class ComponentBwilder<
 
         const rendered = this.render()
 
-        if (!builder.postMountFn)
-          return rendered
-
         const context = this as unknown as ComponentType
-        const runPostMount = () => builder.postMountFn!.call(context, context)
+        const afterPostMount = () => {
+          this.postMountComplete = true
+          this.refreshAssignedElements(context)
+        }
+
+        const runPostMount = () => {
+          if (!builder.postMountFn) return afterPostMount()
+          const result = builder.postMountFn.call(context, context)
+          return isPromiseLike(result) ? result.then(afterPostMount) : afterPostMount()
+        }
 
         return isPromiseLike(rendered)
           ? rendered.then(runPostMount)
@@ -266,7 +273,8 @@ export class ComponentBwilder<
 
         const slots = Array.from(this.root.querySelectorAll('slot')) as HTMLSlotElement[]
         this.slotTracker.setAll(slots)
-        this.refreshAssignedElements(context, slots)
+        if (this.postMountComplete)
+          this.refreshAssignedElements(context, slots)
       }
 
       private refreshAssignedElements(context: ComponentType, slots?: HTMLSlotElement[]) {
