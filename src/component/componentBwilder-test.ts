@@ -27,10 +27,10 @@ new ComponentBwilder().wCSS('.my-class { color: blue; }').wCSS('.my-class { colo
 new ComponentBwilder().wShadowDOM('open').wShadowDOM('open')
 
 // @ts-expect-error intentional duplicate post-mount registration
-new ComponentBwilder().wPostMountFn(() => {}).wPostMountFn(() => {})
+new ComponentBwilder().wConnectedFn(() => {}).wConnectedFn(() => {})
 
 // @ts-expect-error intentional duplicate post-render registration
-new ComponentBwilder().wPostRenderFn(() => {}).wPostRenderFn(() => {})
+new ComponentBwilder().wAfterUpdateFn(() => {}).wAfterUpdateFn(() => {})
 
 
 const stubRender = function (this: RenderContext) {
@@ -418,7 +418,7 @@ describe('ComponentBwilder render', () => {
     assert.equal(c.querySelector('div')!.innerHTML, 'DestructureStyle')
   })
 
-  test('wPostMountFn runs once after initial render', async () => {
+  test('wConnectedFn runs once after initial render', async () => {
     const events: string[] = []
     let mountCount = 0
 
@@ -430,7 +430,7 @@ describe('ComponentBwilder render', () => {
         events.push('render')
         this.root.innerHTML = `<div>${this['data-v'] ?? 'init'}</div>`
       })
-      .wPostMountFn(function (c) {
+      .wConnectedFn(function (c) {
         mountCount += 1
         events.push('postMount')
         assert.equal(this, c)
@@ -449,7 +449,7 @@ describe('ComponentBwilder render', () => {
     assert.deepEqual(events, ['render', 'postMount', 'render'])
   })
 
-  test('wPostRenderFn runs after every render', async () => {
+  test('wAfterUpdateFn runs after every render', async () => {
     let renderCount = 0
     let postRenderCount = 0
 
@@ -461,7 +461,7 @@ describe('ComponentBwilder render', () => {
         renderCount += 1
         this.root.innerHTML = `<div>${this['data-v'] ?? 'init'}</div>`
       })
-      .wPostRenderFn(function (c) {
+      .wAfterUpdateFn(function (c) {
         postRenderCount += 1
         assert.equal(this, c)
       })
@@ -482,7 +482,7 @@ describe('ComponentBwilder render', () => {
     assert.equal(postRenderCount, 3)
   })
 
-  test('wPostRenderFn supports destructured first-argument context', async () => {
+  test('wAfterUpdateFn supports destructured first-argument context', async () => {
     let lastText = ''
 
     const MyComponentClass = new ComponentBwilder()
@@ -492,7 +492,7 @@ describe('ComponentBwilder render', () => {
       .wRender(function ({root, 'data-v': dataV}) {
         root.innerHTML = `<div>${dataV ?? 'init'}</div>`
       })
-      .wPostRenderFn(function ({root}) {
+      .wAfterUpdateFn(function ({root}) {
         lastText = root!.querySelector('div')!.textContent ?? ''
       })
       .bwild()
@@ -539,7 +539,7 @@ describe('ComponentBwilder render', () => {
         this.root.innerHTML = '<div>ready</div>'
         events.push('render-end')
       })
-      .wPostRenderFn(function () {
+      .wAfterUpdateFn(function () {
         events.push('postRender')
       })
       .bwild()
@@ -567,13 +567,13 @@ describe('ComponentBwilder render', () => {
         root.innerHTML = '<div>async ready</div>'
         events.push('render-end')
       })
-      .wPostRenderFn(async function ({root}) {
+      .wAfterUpdateFn(async function ({root}) {
         events.push('postRender-start')
         await Promise.resolve()
         const txt = root.querySelector('div')!.textContent
         events.push(`postRender-end:${txt}`)
       })
-      .wPostMountFn(async function ({root}) {
+      .wConnectedFn(async function ({root}) {
         events.push('postMount-start')
         await Promise.resolve()
         const txt = root.querySelector('div')!.textContent
@@ -603,7 +603,7 @@ describe('ComponentBwilder render', () => {
       .wRender(function () {
         this.root.innerHTML = '<div>ready</div>'
       })
-      .wPostRenderFn(async function () {
+      .wAfterUpdateFn(async function () {
         await Promise.resolve()
         postRenderDone = true
       })
@@ -625,7 +625,7 @@ describe('ComponentBwilder render', () => {
         await Promise.resolve()
         throw new Error('render failed')
       })
-      .wPostMountFn(function () {
+      .wConnectedFn(function () {
         postMountCalled = true
       })
       .bwild()
@@ -642,7 +642,7 @@ describe('ComponentBwilder render', () => {
       .wRender(function () {
         this.root.innerHTML = '<div>ready</div>'
       })
-      .wPostRenderFn(async function () {
+      .wAfterUpdateFn(async function () {
         await Promise.resolve()
         throw new Error('postRender failed')
       })
@@ -662,7 +662,7 @@ describe('ComponentBwilder render', () => {
         renderCompleted = true
         this.root.innerHTML = '<div>ready</div>'
       })
-      .wPostMountFn(async function () {
+      .wConnectedFn(async function () {
         await Promise.resolve()
         throw new Error('postMount failed')
       })
@@ -685,7 +685,7 @@ describe('ComponentBwilder render', () => {
         this.root.innerHTML = '<div>ready</div>'
         events.push('render-end')
       })
-      .wPostMountFn(function () {
+      .wConnectedFn(function () {
         events.push('postMount')
       })
       .bwild()
@@ -737,7 +737,7 @@ describe('ComponentBwilder render', () => {
         events.push('render')
         this.root.innerHTML = '<div>ready</div>'
       })
-      .wPostMountFn(async function () {
+      .wConnectedFn(async function () {
         events.push('postMount-start')
         await Promise.resolve()
         events.push('postMount-end')
@@ -775,7 +775,7 @@ describe('ComponentBwilder render', () => {
       .wRender(function () {
         this.root.innerHTML = '<div>ok</div>'
       })
-      .wPostRenderFn(function () {
+      .wAfterUpdateFn(function () {
         throw new Error('postRender sync failed')
       })
       .bwild()
@@ -792,7 +792,7 @@ describe('ComponentBwilder render', () => {
       .wRender(function () {
         this.root.innerHTML = '<div>ok</div>'
       })
-      .wPostMountFn(function () {
+      .wConnectedFn(function () {
         throw new Error('postMount sync failed')
       })
       .bwild()
@@ -811,7 +811,7 @@ describe('ComponentBwilder render', () => {
       .wTagName(nextTag('postmount-cleanup'))
       .wShadowDOM('none')
       .wRender(stubRender)
-      .wPostMountFn(function () {
+      .wConnectedFn(function () {
         events.push('mount')
         return () => events.push('cleanup')
       })
@@ -832,7 +832,7 @@ describe('ComponentBwilder render', () => {
       .wTagName(nextTag('postmount-reset'))
       .wShadowDOM('none')
       .wRender(stubRender)
-      .wPostMountFn(function () {
+      .wConnectedFn(function () {
         mountCount++
       })
       .bwild()
@@ -853,7 +853,7 @@ describe('ComponentBwilder render', () => {
       .wTagName(nextTag('postmount-cleanup-reconnect'))
       .wShadowDOM('none')
       .wRender(stubRender)
-      .wPostMountFn(function () {
+      .wConnectedFn(function () {
         events.push('mount')
         return () => events.push('cleanup')
       })
@@ -873,7 +873,7 @@ describe('ComponentBwilder render', () => {
       .wTagName(nextTag('async-postmount-cleanup'))
       .wShadowDOM('none')
       .wRender(stubRender)
-      .wPostMountFn(async function () {
+      .wConnectedFn(async function () {
         await Promise.resolve()
         events.push('mount')
         return () => events.push('cleanup')
@@ -1160,7 +1160,7 @@ describe('ComponentBwilder render', () => {
           content: '#content'
         }
       })
-      .wPostRenderFn(function ({subElements}) {
+      .wAfterUpdateFn(function ({subElements}) {
         postRenderTitle = subElements.title?.textContent ?? ''
       })
       .bwild()
@@ -1205,7 +1205,7 @@ describe('ComponentBwilder render', () => {
           content: '#content'
         }
       })
-      .wPostMountFn(function ({subElements}) {
+      .wConnectedFn(function ({subElements}) {
         assert.equal(subElements.content?.textContent, 'Mounted Content')
         assert.equal(this.subElements.content?.textContent, 'Mounted Content')
       })
@@ -1332,7 +1332,7 @@ describe('ComponentBwilder render', () => {
     assert.equal(foundThis, c)
   })
 
-  test('rerender function is bound to this context in wPostMountFn functions', () => {
+  test('rerender function is bound to this context in wConnectedFn functions', () => {
     let foundThis = undefined
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('render-this-context'))
@@ -1340,9 +1340,9 @@ describe('ComponentBwilder render', () => {
       .wRender(function () {
         foundThis = this
       })
-      .wPostMountFn(function () {
+      .wConnectedFn(function () {
         foundThis = null
-        this.rerender()
+        this.requestUpdate()
       })
       .bwild()
 
@@ -1384,13 +1384,13 @@ describe('ComponentBwilder render', () => {
         events.push('render')
         this.root.innerHTML = '<div>content</div>'
       })
-      .wPostMountFn(function () {
+      .wConnectedFn(function () {
         events.push('postMount')
       })
       .bwild()
 
     const c = new MyComponentClass()
-    c.rerender()
+    c.requestUpdate()
 
     assert.deepEqual(events, ['render'])
     assert.equal(c.querySelector('div')!.textContent, 'content')
@@ -1496,7 +1496,7 @@ describe('ComponentBwilder render', () => {
       .wRender(function ({root}) {
         root.innerHTML = '<slot></slot>'
       })
-      .wPostMountFn(function () {
+      .wConnectedFn(function () {
         const slot = this.shadowRoot!.querySelector('slot') as HTMLSlotElement
         const el = document.createElement('div')
         el.setAttribute('data-id', 'pre')
@@ -1525,7 +1525,7 @@ describe('ComponentBwilder render', () => {
       .wRender(function ({root}) {
         root.innerHTML = '<slot></slot>'
       })
-      .wPostRenderFn(function ({root}) {
+      .wAfterUpdateFn(function ({root}) {
         const slot = root.querySelector('slot') as HTMLSlotElement
         const el = document.createElement('div')
         el.setAttribute('data-id', 'x')
@@ -1538,7 +1538,7 @@ describe('ComponentBwilder render', () => {
       .bwild()
 
     const c = new MyComponentClass()
-    c.rerender()
+    c.requestUpdate()
 
     assert.deepEqual(events, [])
   })
@@ -1552,7 +1552,7 @@ describe('ComponentBwilder render', () => {
       .wRender(function ({root}) {
         root.innerHTML = '<slot></slot>'
       })
-      .wPostRenderFn(function ({root}) {
+      .wAfterUpdateFn(function ({root}) {
         // Set up the mock after render completes, before slotAddedHandler fires
         const slot = root.querySelector('slot') as HTMLSlotElement
         const el = document.createElement('div')
@@ -1580,7 +1580,7 @@ describe('ComponentBwilder render', () => {
       .wRender(function ({root}) {
         root.innerHTML = '<slot></slot>'
       })
-      .wPostMountFn(function () {
+      .wConnectedFn(function () {
         // Mock assignedElements here — before slotAddedHandler should fire
         const slot = this.shadowRoot!.querySelector('slot') as HTMLSlotElement
         const el = document.createElement('div')
@@ -1609,7 +1609,7 @@ describe('ComponentBwilder render', () => {
       .wRender(function ({root}) {
         root.innerHTML = '<slot></slot>'
       })
-      .wPostMountFn(async function () {
+      .wConnectedFn(async function () {
         events.push('postMount-start')
         await Promise.resolve()
         const slot = this.shadowRoot!.querySelector('slot') as HTMLSlotElement
@@ -1746,7 +1746,7 @@ describe('wState', () => {
     assert.equal(c.querySelector('div')!.textContent, 'Bob:25')
   })
 
-  test('state is accessible in wPostMountFn and wPostRenderFn via context', async () => {
+  test('state is accessible in wConnectedFn and wAfterUpdateFn via context', async () => {
     let postMountVal: unknown
     let postRenderVal: unknown
 
@@ -1757,10 +1757,10 @@ describe('wState', () => {
       .wRender(function () {
         this.root.innerHTML = '<div>ready</div>'
       })
-      .wPostMountFn(function (context) {
+      .wConnectedFn(function (context) {
         postMountVal = context.state.value
       })
-      .wPostRenderFn(function (context) {
+      .wAfterUpdateFn(function (context) {
         postRenderVal = context.state.value
       })
       .bwild()

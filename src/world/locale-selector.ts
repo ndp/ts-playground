@@ -40,8 +40,8 @@ const LocaleSelector = (new ComponentBwilder())
     ).join('')
     return {segmentedButtons}
   })
-  .wPostMountFn(function () {
-    this.state.languages.onChange(this.rerender)
+  .wConnectedFn(function () {
+    this.state.languages.onChange(this.requestUpdate)
   })
   .bwild();
 

@@ -18,7 +18,7 @@ export class ComponentBwilder<
   AllAttrs extends readonly string[] = [...ObservedAttrs, ...UnobservedAttrs],
   AttrsRecord extends {} = AllAttrs[number] extends string ? Record<AllAttrs[number], string> : {},
   RenderingContext extends RenderContext<{}, SubElementsMap> = RenderContext<AttrsRecord, SubElements, StateRecord>,
-  ComponentType = HTMLElement & RenderingContext & {rerender: () => void|Promise<void>}> {
+  ComponentType = HTMLElement & RenderingContext & {requestUpdate: () => void|Promise<void>}> {
 
   private tagName?: string | null
   private css: { text: string, requestedMode: CSSMode } | undefined
@@ -97,14 +97,14 @@ export class ComponentBwilder<
     return this as this & { wRender: never };
   }
 
-  wPostMountFn(postMountFn: (this: ComponentType, context: ComponentType) => void | (() => void) | Promise<void> | Promise<() => void>) {
+  wConnectedFn(postMountFn: (this: ComponentType, context: ComponentType) => void | (() => void) | Promise<void> | Promise<() => void>) {
     this.postMountFn = postMountFn as any
-    return this as this & { wPostMountFn: never }
+    return this as this & { wConnectedFn: never }
   }
 
-  wPostRenderFn(postRenderFn: (this: ComponentType & {render: never}, context: ComponentType & {rerender: never}) => void | Promise<void>) {
+  wAfterUpdateFn(postRenderFn: (this: ComponentType & {render: never}, context: ComponentType & {requestUpdate: never}) => void | Promise<void>) {
     this.postRenderFn = postRenderFn as any
-    return this as this & { wPostRenderFn: never }
+    return this as this & { wAfterUpdateFn: never }
   }
 
   // Add handler for slot changes that will be wired up in post-mount.
@@ -142,7 +142,7 @@ export class ComponentBwilder<
       constructor() {
         super()
 
-        this.rerender = this.rerender.bind(this)
+        this.requestUpdate = this.requestUpdate.bind(this)
 
         if (builder.shadowDOM !== 'none')
           this.root = this.attachShadow({mode: builder.shadowDOM})
@@ -198,7 +198,7 @@ export class ComponentBwilder<
           this.teardownSlotHandlers()
       }
 
-      rerender() {
+      requestUpdate() {
         return this.render()
       }
 
@@ -318,7 +318,7 @@ type BuiltComponentInstance<
 > = TComponent & HTMLElement & {
   connectedCallback(): Promise<void>
   render(): Promise<void>
-  rerender(): Promise<void>
+  requestUpdate(): Promise<void>
   disconnectedCallback(): void
   root: ShadowRoot | HTMLElement
   subElements: TSubElements

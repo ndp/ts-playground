@@ -36,7 +36,7 @@ const SegmentedButtons = new ComponentBwilder()
 
     return {slotEl}
   })
-  .wPostMountFn(function () {
+  .wConnectedFn(function () {
     // Search light DOM (the host, not shadow root) for any slotted elements pre-marked as selected
     const preselected = Array.from(this.querySelectorAll('[data-value][selected]')) as HTMLElement[]
     if (preselected.length > 0) {
@@ -66,7 +66,7 @@ const SegmentedButtons = new ComponentBwilder()
     applyLockedAttrs(context)
     return () => el.removeEventListener('click', handler)
   })
-  .wPostRenderFn(function (this: HTMLElementWithSubElements) {
+  .wAfterUpdateFn(function (this: HTMLElementWithSubElements) {
     applySelectedClasses(this)
     applySuggestedClasses(this)
     applyLockedAttrs(this)

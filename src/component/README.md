@@ -3,7 +3,7 @@
 Typed, minimal helpers for building compact Web Components used in this repository.
 
 This package exposes a small, TypeScript-first fluent API for defining custom elements with:
-- an explicit, always-async render lifecycle (`render()`, `postRender()`, `postMount()`),
+- an explicit, always-async render lifecycle (`render()`, `afterUpdate()`, `connected()`),
 - observed vs unobserved attributes,
 - simple typed sub-element wiring,
 - optional adopted (`CSSStyleSheet`) or inline CSS injection,
@@ -11,7 +11,7 @@ This package exposes a small, TypeScript-first fluent API for defining custom el
 
 ## Overview
 - **Purpose**: provide a lightweight, predictable, TypeScript-friendly workflow for declaring custom elements without a large framework.
-- **Philosophy**: explicit, lifecycle hooks (`postMount`, `render()`, and `postRender()`), minimal runtime, strong typing for attributes/sub-elements, and a fluent builder syntax.
+- **Philosophy**: explicit, lifecycle hooks (`connectedFn`, `render()`, and `afterUpdate()`), minimal runtime, strong typing for attributes/sub-elements, and a fluent builder syntax.
 - **Primary class**: `ComponentBwilder` — use its chained helpers (tag name, shadow DOM, CSS, attributes, sub-elements, render/lifecycle hooks) and call `.bwild()` to return (and register) the strongly-typed component class.
 
 ## Quick example
@@ -41,8 +41,8 @@ return { label: 'span' }
 - **State management** (`.wState`): declare reactive properties with `.wState(name, initialValue)`. State values are accessible via `this.state[name]`. Assigning to state properties automatically triggers a rerender. Initial values can be static or factory functions (called once per instance).
 - **Lifecycle hooks**: 
   - `.wRender(fn)` — called each time the component needs to update; always returns `Promise<void>`.
-  - `.wPostRenderFn(fn)` — runs as a microtask after each render completes; supports `async` functions.
-  - `.wPostMountFn(fn)` — runs once after the initial `connectedCallback` render + postRender; supports async. Can return a cleanup function (sync or `Promise<() => void>`) that runs on disconnect.
+  - `.wAfterUpdateFn(fn)` — runs as a microtask after each render completes; supports `async` functions.
+  - `.wConnectedFn(fn)` — runs once after the initial `connectedCallback` render + afterUpdate; supports async. Can return a cleanup function (sync or `Promise<() => void>`) that runs on disconnect.
 - **Slot handling**: `.wSlotAddedHandler` gives you per-assigned-element callbacks that can return cleanup functions, called when elements are assigned or removed.
 
 ## Usage recipes
@@ -82,7 +82,7 @@ new ComponentBwilder()
 this.root.innerHTML = '<h1 id="title">Title</h1><div id="content">Body</div>'
 return { title: '#title', content: '#content' }
 })
-.wPostRenderFn(function ({ subElements }) {
+.wAfterUpdateFn(function ({ subElements }) {
 // `subElements.title` and `subElements.content` are populated
 })
 .bwild()
@@ -103,11 +103,11 @@ const instance = new ComponentBwilder()
   const data = await fetchData()
   root.innerHTML = `<div>${data.title}</div>`
 })
-.wPostRenderFn(async function ({ root }) {
+.wAfterUpdateFn(async function ({ root }) {
   await afterRenderHook()
 })
-.wPostMountFn(async function () {
-  // runs once after initial render + postRender completes
+.wConnectedFn(async function () {
+  // runs once after initial render + afterUpdate completes
   setupSubscriptions()
   return () => teardownSubscriptions() // cleanup on disconnect
 })
@@ -132,7 +132,7 @@ const Counter = new ComponentBwilder()
       <button>Increment</button>
     `
   })
-  .wPostRenderFn(function () {
+  .wAfterUpdateFn(function () {
     const btn = this.root.querySelector('button')!
     btn.onclick = () => {
       this.state.count++  // triggers rerender
@@ -141,7 +141,7 @@ const Counter = new ComponentBwilder()
   .bwild()
 ```
 
-State properties are reactive: assigning to `this.state.propName` automatically triggers a `render()` and `postRenderFn()` cycle. Initial values can be static primitives, objects, or factory functions (called once per instance to avoid sharing mutable defaults).
+State properties are reactive: assigning to `this.state.propName` automatically triggers a `render()` and `afterUpdateFn()` cycle. Initial values can be static primitives, objects, or factory functions (called once per instance to avoid sharing mutable defaults).
 
 ### 6. Slot assigned-element handling
 ```ts
@@ -150,7 +150,7 @@ State properties are reactive: assigning to `this.state.propName` automatically 
 })
 .wSlotAddedHandler(function (_, assignedEl) {
   // Called for each assigned element; slot handler does NOT fire during
-  // connectedCallback until AFTER postMountFn (if present) completes.
+  // connectedCallback until AFTER connectedFn (if present) completes.
   assignedEl.addEventListener('click', onClick)
   return () => assignedEl.removeEventListener('click', onClick)
 })
@@ -171,8 +171,8 @@ The handler fires immediately when elements are dynamically assigned to slots af
 - `wElement(name: string)` — declare a sub-element (accessed via `this.subElements[name]`)
 - `wState(name: string, initial: value | factory)` — reactive state (accessed via `this.state[name]`, assignment triggers rerender)
 - `wRender(fn)` — render function
-- `wPostRenderFn(fn)` — runs after each render
-- `wPostMountFn(fn)` — runs once after initial connection; can return cleanup
+- `wAfterUpdateFn(fn)` — runs after each render
+- `wConnectedFn(fn)` — runs once after initial connection; can return cleanup
 - `wSlotAddedHandler(fn)` — callback for assigned elements; can return cleanup
 - `bwild()` — finalize and return the component class
 
@@ -201,10 +201,10 @@ npm run typecheck
 
 ### Notes & gotchas
 - **Always-async lifecycle**: `connectedCallback()`, `render()`, and `rerender()` always return `Promise<void>`. Test code and production code that needs post-render DOM state must `await` these calls.
-- **Slot handlers fire after postMount**: Handlers registered with `.wSlotAddedHandler` do not fire for pre-assigned elements (elements slotted at connection time) until after `postMountFn` completes, preventing race conditions during mount.
+- **Slot handlers fire after connected**: Handlers registered with `.wSlotAddedHandler` do not fire for pre-assigned elements (elements slotted at connection time) until after `connectedFn` completes, preventing race conditions during mount.
 - **Providing an `onChange` callback** replaces the default rerender for observed attributes; call `this.render()` inside the callback when you still need to refresh DOM.
-- **Cleanup on disconnect**: `postMountFn` can return a cleanup function that runs when the component disconnects, allowing cleanup of subscriptions, listeners, or timers. `slotAddedHandler` cleanup also runs at this time.
-- **Reconnection resets state**: Disconnecting and reconnecting a component resets `postMountComplete` flag and reruns the full lifecycle (render → postRender → postMount).
+- **Cleanup on disconnect**: `connectedFn` can return a cleanup function that runs when the component disconnects, allowing cleanup of subscriptions, listeners, or timers. `slotAddedHandler` cleanup also runs at this time.
+- **Reconnection resets state**: Disconnecting and reconnecting a component resets `connectedComplete` flag and reruns the full lifecycle (render → afterUpdate → connected).
 - `.wTagName(null)` returns the class without calling `customElements.define`, useful in test harnesses or subclassing scenarios.
 - Adopted stylesheets require browser support ( `CSSStyleSheet`, `replaceSync()`); the builder logs a fallback warning and injects inline CSS otherwise.
 - Attempting to define the same custom element tag twice throws (see tests).
