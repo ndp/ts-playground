@@ -2,8 +2,7 @@ import {type RenderContext, type SubElementInputMap, type SubElementsMap} from '
 import {type TagName, type TagNameLiteral} from './TagName.ts'
 import {Tracker} from '@ndp-software/util'
 
-type ExtendableStringTuple = readonly [string?, string?, string?, string?, string?, string?, string?, string?]
-type ExtendableStringTuple3 = readonly [...ExtendableStringTuple, ...ExtendableStringTuple, ...ExtendableStringTuple]
+type Push<Tuple extends readonly string[], S extends string> = readonly [...Tuple, S]
 type SubElementKeys<T extends SubElementsMap> = Extract<keyof T, string>
 type BwilderRendererReturn<TSubElements extends SubElementsMap>
   = SubElementInputMap<SubElementKeys<TSubElements>> | void
@@ -12,11 +11,11 @@ type ComponentBwilderRenderer<TContext extends RenderContext, TSubElements exten
 type CSSMode = 'adopted' | 'inline'
 
 export class ComponentBwilder<
-  ObservedAttrs extends ExtendableStringTuple = [],
-  UnobservedAttrs extends ExtendableStringTuple = [],
+  ObservedAttrs extends readonly string[] = [],
+  UnobservedAttrs extends readonly string[] = [],
   SubElements extends SubElementsMap = {},
   StateRecord extends Record<string, unknown> = {},
-  AllAttrs extends ExtendableStringTuple3 = [...ObservedAttrs, ...UnobservedAttrs],
+  AllAttrs extends readonly string[] = [...ObservedAttrs, ...UnobservedAttrs],
   AttrsRecord extends {} = AllAttrs[number] extends string ? Record<AllAttrs[number], string> : {},
   RenderingContext extends RenderContext<{}, SubElementsMap> = RenderContext<AttrsRecord, SubElements, StateRecord>,
   ComponentType = HTMLElement & RenderingContext & {rerender: () => void|Promise<void>}> {
@@ -58,8 +57,12 @@ export class ComponentBwilder<
 
   wAttr<A extends string>(attr: A, defaultValue?: string) {
     this.unobservedAttrs[attr] = defaultValue ?? null
-    // @ts-ignore TS2344
-    return this as unknown as ComponentBwilder<ObservedAttrs, [...UnobservedAttrs, A], SubElements>;
+    return this as unknown as ComponentBwilder<
+      ObservedAttrs,
+      Push<UnobservedAttrs, A>,
+      SubElements,
+      StateRecord
+    >;
   }
 
   wObservedAttr<A extends string>(attr: A,
@@ -67,19 +70,25 @@ export class ComponentBwilder<
     if (attr in this.observedAttrs)
       throw new Error(`Attr "${attr}" is already observed.`)
     this.observedAttrs[attr] = onChange ?? null
-    // @ts-ignore TS2344
-    return this as unknown as ComponentBwilder<[...ObservedAttrs, A], UnobservedAttrs, SubElements>;
+    return this as unknown as ComponentBwilder<
+      Push<ObservedAttrs, A>,
+      UnobservedAttrs,
+      SubElements,
+      StateRecord>;
   }
 
   wElement<A extends string, T extends HTMLElement = HTMLElement>(elementName: A) {
     this.subElementNames.push(elementName);
-    // @ts-ignore TS2344
-    return this as unknown as ComponentBwilder<ObservedAttrs, UnobservedAttrs, {[k in keyof SubElements]: SubElements[k]} & Record<A, T | null>>;
+    return this as unknown as ComponentBwilder<
+      ObservedAttrs,
+      UnobservedAttrs,
+      {[k in keyof SubElements]: SubElements[k]} & Record<A, T | null>,
+      StateRecord
+    >;
   }
 
   wState<N extends string, T>(name: N, initial: T | (() => T)) {
     this.stateDefinitions[name] = initial
-    // @ts-ignore TS2344
     return this as unknown as ComponentBwilder<ObservedAttrs, UnobservedAttrs, SubElements, StateRecord & Record<N, T>>
   }
 
