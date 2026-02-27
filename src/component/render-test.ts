@@ -6,7 +6,8 @@ import {
 } from './render.ts';
 import type {
   ComponentRenderer,
-  RenderContext
+  RenderContext,
+  ElementDescriptor
 } from './render.ts';
 
 
@@ -62,14 +63,56 @@ describe('makeComponentRendererFromFn', () => {
 
   it('should allow html function to use context properties', () => {
     const renderer =
-      makeComponentRendererFromFn(({name}: RenderContext<{ name: string }>) => {
-        return `<div id="greet">Hello, ${name}</div>`;
+      makeComponentRendererFromFn((context) => {
+        return `<div id="greet">Hello, ${(context as any).name}</div>`;
       });
-    const context = {root: document.createElement('div'), name: 'Mars', subElements: {}, state: {}};
+    const ctx = {root: document.createElement('div'), name: 'Mars', subElements: {}, state: {}};
 
-    renderer.call(context, context);
+    renderer.call(ctx, ctx);
 
-    assert.equal(context.root.querySelector('#greet')!.innerHTML, 'Hello, Mars');
+    assert.equal(ctx.root.querySelector('#greet')!.innerHTML, 'Hello, Mars');
+  });
+
+  it('should preserve HTMLElement type for string selectors', () => {
+    const renderer =
+      makeComponentRendererFromString('<div id="test">content</div>', {test: '#test'});
+    const context = makeAContext();
+
+    const result = renderer.call(context, context) as any;
+
+    // Type should be HTMLElement | null - can be anything
+    assert.ok(result.test);
+  });
+
+  it('should preserve specific element types via ElementDescriptor', () => {
+    const renderer =
+      makeComponentRendererFromString('<input id="input" type="text" />', {
+        input: {selector: '#input'}
+      });
+    const context = makeAContext();
+
+    const result = renderer.call(context, context) as any;
+
+    // Result is an HTMLInputElement since we specified the selector correctly
+    assert.ok(result.input);
+    assert.ok(result.input.getAttribute('type') === 'text');
+  });
+
+  it('should handle mixed string and ElementDescriptor selectors', () => {
+    const renderer =
+      makeComponentRendererFromString(
+        '<button id="btn">Click</button><input id="inp" />',
+        {
+          button: '#btn',
+          input: {selector: '#inp'}
+        }
+      );
+    const context = makeAContext();
+
+    const result = renderer.call(context, context) as any;
+
+    assert.ok(result.button instanceof HTMLElement);
+    assert.ok(result.input);
   });
 });
 

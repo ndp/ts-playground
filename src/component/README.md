@@ -88,6 +88,34 @@ return { title: '#title', content: '#content' }
 .bwild()
 ```
 
+**Sub-element type hints** — for better TypeScript support, pass a type parameter to `.wElement()`:
+
+```ts
+new ComponentBwilder()
+.wTagName('c-form')
+.wElement('email', HTMLInputElement)     // Typed as HTMLInputElement | null
+.wElement('submit', HTMLButtonElement)   // Typed as HTMLButtonElement | null
+.wElement('status')                      // Generic HTMLElement | null
+.wShadowDOM('none')
+.wRender(function () {
+this.root.innerHTML = `
+  <input id="email" type="email" />
+  <button id="submit">Submit</button>
+  <div id="status"></div>
+`
+return { email: '#email', submit: '#submit', status: '#status' }
+})
+.wAfterUpdateFn(function () {
+// Now TypeScript knows the specific types:
+const emailValue = this.subElements.email?.value    // ✓ HTMLInputElement.value
+const isDisabled = this.subElements.submit?.disabled // ✓ HTMLButtonElement.disabled
+this.subElements.status!.textContent = 'Ready'      // ✓ generic HTMLElement
+})
+.bwild()
+```
+
+The second parameter is optional and TypeScript-only (zero runtime cost) — existing code without type hints continues to work unchanged.
+
 ### 3. CSS modes and sharing
 ```ts
 .wCSS('.foo { color: red }')      // requests adopted, falls back to inline if unsupported
@@ -143,7 +171,35 @@ const Counter = new ComponentBwilder()
 
 State properties are reactive: assigning to `this.state.propName` automatically triggers a `render()` and `afterUpdateFn()` cycle. Initial values can be static primitives, objects, or factory functions (called once per instance to avoid sharing mutable defaults).
 
-### 6. Slot assigned-element handling
+### 6. Type-preserved sub-elements with `ElementDescriptor`
+
+When using render factories (`makeComponentRendererFromString`, `makeComponentRendererFromFn`) outside of ComponentBwilder, you can also use `ElementDescriptor` to preserve specific element types:
+
+```ts
+import { makeComponentRendererFromString } from './render'
+
+const renderer = makeComponentRendererFromString(
+  '<input id="email" /><button id="submit">Send</button>',
+  {
+    email: { selector: '#email', type: HTMLInputElement },
+    submit: { selector: '#submit', type: HTMLButtonElement }
+  }
+)
+// Result type: { email: HTMLInputElement | null, submit: HTMLButtonElement | null }
+
+// Or mix string selectors (generic HTMLElement) with typed descriptors:
+const renderer2 = makeComponentRendererFromString(
+  '<input id="email" /><div id="status"></div>',
+  {
+    email: { selector: '#email', type: HTMLInputElement },  // Typed
+    status: '#status'                                       // Generic HTMLElement | null
+  }
+)
+```
+
+The `type` property in `ElementDescriptor` is optional and TypeScript-only (zero runtime cost).
+
+### 7. Slot assigned-element handling
 ```ts
 .wRender(function ({ root }) {
   root.innerHTML = '<slot></slot>'
@@ -168,7 +224,7 @@ The handler fires immediately when elements are dynamically assigned to slots af
 - `wCSS(cssText: string, mode?: 'adopted' | 'inline')` — inject CSS
 - `wAttr(name: string, defaultValue?: string)` — unobserved attribute
 - `wObservedAttr(name: string, onChange?: callback)` — observed attribute (auto-rerender unless onChange provided)
-- `wElement(name: string)` — declare a sub-element (accessed via `this.subElements[name]`)
+- `wElement(name: string, elementType?: ElementConstructor)` — declare a sub-element with optional type hint (accessed via `this.subElements[name]`). Pass an HTMLElement constructor (e.g., `HTMLInputElement`) as the second parameter for type-safe access to element-specific properties.
 - `wState(name: string, initial: value | factory)` — reactive state (accessed via `this.state[name]`, assignment triggers rerender)
 - `wRender(fn)` — render function
 - `wAfterUpdateFn(fn)` — runs after each render

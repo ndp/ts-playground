@@ -79,7 +79,10 @@ export class ComponentBwilder<
       StateRecord>;
   }
 
-  wElement<A extends string, T extends HTMLElement = HTMLElement>(elementName: A) {
+  wElement<A extends string, T extends HTMLElement = HTMLElement>(
+    elementName: A,
+    elementType?: new (...args: any[]) => T
+  ) {
     this.subElementNames.push(elementName);
     return this as unknown as ComponentBwilder<
       ObservedAttrs,
