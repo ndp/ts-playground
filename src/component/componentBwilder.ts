@@ -136,7 +136,7 @@ export class ComponentBwilder<
       private assignedTracker = new Tracker<HTMLElement>()
       private slotAddUnsub?: () => void
       private assignedAddUnsub?: () => void
-      private postMountComplete = false
+      private isConnected = false
       private postMountCleanup?: () => void
 
       constructor() {
@@ -185,13 +185,13 @@ export class ComponentBwilder<
           .then((cleanup) => {
             if (typeof cleanup === 'function')
               this.postMountCleanup = cleanup
-            this.postMountComplete = true
+            this.isConnected = true
             this.refreshAssignedElements(context)
           })
       }
 
       disconnectedCallback() {
-        this.postMountComplete = false
+        this.isConnected = false
         this.postMountCleanup?.()
         this.postMountCleanup = undefined
         if (builder.slotAddedHandler)
@@ -260,7 +260,7 @@ export class ComponentBwilder<
 
         const slots = Array.from(this.root.querySelectorAll('slot')) as HTMLSlotElement[]
         this.slotTracker.setAll(slots)
-        if (this.postMountComplete)
+        if (this.isConnected)
           this.refreshAssignedElements(context, slots)
       }
 

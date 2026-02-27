@@ -825,7 +825,7 @@ describe('ComponentBwilder render', () => {
     assert.deepEqual(events, ['mount', 'cleanup'])
   })
 
-  test('postMountComplete resets on disconnect so reconnect reruns lifecycle', async () => {
+  test('isConnected resets on disconnect so reconnect reruns lifecycle', async () => {
     let mountCount = 0
 
     const MyComponentClass = new ComponentBwilder()
