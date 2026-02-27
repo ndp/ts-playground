@@ -132,8 +132,8 @@ export class ComponentBwilder<
       readonly root: ShadowRoot | HTMLElement;
       subElements: SubElements = makeDefaultSubElements(builder.subElementNames) as SubElements
       state: StateRecord = {} as StateRecord
-      private slotTracker = builder.slotAddedHandler ? new Tracker<HTMLSlotElement>() : null
-      private assignedTracker = builder.slotAddedHandler ? new Tracker<HTMLElement>() : null
+      private slotTracker = new Tracker<HTMLSlotElement>()
+      private assignedTracker = new Tracker<HTMLElement>()
       private slotAddUnsub?: () => void
       private assignedAddUnsub?: () => void
       private postMountComplete = false
@@ -178,17 +178,13 @@ export class ComponentBwilder<
       }
 
       connectedCallback(): Promise<void> {
-        // console.log(`Component <${builder.tagName}> connected to DOM.`)
-
         const context = this as unknown as ComponentType
-        const afterPostMount = () => {
-          this.postMountComplete = true
-          this.refreshAssignedElements(context)
-        }
-
-        return Promise.resolve(this.render())
+        return this.render()
           .then(() => builder.postMountFn?.call(context, context))
-          .then(afterPostMount)
+          .then(() => {
+            this.postMountComplete = true
+            this.refreshAssignedElements(context)
+          })
       }
 
       disconnectedCallback() {
@@ -241,7 +237,7 @@ export class ComponentBwilder<
 
       private refreshSlotHandlers(context: ComponentType) {
         const handler = builder.slotAddedHandler
-        if (!this.slotTracker || !this.assignedTracker || !handler)
+        if (!handler)
           return
 
         if (!this.slotAddUnsub)
@@ -263,9 +259,6 @@ export class ComponentBwilder<
       }
 
       private refreshAssignedElements(context: ComponentType, slots?: HTMLSlotElement[]) {
-        if (!this.slotTracker || !this.assignedTracker)
-          return
-
         const slotList = slots ?? Array.from(this.root.querySelectorAll('slot')) as HTMLSlotElement[]
         const assigned = slotList.flatMap((slot) => {
           const els = slot.assignedElements({flatten: true})
@@ -275,16 +268,11 @@ export class ComponentBwilder<
       }
 
       private teardownSlotHandlers() {
-        if (!this.slotTracker)
-          return
-
         this.slotTracker.removeAll()
 
-        if (this.assignedTracker) {
-          this.assignedTracker.removeAll()
-          if (this.assignedAddUnsub) this.assignedAddUnsub()
-          this.assignedAddUnsub = undefined
-        }
+        this.assignedTracker.removeAll()
+        if (this.assignedAddUnsub) this.assignedAddUnsub()
+        this.assignedAddUnsub = undefined
 
         if (this.slotAddUnsub) this.slotAddUnsub()
         this.slotAddUnsub = undefined
