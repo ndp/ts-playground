@@ -295,7 +295,7 @@ describe('ComponentBwilder render', () => {
     assert.equal(contentDiv2!.innerHTML, 'Hello, Frank', 'Content div should have updated content')
   })
 
-  test('defaults to adopted CSS mode in open shadow DOM', () => {
+  test('defaults to adopted CSS mode in open shadow DOM', async () => {
     const css = `.test-class { color: red; }`;
     const MyComponentClass = new ComponentBwilder()
       .wTagName('styled-component' as TagName)
@@ -307,7 +307,7 @@ describe('ComponentBwilder render', () => {
       .bwild();
 
     const c = new MyComponentClass();
-    c.connectedCallback();
+    await c.connectedCallback();
 
     const shadowRoot = c.shadowRoot;
     assert.ok(shadowRoot, 'Shadow root should exist');
@@ -449,7 +449,7 @@ describe('ComponentBwilder render', () => {
     assert.deepEqual(events, ['render', 'postMount', 'render'])
   })
 
-  test('wPostRenderFn runs after every render', () => {
+  test('wPostRenderFn runs after every render', async () => {
     let renderCount = 0
     let postRenderCount = 0
 
@@ -468,20 +468,21 @@ describe('ComponentBwilder render', () => {
       .bwild()
 
     const c = new MyComponentClass()
-    c.connectedCallback()
+    await c.connectedCallback()
     assert.equal(renderCount, 1)
     assert.equal(postRenderCount, 1)
 
     c.setAttribute('data-v', 'next')
+    await Promise.resolve() // yield to microtasks: flush the render triggered by setAttribute
     assert.equal(renderCount, 2)
     assert.equal(postRenderCount, 2)
 
-    c.render()
+    await c.render()
     assert.equal(renderCount, 3)
     assert.equal(postRenderCount, 3)
   })
 
-  test('wPostRenderFn supports destructured first-argument context', () => {
+  test('wPostRenderFn supports destructured first-argument context', async () => {
     let lastText = ''
 
     const MyComponentClass = new ComponentBwilder()
@@ -497,10 +498,11 @@ describe('ComponentBwilder render', () => {
       .bwild()
 
     const c = new MyComponentClass()
-    c.connectedCallback()
+    await c.connectedCallback()
     assert.equal(lastText, 'init')
 
     c.setAttribute('data-v', 'next')
+    await Promise.resolve() // yield to microtasks: flush the render triggered by setAttribute
     assert.equal(lastText, 'next')
   })
 
@@ -745,7 +747,7 @@ describe('ComponentBwilder render', () => {
     const c = new MyComponentClass()
     const promise = c.connectedCallback()
 
-    assert.deepEqual(events, ['render', 'postMount-start'])
+    assert.deepEqual(events, ['render'])
     assert.ok(promise instanceof Promise, 'connectedCallback should return a Promise')
 
     await promise
@@ -779,9 +781,10 @@ describe('ComponentBwilder render', () => {
       .bwild()
 
     const c2 = new PostRenderThrowsClass()
-    assert.throws(() => {
-      c2.render()
-    }, /postRender sync failed/)
+    await assert.rejects(
+      () => c2.render(),
+      /postRender sync failed/
+    )
 
     const PostMountThrowsClass = new ComponentBwilder()
       .wTagName(nextTag('sync-post-mount-throw'))
@@ -795,12 +798,13 @@ describe('ComponentBwilder render', () => {
       .bwild()
 
     const c3 = new PostMountThrowsClass()
-    assert.throws(() => {
-      c3.connectedCallback()
-    }, /postMount sync failed/)
+    await assert.rejects(
+      () => c3.connectedCallback(),
+      /postMount sync failed/
+    )
   })
 
-  test('injects CSS style only once across re-renders', () => {
+  test('injects CSS style only once across re-renders', async () => {
     const css = '.single-style { color: green; }'
 
     const MyComponentClass = new ComponentBwilder()
@@ -814,15 +818,16 @@ describe('ComponentBwilder render', () => {
       .bwild()
 
     const c = new MyComponentClass()
-    c.connectedCallback()
+    await c.connectedCallback()
     c.setAttribute('data-v', 'a')
-    c.render()
+    await Promise.resolve() // yield to microtasks: flush the render triggered by setAttribute
+    await c.render()
 
     assert.equal(c.querySelectorAll('style').length, 1)
     assert.equal(c.querySelector('style')!.textContent, css)
   })
 
-  test('injects CSS style only once in open shadow root across re-renders', () => {
+  test('injects CSS style only once in open shadow root across re-renders', async () => {
     const css = '.single-style-shadow { color: purple; }'
 
     const MyComponentClass = new ComponentBwilder()
@@ -836,7 +841,7 @@ describe('ComponentBwilder render', () => {
       .bwild()
 
     const c = new MyComponentClass()
-    c.connectedCallback()
+    await c.connectedCallback()
     c.setAttribute('data-v', 'a')
     c.render()
 
@@ -845,7 +850,7 @@ describe('ComponentBwilder render', () => {
     assert.equal(adoptedSheets.length, 1)
   })
 
-  test('falls back to inline CSS and logs warning when adopted mode is unavailable', () => {
+  test('falls back to inline CSS and logs warning when adopted mode is unavailable', async () => {
     const css = '.fallback-style { color: teal; }'
     const warnings: string[] = []
     const originalWarn = console.warn
@@ -865,9 +870,10 @@ describe('ComponentBwilder render', () => {
         .bwild()
 
       const c = new MyComponentClass()
-      c.connectedCallback()
+      await c.connectedCallback()
       c.setAttribute('data-v', 'next')
-      c.render()
+      await Promise.resolve() // yield to microtasks: flush the render triggered by setAttribute
+      await c.render()
 
       assert.equal(c.querySelectorAll('style').length, 1)
       assert.equal(c.querySelector('style')!.textContent, css)
@@ -878,7 +884,7 @@ describe('ComponentBwilder render', () => {
     }
   })
 
-  test('supports explicit inline CSS mode in open shadow root', () => {
+  test('supports explicit inline CSS mode in open shadow root', async () => {
     const css = '.inline-style { color: navy; }'
 
     const MyComponentClass = new ComponentBwilder()
@@ -891,13 +897,13 @@ describe('ComponentBwilder render', () => {
       .bwild()
 
     const c = new MyComponentClass()
-    c.connectedCallback()
+    await c.connectedCallback()
 
     assert.equal(c.shadowRoot!.querySelectorAll('style').length, 1)
     assert.equal(c.shadowRoot!.querySelector('style')!.textContent, css)
   })
 
-  test('adopted mode reuses stylesheet instance for same CSS across components', () => {
+  test('adopted mode reuses stylesheet instance for same CSS across components', async () => {
     const css = '.shared-adopted { color: magenta; }'
 
     const ComponentA = new ComponentBwilder()
@@ -920,8 +926,8 @@ describe('ComponentBwilder render', () => {
 
     const a = new ComponentA()
     const b = new ComponentB()
-    a.connectedCallback()
-    b.connectedCallback()
+    await a.connectedCallback()
+    await b.connectedCallback()
 
     const aSheets = (a.shadowRoot! as unknown as { adoptedStyleSheets: CSSStyleSheet[] }).adoptedStyleSheets
     const bSheets = (b.shadowRoot! as unknown as { adoptedStyleSheets: CSSStyleSheet[] }).adoptedStyleSheets
@@ -1054,7 +1060,7 @@ describe('ComponentBwilder render', () => {
     assert.equal(c.querySelector('#content')!.textContent, 'C')
   })
 
-  test('subElements are resolved from selector map returned by render', () => {
+  test('subElements are resolved from selector map returned by render', async () => {
     let postRenderTitle = ''
 
     const MyComponentClass = new ComponentBwilder()
@@ -1075,14 +1081,14 @@ describe('ComponentBwilder render', () => {
       .bwild()
 
     const c = new MyComponentClass()
-    c.connectedCallback()
+    await c.connectedCallback()
 
     assert.equal(postRenderTitle, 'My Title')
     assert.equal(c.subElements.title?.textContent, 'My Title')
     assert.equal(c.subElements.content?.textContent, 'My Content')
   })
 
-  test('subElements accept direct element map returned by render', () => {
+  test('subElements accept direct element map returned by render', async () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('subelements-element-map'))
       .wElement('title')
@@ -1096,7 +1102,7 @@ describe('ComponentBwilder render', () => {
       .bwild()
 
     const c = new MyComponentClass()
-    c.connectedCallback()
+    await c.connectedCallback()
 
     assert.equal(c.subElements.title?.textContent, 'Direct Element')
   })
@@ -1141,7 +1147,7 @@ describe('ComponentBwilder render', () => {
     // but cannot be directly instantiated in a DOM environment
   })
 
-  test('slotAddedHandler gets called for assigned elements', () => {
+  test('slotAddedHandler gets called for assigned elements', async () => {
     const events: string[] = []
     const assignedEl = document.createElement('div')
     const MyComponentClass = new ComponentBwilder()
@@ -1157,7 +1163,7 @@ describe('ComponentBwilder render', () => {
       .bwild()
 
     const c = new MyComponentClass()
-    c.connectedCallback()
+    await c.connectedCallback()
 
     const slot = c.shadowRoot!.querySelector('slot') as HTMLSlotElement
     ;(slot as any).assignedElements = () => [assignedEl]
@@ -1191,7 +1197,7 @@ describe('ComponentBwilder render', () => {
     assert.deepEqual(events, [])
   })
 
-  test('slotAddedHandler tracks assigned elements across slot changes', () => {
+  test('slotAddedHandler tracks assigned elements across slot changes', async () => {
     const events: string[] = []
     let assigned: HTMLElement[] = []
 
@@ -1208,7 +1214,7 @@ describe('ComponentBwilder render', () => {
       .bwild()
 
     const c = new MyComponentClass()
-    c.connectedCallback()
+    await c.connectedCallback()
     const slot = c.shadowRoot!.querySelector('slot') as HTMLSlotElement
 
     const elA = document.createElement('div');
@@ -1342,7 +1348,7 @@ describe('ComponentBwilder render', () => {
     assert.equal(c.subElements.myEl, null)
   })
 
-  test('wSlotAddedHandler is called for elements assigned across multiple slots', () => {
+  test('wSlotAddedHandler is called for elements assigned across multiple slots', async () => {
     const events: string[] = []
 
     const elA = document.createElement('div')
@@ -1363,7 +1369,7 @@ describe('ComponentBwilder render', () => {
       .bwild()
 
     const c = new MyComponentClass()
-    c.connectedCallback()
+    await c.connectedCallback()
 
     const [slot1, slot2] = Array.from(c.shadowRoot!.querySelectorAll('slot')) as HTMLSlotElement[]
     ;(slot1 as any).assignedElements = () => [elA]
@@ -1452,7 +1458,7 @@ describe('ComponentBwilder render', () => {
     assert.deepEqual(events, [])
   })
 
-  test('slotAddedHandler fires for elements present at mount when no postMountFn', () => {
+  test('slotAddedHandler fires for elements present at mount when no postMountFn', async () => {
     const events: string[] = []
 
     const MyComponentClass = new ComponentBwilder()
@@ -1475,7 +1481,7 @@ describe('ComponentBwilder render', () => {
       .bwild()
 
     const c = new MyComponentClass()
-    c.connectedCallback()
+    await c.connectedCallback()
 
     assert.deepEqual(events, ['handler:pre'])
   })
@@ -1655,7 +1661,7 @@ describe('wState', () => {
     assert.equal(c.querySelector('div')!.textContent, 'Bob:25')
   })
 
-  test('state is accessible in wPostMountFn and wPostRenderFn via context', () => {
+  test('state is accessible in wPostMountFn and wPostRenderFn via context', async () => {
     let postMountVal: unknown
     let postRenderVal: unknown
 
@@ -1675,7 +1681,7 @@ describe('wState', () => {
       .bwild()
 
     const c = new MyComponentClass()
-    c.connectedCallback()
+    await c.connectedCallback()
 
     assert.equal(postMountVal, 'hello')
     assert.equal(postRenderVal, 'hello')

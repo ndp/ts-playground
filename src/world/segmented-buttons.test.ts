@@ -13,6 +13,9 @@ describe('segmented-buttons component', () => {
         return el;
     }
 
+    const waitForConnectedCallback = () => new Promise<void>(r => setTimeout(r, 0))
+    const waitForMountComplete = waitForConnectedCallback
+
     beforeEach(() => {
         document.body.innerHTML = '';
         host = document.createElement('segmented-buttons');
@@ -65,10 +68,11 @@ describe('segmented-buttons component', () => {
             assert.strictEqual(first.classList.contains('selected'), false);
         });
 
-        it('allows deselecting the currently selected option', () => {
+        it('allows deselecting the currently selected option', async () => {
             host.appendChild(makeOption('a', 'A'));
             host.appendChild(makeOption('b', 'B'));
             document.body.appendChild(host);
+            await waitForMountComplete();
 
             const first = host.querySelector('[data-value="a"]') as HTMLElement;
             assert.strictEqual(first.classList.contains('selected'), false);
@@ -93,32 +97,35 @@ describe('segmented-buttons component', () => {
             host.setAttribute('required', '');
         });
 
-        it('auto-selects first option when required and no initial selection', () => {
+        it('auto-selects first option when required and no initial selection', async () => {
             host.appendChild(makeOption('x', 'X'));
             host.appendChild(makeOption('y', 'Y'));
             document.body.appendChild(host);
+            await waitForMountComplete();
 
             assert.strictEqual(host.getAttribute('data-value'), 'x');
             const first = host.querySelector('[data-value="x"]') as HTMLElement;
             assert.strictEqual(first.classList.contains('selected'), true);
         });
 
-        it('respects an explicit initial selection when required', () => {
+        it('respects an explicit initial selection when required', async () => {
             const a = makeOption('a', 'A');
             const b = makeOption('b', 'B');
             b.setAttribute('selected', '');
             host.appendChild(a);
             host.appendChild(b);
             document.body.appendChild(host);
+            await waitForMountComplete();
 
             assert.strictEqual(host.getAttribute('data-value'), 'b');
             assert.strictEqual((host.querySelector('[data-value="b"]') as HTMLElement).classList.contains('selected'), true);
         });
 
-        it('prevents deselecting the currently selected option when required', () => {
+        it('prevents deselecting the currently selected option when required', async () => {
             host.appendChild(makeOption('a', 'A'));
             host.appendChild(makeOption('b', 'B'));
             document.body.appendChild(host);
+            await waitForMountComplete();
 
             const first = host.querySelector('[data-value="a"]') as HTMLElement;
             // already selected via auto-select; clicking again should not deselect
@@ -141,10 +148,11 @@ describe('segmented-buttons component', () => {
             assert.strictEqual(changes, 0);
         });
 
-        it('still allows switching selection between options when required', () => {
+        it('still allows switching selection between options when required', async () => {
             host.appendChild(makeOption('a', 'A'));
             host.appendChild(makeOption('b', 'B'));
             document.body.appendChild(host);
+            await waitForMountComplete();
 
             let changes = 0;
             host.addEventListener('change', () => changes++);
@@ -157,9 +165,10 @@ describe('segmented-buttons component', () => {
             assert.strictEqual(changes, 1);
         });
 
-        it('auto-selects first option when a new option is added and nothing is selected', () => {
+        it('auto-selects first option when a new option is added and nothing is selected', async () => {
             // Start required with no options → no data-value
             document.body.appendChild(host);
+            await waitForConnectedCallback();
             assert.strictEqual(host.hasAttribute('data-value'), false);
 
             host.appendChild(makeOption('z', 'Z'));
@@ -167,7 +176,7 @@ describe('segmented-buttons component', () => {
             assert.strictEqual(host.getAttribute('data-value'), 'z');
         });
 
-        it('respects [selected] attribute over auto-select: does not override explicit pre-connection selection', () => {
+        it('respects [selected] attribute over auto-select: does not override explicit pre-connection selection', async () => {
             // Options are added before connection; 'b' is marked [selected].
             // required enforcement must NOT fire during the slot-added phase
             // (before postMount's [selected] scan runs) and override the explicit selection.
@@ -177,6 +186,7 @@ describe('segmented-buttons component', () => {
             host.appendChild(a);
             host.appendChild(b);
             document.body.appendChild(host); // triggers connectedCallback → postMount
+            await waitForMountComplete();
 
             // 'b' should win; auto-select must not have grabbed 'a' first
             assert.strictEqual(host.getAttribute('data-value'), 'b',
@@ -189,7 +199,7 @@ describe('segmented-buttons component', () => {
                 false, 'first option must NOT be selected');
         });
 
-        it('sets data-value exactly once during initial connection (no intermediate auto-select churn)', () => {
+        it('sets data-value exactly once during initial connection (no intermediate auto-select churn)', async () => {
             // The slot handler fires for each option during connectedCallback, BEFORE postMountFn.
             // Without the mountedHosts guard, enforceRequired would fire in the slot handler
             // and set data-value='a', only for postMountFn to override it with 'b'.
@@ -210,6 +220,7 @@ describe('segmented-buttons component', () => {
             };
 
             document.body.appendChild(host);
+            await waitForMountComplete();
             host.setAttribute = origSetAttr; // restore
 
             // data-value should be set exactly once, directly to 'b'
@@ -227,11 +238,12 @@ describe('segmented-buttons component', () => {
             host.setAttribute('multi', '');
         });
 
-        it('allows multiple selections and independent toggling', () => {
+        it('allows multiple selections and independent toggling', async () => {
             host.appendChild(makeOption('a', 'A'));
             host.appendChild(makeOption('b', 'B'));
             host.appendChild(makeOption('c', 'C'));
             document.body.appendChild(host);
+            await waitForMountComplete();
 
             const events: Array<string[]> = [];
             host.addEventListener('change', (ev: Event) => events.push((ev as CustomEvent).detail.value));
@@ -261,11 +273,12 @@ describe('segmented-buttons component', () => {
             assert.strictEqual(c.classList.contains('selected'), true);
         });
 
-        it('enforces at least one selection when multi and required', () => {
+        it('enforces at least one selection when multi and required', async () => {
             host.setAttribute('required', '');
             host.appendChild(makeOption('a', 'A'));
             host.appendChild(makeOption('b', 'B'));
             document.body.appendChild(host);
+            await waitForMountComplete();
 
             const a = host.querySelector('[data-value="a"]') as HTMLElement;
             const b = host.querySelector('[data-value="b"]') as HTMLElement;
@@ -291,7 +304,7 @@ describe('segmented-buttons component', () => {
             assert.strictEqual(b.classList.contains('selected'), true);
         });
 
-        it('adopts multiple initially selected options in multi mode', () => {
+        it('adopts multiple initially selected options in multi mode', async () => {
             const a = makeOption('a', 'A');
             const b = makeOption('b', 'B');
             a.setAttribute('selected', '');
@@ -299,17 +312,19 @@ describe('segmented-buttons component', () => {
             host.appendChild(a);
             host.appendChild(b);
             document.body.appendChild(host);
+            await waitForMountComplete();
 
             assert.strictEqual(host.getAttribute('data-value'), 'a,b');
             assert.strictEqual(a.classList.contains('selected'), true);
             assert.strictEqual(b.classList.contains('selected'), true);
         });
 
-        it('orders multi selections by click sequence (existing stay first, new append)', () => {
+        it('orders multi selections by click sequence (existing stay first, new append)', async () => {
             host.appendChild(makeOption('c', 'C'));
             host.appendChild(makeOption('a', 'A'));
             host.appendChild(makeOption('b', 'B'));
             document.body.appendChild(host);
+            await waitForMountComplete();
 
             const c = host.querySelector('[data-value="c"]') as HTMLElement;
             const a = host.querySelector('[data-value="a"]') as HTMLElement;

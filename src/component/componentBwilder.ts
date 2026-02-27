@@ -177,10 +177,8 @@ export class ComponentBwilder<
           this.render()
       }
 
-      connectedCallback() {
+      connectedCallback(): Promise<void> {
         // console.log(`Component <${builder.tagName}> connected to DOM.`)
-
-        const rendered = this.render()
 
         const context = this as unknown as ComponentType
         const afterPostMount = () => {
@@ -188,15 +186,9 @@ export class ComponentBwilder<
           this.refreshAssignedElements(context)
         }
 
-        const runPostMount = () => {
-          if (!builder.postMountFn) return afterPostMount()
-          const result = builder.postMountFn.call(context, context)
-          return isPromiseLike(result) ? result.then(afterPostMount) : afterPostMount()
-        }
-
-        return isPromiseLike(rendered)
-          ? rendered.then(runPostMount)
-          : runPostMount()
+        return Promise.resolve(this.render())
+          .then(() => builder.postMountFn?.call(context, context))
+          .then(afterPostMount)
       }
 
       disconnectedCallback() {
@@ -208,50 +200,43 @@ export class ComponentBwilder<
         return this.render()
       }
 
-      render() {
+      render(): Promise<void> {
 
         const context = this as unknown as RenderingContext
         const renderResult = renderFn.call(context, context)
 
-        const afterRender = (returnedSubElements?: unknown) => {
-          this.subElements = normalizeSubElements(this.root, returnedSubElements, builder.subElementNames) as SubElements
+        return Promise.resolve(renderResult)
+          .then((returnedSubElements) => {
+            this.subElements = normalizeSubElements(this.root, returnedSubElements, builder.subElementNames) as SubElements
 
-          if (builder.slotAddedHandler)
-            this.refreshSlotHandlers(context as unknown as ComponentType)
+            if (builder.slotAddedHandler)
+              this.refreshSlotHandlers(context as unknown as ComponentType)
 
-          if (builder.css) {
-            const actualMode = resolveCSSMode(this.root, builder.css.requestedMode)
+            if (builder.css) {
+              const actualMode = resolveCSSMode(this.root, builder.css.requestedMode)
 
-            if (actualMode !== builder.css.requestedMode && !elementClass.warnedCSSFallback) {
-              console.warn(
-                `[ComponentBwilder] CSS mode "${builder.css.requestedMode}" is not supported for this root. Falling back to "${actualMode}".`
-              )
-              elementClass.warnedCSSFallback = true
+              if (actualMode !== builder.css.requestedMode && !elementClass.warnedCSSFallback) {
+                console.warn(
+                  `[ComponentBwilder] CSS mode "${builder.css.requestedMode}" is not supported for this root. Falling back to "${actualMode}".`
+                )
+                elementClass.warnedCSSFallback = true
+              }
+
+              if (actualMode === 'adopted') {
+                const sheet = ensureStyleSheet(builder.css.text)
+                const rootWithSheets = this.root as AdoptedStylesHost
+                if (!rootWithSheets.adoptedStyleSheets.includes(sheet))
+                  rootWithSheets.adoptedStyleSheets = [...rootWithSheets.adoptedStyleSheets, sheet]
+              } else if (this.root.querySelector('style') === null) {
+                const styleEl = document.createElement('style');
+                styleEl.textContent = builder.css.text;
+                this.root.prepend(styleEl);
+              }
             }
 
-            if (actualMode === 'adopted') {
-              const sheet = ensureStyleSheet(builder.css.text)
-              const rootWithSheets = this.root as AdoptedStylesHost
-              if (!rootWithSheets.adoptedStyleSheets.includes(sheet))
-                rootWithSheets.adoptedStyleSheets = [...rootWithSheets.adoptedStyleSheets, sheet]
-            } else if (this.root.querySelector('style') === null) {
-              const styleEl = document.createElement('style');
-              styleEl.textContent = builder.css.text;
-              this.root.prepend(styleEl);
-            }
-          }
-
-          if (builder.postRenderFn)
-            return builder.postRenderFn.call(context as any, context as any)
-        }
-
-        if (isPromiseLike(renderResult)) {
-          return Promise.resolve(renderResult).then((returnedSubElements) => afterRender(returnedSubElements))
-        }
-
-        const postRenderResult = afterRender(renderResult)
-        if (isPromiseLike(postRenderResult))
-          return postRenderResult
+            if (builder.postRenderFn)
+              return builder.postRenderFn.call(context as any, context as any)
+          })
       }
 
       private refreshSlotHandlers(context: ComponentType) {
@@ -337,9 +322,9 @@ type BuiltComponentInstance<
   TComponent,
   TSubElements extends SubElementsMap
 > = TComponent & HTMLElement & {
-  connectedCallback(): Promise<void> | void
-  render(): Promise<void> | void
-  rerender(): Promise<void> | void
+  connectedCallback(): Promise<void>
+  render(): Promise<void>
+  rerender(): Promise<void>
   disconnectedCallback(): void
   root: ShadowRoot | HTMLElement
   subElements: TSubElements
@@ -382,12 +367,6 @@ function resolveCSSMode(root: ShadowRoot | HTMLElement, requestedMode: CSSMode):
     return 'inline'
 
   return supportsAdoptedStyleSheets(root) ? 'adopted' : 'inline'
-}
-
-function isPromiseLike<T = unknown>(value: unknown): value is PromiseLike<T> {
-  if (!value || (typeof value !== 'object' && typeof value !== 'function'))
-    return false
-  return typeof (value as PromiseLike<T>).then === 'function'
 }
 
 function makeDefaultSubElements(names: string[]) {
