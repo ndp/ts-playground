@@ -804,6 +804,91 @@ describe('ComponentBwilder render', () => {
     )
   })
 
+  test('postMountFn cleanup is called on disconnect', async () => {
+    const events: string[] = []
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('postmount-cleanup'))
+      .wShadowDOM('none')
+      .wRender(stubRender)
+      .wPostMountFn(function () {
+        events.push('mount')
+        return () => events.push('cleanup')
+      })
+      .bwild()
+
+    const c = new MyComponentClass()
+    await c.connectedCallback()
+    assert.deepEqual(events, ['mount'])
+
+    c.disconnectedCallback()
+    assert.deepEqual(events, ['mount', 'cleanup'])
+  })
+
+  test('postMountComplete resets on disconnect so reconnect reruns lifecycle', async () => {
+    let mountCount = 0
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('postmount-reset'))
+      .wShadowDOM('none')
+      .wRender(stubRender)
+      .wPostMountFn(function () {
+        mountCount++
+      })
+      .bwild()
+
+    const c = new MyComponentClass()
+    await c.connectedCallback()
+    assert.equal(mountCount, 1)
+
+    c.disconnectedCallback()
+    await c.connectedCallback()
+    assert.equal(mountCount, 2)
+  })
+
+  test('postMountFn cleanup runs before postMountFn re-runs on reconnect', async () => {
+    const events: string[] = []
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('postmount-cleanup-reconnect'))
+      .wShadowDOM('none')
+      .wRender(stubRender)
+      .wPostMountFn(function () {
+        events.push('mount')
+        return () => events.push('cleanup')
+      })
+      .bwild()
+
+    const c = new MyComponentClass()
+    await c.connectedCallback()
+    c.disconnectedCallback()
+    await c.connectedCallback()
+    assert.deepEqual(events, ['mount', 'cleanup', 'mount'])
+  })
+
+  test('async postMountFn returning a cleanup function calls cleanup on disconnect', async () => {
+    const events: string[] = []
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('async-postmount-cleanup'))
+      .wShadowDOM('none')
+      .wRender(stubRender)
+      .wPostMountFn(async function () {
+        await Promise.resolve()
+        events.push('mount')
+        return () => events.push('cleanup')
+      })
+      .bwild()
+
+    const c = new MyComponentClass()
+    await c.connectedCallback()
+    assert.deepEqual(events, ['mount'])
+
+    c.disconnectedCallback()
+    assert.deepEqual(events, ['mount', 'cleanup'])
+  })
+
+
   test('injects CSS style only once across re-renders', async () => {
     const css = '.single-style { color: green; }'
 

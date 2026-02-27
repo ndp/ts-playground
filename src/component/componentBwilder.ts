@@ -32,7 +32,7 @@ export class ComponentBwilder<
   private subElementNames: string[] = []
   private stateDefinitions: Record<string, unknown | (() => unknown)> = {}
   private renderFn: ComponentBwilderRenderer<RenderingContext, SubElements> | undefined
-  private postMountFn?: (this: ComponentType, context: ComponentType) => void | Promise<void>
+  private postMountFn?: (this: ComponentType, context: ComponentType) => void | (() => void) | Promise<void> | Promise<() => void>
   private postRenderFn?: (this: ComponentType, context: ComponentType) => void | Promise<void>
   private slotAddedHandler: (<TEl extends HTMLElement>(this: ComponentType, context: ComponentType, slottedEl: TEl) => () => void) | undefined
 
@@ -97,7 +97,7 @@ export class ComponentBwilder<
     return this as this & { wRender: never };
   }
 
-  wPostMountFn(postMountFn: (this: ComponentType, context: ComponentType) => void | Promise<void>) {
+  wPostMountFn(postMountFn: (this: ComponentType, context: ComponentType) => void | (() => void) | Promise<void> | Promise<() => void>) {
     this.postMountFn = postMountFn as any
     return this as this & { wPostMountFn: never }
   }
@@ -137,6 +137,7 @@ export class ComponentBwilder<
       private slotAddUnsub?: () => void
       private assignedAddUnsub?: () => void
       private postMountComplete = false
+      private postMountCleanup?: () => void
 
       constructor() {
         super()
@@ -181,13 +182,18 @@ export class ComponentBwilder<
         const context = this as unknown as ComponentType
         return this.render()
           .then(() => builder.postMountFn?.call(context, context))
-          .then(() => {
+          .then((cleanup) => {
+            if (typeof cleanup === 'function')
+              this.postMountCleanup = cleanup
             this.postMountComplete = true
             this.refreshAssignedElements(context)
           })
       }
 
       disconnectedCallback() {
+        this.postMountComplete = false
+        this.postMountCleanup?.()
+        this.postMountCleanup = undefined
         if (builder.slotAddedHandler)
           this.teardownSlotHandlers()
       }
