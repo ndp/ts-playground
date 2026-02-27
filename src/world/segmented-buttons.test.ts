@@ -167,6 +167,56 @@ describe('segmented-buttons component', () => {
             assert.strictEqual(host.getAttribute('data-value'), 'z');
         });
 
+        it('respects [selected] attribute over auto-select: does not override explicit pre-connection selection', () => {
+            // Options are added before connection; 'b' is marked [selected].
+            // required enforcement must NOT fire during the slot-added phase
+            // (before postMount's [selected] scan runs) and override the explicit selection.
+            const a = makeOption('a', 'A');
+            const b = makeOption('b', 'B');
+            b.setAttribute('selected', '');
+            host.appendChild(a);
+            host.appendChild(b);
+            document.body.appendChild(host); // triggers connectedCallback → postMount
+
+            // 'b' should win; auto-select must not have grabbed 'a' first
+            assert.strictEqual(host.getAttribute('data-value'), 'b',
+                'explicit [selected] should win over required auto-select of first option');
+            assert.strictEqual(
+                (host.querySelector('[data-value="b"]') as HTMLElement).classList.contains('selected'),
+                true);
+            assert.strictEqual(
+                (host.querySelector('[data-value="a"]') as HTMLElement).classList.contains('selected'),
+                false, 'first option must NOT be selected');
+        });
+
+        it('sets data-value exactly once during initial connection (no intermediate auto-select churn)', () => {
+            // The slot handler fires for each option during connectedCallback, BEFORE postMountFn.
+            // Without the mountedHosts guard, enforceRequired would fire in the slot handler
+            // and set data-value='a', only for postMountFn to override it with 'b'.
+            // The guard prevents this intermediate mutation.
+            const mutations: string[] = [];
+
+            const a = makeOption('a', 'A');
+            const b = makeOption('b', 'B');
+            b.setAttribute('selected', '');
+            host.appendChild(a);
+            host.appendChild(b);
+
+            // Spy on setAttribute before connecting
+            const origSetAttr = host.setAttribute.bind(host);
+            host.setAttribute = (name: string, value: string) => {
+                if (name === 'data-value') mutations.push(value);
+                origSetAttr(name, value);
+            };
+
+            document.body.appendChild(host);
+            host.setAttribute = origSetAttr; // restore
+
+            // data-value should be set exactly once, directly to 'b'
+            assert.deepStrictEqual(mutations, ['b'],
+                'data-value should be set only once (to "b"), with no intermediate "a" mutation');
+        });
+
     });
 
     describe('multi attribute', () => {
