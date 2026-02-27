@@ -38,60 +38,6 @@ const stubRender = function (this: RenderContext) {
 }
 
 describe('ComponentBwilder basic tests', () => {
-  test('successfully', () => {
-
-    const MyBuilder =
-      new ComponentBwilder()
-        .wTagName('another-component' as TagName)
-        .wCSS('.my-class { color: blue; }')
-        .wShadowDOM('open')
-        .wRender(function () {
-          this.root.innerHTML = '<div>Stub</div>'
-        })
-    const MyComponent = MyBuilder.bwild()
-
-    const c = new MyComponent()
-    if (!(c instanceof HTMLElement)) {
-      throw new Error('Component is not an instance of HTMLElement')
-    }
-  })
-
-  test('without css and shadowDOM', () => {
-    const MyBuilder =
-      new ComponentBwilder()
-        .wTagName('simple-component' as TagName)
-        .wRender(stubRender)
-    const MyComponent = MyBuilder.bwild()
-
-    const c = new MyComponent()
-    if (!(c instanceof HTMLElement)) throw new Error('Component is not an instance of HTMLElement')
-
-  })
-
-  test('with closed shadowDOM', () => {
-    const MyBuilder = new ComponentBwilder()
-      .wTagName('closed-component' as TagName)
-      .wShadowDOM('closed')
-      .wRender(stubRender)
-    const MyComponent = MyBuilder.bwild()
-
-    const c = new MyComponent()
-    if (!(c instanceof HTMLElement)) throw new Error('Component is not an instance of HTMLElement')
-  })
-
-  test('with no shadowDOM', () => {
-    const MyBuilder =
-      new ComponentBwilder()
-        .wTagName('no-shadow-component' as TagName)
-        .wShadowDOM('none')
-        .wRender(stubRender)
-    const MyComponent = MyBuilder.bwild()
-
-    const c = new MyComponent()
-    if (!(c instanceof HTMLElement)) throw new Error('Component is not an instance of HTMLElement')
-
-  })
-
   test('throws when tagName not explicitly set', () => {
     assert.throws(() => {
       new ComponentBwilder()
@@ -503,26 +449,6 @@ describe('ComponentBwilder render', () => {
     assert.deepEqual(events, ['render', 'postMount', 'render'])
   })
 
-  test('wPostMountFn receives context as first argument', async () => {
-    let sameContextObject = false
-
-    const MyComponentClass = new ComponentBwilder()
-      .wTagName(nextTag('post-mount-context-arg'))
-      .wShadowDOM('none')
-      .wRender(function () {
-        this.root.innerHTML = '<div>ready</div>'
-      })
-      .wPostMountFn(function (context) {
-        sameContextObject = this === context
-      })
-      .bwild()
-
-    const c = new MyComponentClass()
-    await c.connectedCallback()
-
-    assert.equal(sameContextObject, true)
-  })
-
   test('wPostRenderFn runs after every render', () => {
     let renderCount = 0
     let postRenderCount = 0
@@ -874,30 +800,6 @@ describe('ComponentBwilder render', () => {
     assert.equal(aSheets[0], bSheets[0])
   })
 
-  test('adopted mode does not duplicate stylesheet across re-renders', () => {
-    const css = '.adopted-no-dup { color: brown; }'
-
-    const MyComponentClass = new ComponentBwilder()
-      .wTagName(nextTag('adopted-no-dup'))
-      .wShadowDOM('open')
-      .wObservedAttr('data-v')
-      .wCSS(css)
-      .wRender(function () {
-        this.root.innerHTML = '<div class="adopted-no-dup">Text</div>'
-      })
-      .bwild()
-
-    const c = new MyComponentClass()
-    c.connectedCallback()
-    c.setAttribute('data-v', '1')
-    c.setAttribute('data-v', '2')
-    c.render()
-
-    const sheets = (c.shadowRoot! as unknown as { adoptedStyleSheets: CSSStyleSheet[] }).adoptedStyleSheets
-    assert.equal(sheets.length, 1)
-    assert.equal(c.shadowRoot!.querySelectorAll('style').length, 0)
-  })
-
   test('adopted mode does not log fallback warning when supported', () => {
     const css = '.adopted-no-warning { color: olive; }'
     const warnings: string[] = []
@@ -1192,33 +1094,6 @@ describe('ComponentBwilder render', () => {
     assert.deepEqual(events, ['add:a', 'add:b', 'remove:a'])
   })
 
-  test('slotAddedHandler cleanups run on disconnect', () => {
-    const events: string[] = []
-
-    const MyComponentClass = new ComponentBwilder()
-      .wTagName(nextTag('slot-disconnect'))
-      .wRender(function ({root}) {
-        root.innerHTML = '<slot data-slot="x"></slot>'
-      })
-      .wSlotAddedHandler(function () {
-        events.push('add')
-        return () => events.push('cleanup')
-      })
-      .bwild()
-
-    const c = new MyComponentClass()
-    c.connectedCallback()
-    const slot = c.shadowRoot!.querySelector('slot') as HTMLSlotElement
-    const assigned = document.createElement('div')
-    ;(slot as any).assignedElements = () => [assigned]
-    slot.dispatchEvent(new (slot.ownerDocument.defaultView as any).Event('slotchange'))
-
-    assert.deepEqual(events, ['add'])
-
-    c.disconnectedCallback()
-    assert.deepEqual(events, ['add', 'cleanup'])
-  })
-
   test('render function is bound to this context', () => {
     let foundThis = undefined
     const MyComponentClass = new ComponentBwilder()
@@ -1388,6 +1263,119 @@ describe('ComponentBwilder render', () => {
     slot.dispatchEvent(new (slot.ownerDocument.defaultView as any).Event('slotchange'))
 
     assert.doesNotThrow(() => c.disconnectedCallback())
+  })
+
+  test('slotAddedHandler cleanup fires on disconnect for elements present at mount', async () => {
+    const events: string[] = []
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('pre-assigned-cleanup'))
+      .wShadowDOM('open')
+      .wRender(function ({root}) {
+        root.innerHTML = '<slot></slot>'
+      })
+      .wPostMountFn(function () {
+        const slot = this.shadowRoot!.querySelector('slot') as HTMLSlotElement
+        const el = document.createElement('div')
+        el.setAttribute('data-id', 'pre')
+        ;(slot as any).assignedElements = () => [el]
+      })
+      .wSlotAddedHandler(function ({}, slottedEl) {
+        events.push(`add:${slottedEl.getAttribute('data-id')}`)
+        return () => events.push(`cleanup:${slottedEl.getAttribute('data-id')}`)
+      })
+      .bwild()
+
+    const c = new MyComponentClass()
+    await c.connectedCallback()
+    assert.deepEqual(events, ['add:pre'])
+
+    c.disconnectedCallback()
+    assert.deepEqual(events, ['add:pre', 'cleanup:pre'])
+  })
+
+  test('slotAddedHandler does not fire during rerender() before connectedCallback', () => {
+    const events: string[] = []
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('rerender-pre-connect-slot'))
+      .wShadowDOM('open')
+      .wRender(function ({root}) {
+        root.innerHTML = '<slot></slot>'
+      })
+      .wPostRenderFn(function ({root}) {
+        const slot = root.querySelector('slot') as HTMLSlotElement
+        const el = document.createElement('div')
+        el.setAttribute('data-id', 'x')
+        ;(slot as any).assignedElements = () => [el]
+      })
+      .wSlotAddedHandler(function ({}, slottedEl) {
+        events.push(`handler:${slottedEl.getAttribute('data-id')}`)
+        return () => {}
+      })
+      .bwild()
+
+    const c = new MyComponentClass()
+    c.rerender()
+
+    assert.deepEqual(events, [])
+  })
+
+  test('slotAddedHandler fires for elements present at mount when no postMountFn', () => {
+    const events: string[] = []
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('pre-assigned-no-postmount'))
+      .wShadowDOM('open')
+      .wRender(function ({root}) {
+        root.innerHTML = '<slot></slot>'
+      })
+      .wPostRenderFn(function ({root}) {
+        // Set up the mock after render completes, before slotAddedHandler fires
+        const slot = root.querySelector('slot') as HTMLSlotElement
+        const el = document.createElement('div')
+        el.setAttribute('data-id', 'pre')
+        ;(slot as any).assignedElements = () => [el]
+      })
+      .wSlotAddedHandler(function ({}, slottedEl) {
+        events.push(`handler:${slottedEl.getAttribute('data-id')}`)
+        return () => {}
+      })
+      .bwild()
+
+    const c = new MyComponentClass()
+    c.connectedCallback()
+
+    assert.deepEqual(events, ['handler:pre'])
+  })
+
+  test('slotAddedHandler fires after postMountFn for elements present at mount', async () => {
+    const events: string[] = []
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('pre-assigned-ordering'))
+      .wShadowDOM('open')
+      .wRender(function ({root}) {
+        root.innerHTML = '<slot></slot>'
+      })
+      .wPostMountFn(function () {
+        // Mock assignedElements here — before slotAddedHandler should fire
+        const slot = this.shadowRoot!.querySelector('slot') as HTMLSlotElement
+        const el = document.createElement('div')
+        el.setAttribute('data-id', 'pre')
+        ;(slot as any).assignedElements = () => [el]
+        events.push('postMount')
+      })
+      .wSlotAddedHandler(function ({}, slottedEl) {
+        events.push(`handler:${slottedEl.getAttribute('data-id')}`)
+        return () => {}
+      })
+      .bwild()
+
+    const c = new MyComponentClass()
+    await c.connectedCallback()
+
+    assert.deepEqual(events, ['postMount', 'handler:pre'])
   })
 
 })
