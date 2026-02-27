@@ -1,5 +1,5 @@
 import {
-  ComponentBwilder
+  ComponentBwilder, resetTest
 } from './componentBwilder.ts'
 import {assertValidTagName, type TagName} from './TagName.ts'
 import {describe, test} from 'node:test'
@@ -103,13 +103,13 @@ describe('ComponentBwilder observed attributes', () => {
   test('callback receives attr name and component as context', () => {
 
     let callbackThis: unknown = null
-    let callbackArgs: null | { name: unknown, oldValue: unknown, newValue: unknown } = null
+    let callbackArgs: any = null
 
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('observed-attrs-context'))
       .wObservedAttr('data-id', function (this: HTMLElement, args) {
         callbackThis = this
-        callbackArgs = args as { name: unknown, oldValue: unknown, newValue: unknown }
+        callbackArgs = args
       })
       .wRender(stubRender)
       .bwild()
@@ -118,9 +118,9 @@ describe('ComponentBwilder observed attributes', () => {
     c.setAttribute('data-id', '42')
 
     assert.equal(callbackThis, c)
-    assert.equal(callbackArgs!.name, 'data-id')
-    assert.equal(callbackArgs!.oldValue, null)
-    assert.equal(callbackArgs!.newValue, '42')
+    assert.equal(callbackArgs.name, 'data-id')
+    assert.equal(callbackArgs.oldValue, null)
+    assert.equal(callbackArgs.newValue, '42')
   })
 
   test('callback receives null when observed attribute is removed', () => {
@@ -936,6 +936,7 @@ describe('ComponentBwilder render', () => {
   })
 
   test('falls back to inline CSS and logs warning when adopted mode is unavailable', async () => {
+    resetTest()
     const css = '.fallback-style { color: teal; }'
     const warnings: string[] = []
     const originalWarn = console.warn

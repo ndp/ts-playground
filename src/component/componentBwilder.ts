@@ -10,6 +10,8 @@ type ComponentBwilderRenderer<TContext extends RenderContext, TSubElements exten
   = (this: TContext, context: TContext) => BwilderRendererReturn<TSubElements> | Promise<BwilderRendererReturn<TSubElements>>
 type CSSMode = 'adopted' | 'inline'
 
+let gWarnedCSSFallback = false
+
 export class ComponentBwilder<
   ObservedAttrs extends readonly string[] = [],
   UnobservedAttrs extends readonly string[] = [],
@@ -127,7 +129,6 @@ export class ComponentBwilder<
 
     const builder = this
     const elementClass = class extends HTMLElement {
-      private static warnedCSSFallback = false
 
       readonly root: ShadowRoot | HTMLElement;
       subElements: SubElements = makeDefaultSubElements(builder.subElementNames) as SubElements
@@ -136,7 +137,7 @@ export class ComponentBwilder<
       private assignedTracker = new Tracker<HTMLElement>()
       private slotAddUnsub?: () => void
       private assignedAddUnsub?: () => void
-      private isConnected = false
+      private _isConnected = false
       private postMountCleanup?: () => void
 
       constructor() {
@@ -185,13 +186,13 @@ export class ComponentBwilder<
           .then((cleanup) => {
             if (typeof cleanup === 'function')
               this.postMountCleanup = cleanup
-            this.isConnected = true
+            this._isConnected = true
             this.refreshAssignedElements(context)
           })
       }
 
       disconnectedCallback() {
-        this.isConnected = false
+        this._isConnected = false
         this.postMountCleanup?.()
         this.postMountCleanup = undefined
         if (builder.slotAddedHandler)
@@ -217,11 +218,11 @@ export class ComponentBwilder<
             if (builder.css) {
               const actualMode = resolveCSSMode(this.root, builder.css.requestedMode)
 
-              if (actualMode !== builder.css.requestedMode && !elementClass.warnedCSSFallback) {
+              if (actualMode !== builder.css.requestedMode && !gWarnedCSSFallback) {
                 console.warn(
                   `[ComponentBwilder] CSS mode "${builder.css.requestedMode}" is not supported for this root. Falling back to "${actualMode}".`
                 )
-                elementClass.warnedCSSFallback = true
+                gWarnedCSSFallback = true
               }
 
               if (actualMode === 'adopted') {
@@ -260,7 +261,7 @@ export class ComponentBwilder<
 
         const slots = Array.from(this.root.querySelectorAll('slot')) as HTMLSlotElement[]
         this.slotTracker.setAll(slots)
-        if (this.isConnected)
+        if (this._isConnected)
           this.refreshAssignedElements(context, slots)
       }
 
@@ -393,4 +394,9 @@ function normalizeSubElements(root: ShadowRoot | HTMLElement,
   }
 
   return normalized
+}
+
+
+export function resetTest() {
+  gWarnedCSSFallback = false
 }
