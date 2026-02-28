@@ -11,6 +11,7 @@ global.Event = dom.window.Event
 global.CSSStyleSheet = dom.window.CSSStyleSheet
 
 global.CustomEvent = dom.window.CustomEvent
+global.HTMLSlotElement = dom.window.HTMLSlotElement
 
 if (typeof global.CSSStyleSheet !== 'function') {
   class CSSStyleSheetShim {

@@ -3,14 +3,14 @@ import {ComponentBwilder, type TagName} from '@ndp-software/component-bwilder'
 const css = await maybeFetchText(new URL('../segmented-buttons.css', import.meta.url))
 
 type HTMLElementWithSubElements = HTMLElement  & {
-  subElements: { slotEl: HTMLSlotElement | null }
+  subElements: { slotEl: HTMLSlotElement }
 }
 
 const SegmentedButtons = new ComponentBwilder()
   .wTagName('segmented-buttons' as TagName)
   .wShadowDOM('open')
   .wCSS(css)
-  .wElement<'slotEl', HTMLSlotElement>('slotEl')
+  .wElement('slotEl!', HTMLSlotElement)
   .wObservedAttr('data-value', function () {
     applySelectedClasses(this)
   })
