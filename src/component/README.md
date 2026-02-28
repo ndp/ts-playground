@@ -287,6 +287,20 @@ npm run typecheck
 
 
 
+## Future ideas
+
+### Strict mode validation
+
+Once you declare a field as required with `!` (e.g., `wElement('email!')`), it becomes part of your component's contract. The builder currently enforces this only at the TypeScript level. A future "strict mode" could add **runtime validation on component mount** to catch missing required fields early.
+
+Example idea:
+- When a component with required fields mounts, validate that all marked fields are actually present in the rendered output.
+- Log or throw errors if a required field is missing, helping developers catch rendering bugs immediately rather than when code tries to access the field.
+- Could be opt-in via `.wStrictMode(true)` or environment-based (dev only).
+- Applies to required elements (`.wElement('x!')`), attributes (`.wAttr('role!')`), and state (`.wState('count!')`).
+
+This would provide an additional layer of safety beyond TypeScript's compile-time guarantees, especially useful for complex or dynamically rendered components.
+
 ## Guiding principles:
 - Explicit is better than implicit: no magic lifecycle methods or auto-wiring.
 - Type safety: strong typing for attributes, sub-elements, and render context.
