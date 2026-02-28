@@ -88,14 +88,14 @@ return { title: '#title', content: '#content' }
 .bwild()
 ```
 
-**Sub-element type hints** — for better TypeScript support, pass a type parameter to `.wElement()`:
+**Marking elements as required vs. optional** — Append `!` to a field name to mark it as required (non-null):
 
 ```ts
 new ComponentBwilder()
 .wTagName('c-form')
-.wElement('email', HTMLInputElement)     // Typed as HTMLInputElement | null
-.wElement('submit', HTMLButtonElement)   // Typed as HTMLButtonElement | null
-.wElement('status')                      // Generic HTMLElement | null
+.wElement('email!')                    // Required: HTMLElement (no null check needed)
+.wElement('submit!', HTMLButtonElement) // Required & typed: HTMLButtonElement (no null)
+.wElement('status')                    // Optional: HTMLElement | null (needs null check)
 .wShadowDOM('none')
 .wRender(function () {
 this.root.innerHTML = `
@@ -106,15 +106,35 @@ this.root.innerHTML = `
 return { email: '#email', submit: '#submit', status: '#status' }
 })
 .wAfterUpdateFn(function () {
-// Now TypeScript knows the specific types:
-const emailValue = this.subElements.email?.value    // ✓ HTMLInputElement.value
-const isDisabled = this.subElements.submit?.disabled // ✓ HTMLButtonElement.disabled
-this.subElements.status!.textContent = 'Ready'      // ✓ generic HTMLElement
+// Required fields don't need null checks:
+this.subElements.email.value = 'test@example.com'    // ✓ no ?. needed
+this.subElements.submit.disabled = false              // ✓ no ?. needed
+
+// Optional field needs null check:
+if (this.subElements.status) {
+  this.subElements.status.textContent = 'Ready'
+}
 })
 .bwild()
 ```
 
-The second parameter is optional and TypeScript-only (zero runtime cost) — existing code without type hints continues to work unchanged.
+**Sub-element type hints** — pass a type parameter to `.wElement()` for type-safe property access:
+
+```ts
+new ComponentBwilder()
+.wTagName('c-form')
+.wElement('email', HTMLInputElement)     // Typed as HTMLInputElement | null
+.wElement('submit', HTMLButtonElement)   // Typed as HTMLButtonElement | null
+.wElement('status')                      // Generic HTMLElement | null
+// ...
+.wAfterUpdateFn(function () {
+// TypeScript knows the specific types:
+const emailValue = this.subElements.email?.value    // ✓ HTMLInputElement.value
+const isDisabled = this.subElements.submit?.disabled // ✓ HTMLButtonElement.disabled
+})
+```
+
+The type parameter is optional and TypeScript-only (zero runtime cost). The bang suffix applies to all field types: `.wElement()`, `.wAttr()`, `.wObservedAttr()`, and `.wState()`.
 
 ### 3. CSS modes and sharing
 ```ts
@@ -222,10 +242,10 @@ The handler fires immediately when elements are dynamically assigned to slots af
 - `wTagName(tag: string | null)` — custom element tag name (or null to skip registration)
 - `wShadowDOM(mode: 'open' | 'closed' | 'none')` — shadow DOM mode
 - `wCSS(cssText: string, mode?: 'adopted' | 'inline')` — inject CSS
-- `wAttr(name: string, defaultValue?: string)` — unobserved attribute
-- `wObservedAttr(name: string, onChange?: callback)` — observed attribute (auto-rerender unless onChange provided)
-- `wElement(name: string, elementType?: ElementConstructor)` — declare a sub-element with optional type hint (accessed via `this.subElements[name]`). Pass an HTMLElement constructor (e.g., `HTMLInputElement`) as the second parameter for type-safe access to element-specific properties.
-- `wState(name: string, initial: value | factory)` — reactive state (accessed via `this.state[name]`, assignment triggers rerender)
+- `wAttr(name: string, defaultValue?: string)` — unobserved attribute. Append `!` to name to mark as required (e.g., `'role!'` → always a string, never undefined).
+- `wObservedAttr(name: string, onChange?: callback)` — observed attribute (auto-rerender unless onChange provided). Append `!` to mark as required.
+- `wElement(name: string, elementType?: ElementConstructor)` — declare a sub-element. Append `!` to name to mark required (e.g., `'email!'` → non-null, no null-check needed). Pass an HTMLElement constructor as second parameter for type-safe property access.
+- `wState(name: string, initial: value | factory)` — reactive state. Append `!` to name if the value can never be null/undefined.
 - `wRender(fn)` — render function
 - `wAfterUpdateFn(fn)` — runs after each render
 - `wConnectedFn(fn)` — runs once after initial connection; can return cleanup

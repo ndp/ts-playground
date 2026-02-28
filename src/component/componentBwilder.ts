@@ -1,5 +1,6 @@
 import {type RenderContext, type SubElementInputMap, type SubElementsMap} from './render.ts'
 import {type TagName, type TagNameLiteral} from './TagName.ts'
+import {type ExtractFieldName, type IsRequired, type OptionalIfNeeded, type StringIfRequired, parseFieldName} from './element-name-parser.ts'
 import {Tracker} from '@ndp-software/util'
 
 type Push<Tuple extends readonly string[], S extends string> = readonly [...Tuple, S]
@@ -58,10 +59,11 @@ export class ComponentBwilder<
   }
 
   wAttr<A extends string>(attr: A, defaultValue?: string) {
-    this.unobservedAttrs[attr] = defaultValue ?? null
+    const parsed = parseFieldName(attr)
+    this.unobservedAttrs[parsed.name] = defaultValue ?? null
     return this as unknown as ComponentBwilder<
       ObservedAttrs,
-      Push<UnobservedAttrs, A>,
+      Push<UnobservedAttrs, ExtractFieldName<A>>,
       SubElements,
       StateRecord
     >;
@@ -69,11 +71,12 @@ export class ComponentBwilder<
 
   wObservedAttr<A extends string>(attr: A,
                                   onChange?: (this: ComponentType, args: { name: string, newValue: unknown, oldValue: unknown }) => void) {
-    if (attr in this.observedAttrs)
-      throw new Error(`Attr "${attr}" is already observed.`)
-    this.observedAttrs[attr] = onChange ?? null
+    const parsed = parseFieldName(attr)
+    if (parsed.name in this.observedAttrs)
+      throw new Error(`Attr "${parsed.name}" is already observed.`)
+    this.observedAttrs[parsed.name] = onChange ?? null
     return this as unknown as ComponentBwilder<
-      Push<ObservedAttrs, A>,
+      Push<ObservedAttrs, ExtractFieldName<A>>,
       UnobservedAttrs,
       SubElements,
       StateRecord>;
@@ -83,18 +86,20 @@ export class ComponentBwilder<
     elementName: A,
     elementType?: new (...args: any[]) => T
   ) {
-    this.subElementNames.push(elementName);
+    const parsed = parseFieldName(elementName)
+    this.subElementNames.push(parsed.name);
     return this as unknown as ComponentBwilder<
       ObservedAttrs,
       UnobservedAttrs,
-      {[k in keyof SubElements]: SubElements[k]} & Record<A, T | null>,
+      {[k in keyof SubElements]: SubElements[k]} & Record<ExtractFieldName<A>, OptionalIfNeeded<T, A>>,
       StateRecord
     >;
   }
 
   wState<N extends string, T>(name: N, initial: T | (() => T)) {
-    this.stateDefinitions[name] = initial
-    return this as unknown as ComponentBwilder<ObservedAttrs, UnobservedAttrs, SubElements, StateRecord & Record<N, T>>
+    const parsed = parseFieldName(name)
+    this.stateDefinitions[parsed.name] = initial
+    return this as unknown as ComponentBwilder<ObservedAttrs, UnobservedAttrs, SubElements, StateRecord & Record<ExtractFieldName<N>, T>>
   }
 
   wRender(renderFn: ComponentBwilderRenderer<RenderingContext, SubElements>) {

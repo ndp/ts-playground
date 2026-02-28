@@ -1773,4 +1773,83 @@ describe('wState', () => {
     assert.equal(postRenderVal, 'hello')
   })
 
+  test('bang (!) suffix marks elements as required, stripping bang from actual name', async () => {
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('bang-required'))
+      .wElement('email!')
+      .wElement('submit!')
+      .wElement('status')
+      .wShadowDOM('none')
+      .wRender(function () {
+        this.root.innerHTML = `
+          <input id="email" />
+          <button id="submit">Submit</button>
+          <div id="status"></div>
+        `
+        return {
+          email: '#email',
+          submit: '#submit',
+          status: '#status'
+        }
+      })
+      .bwild()
+
+    const c = new MyComponentClass()
+    await c.connectedCallback()
+
+    // All should be populated
+    assert.ok(c.subElements.email)
+    assert.ok(c.subElements.submit)
+    assert.ok(c.subElements.status)
+  })
+
+  test('bang suffix works with attributes', async () => {
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('bang-attrs'))
+      .wAttr('optional-attr')
+      .wAttr('required-attr!')
+      .wShadowDOM('none')
+      .wRender(function () {
+        this.root.innerHTML = '<div>ready</div>'
+      })
+      .bwild()
+
+    const c = new MyComponentClass()
+    c.setAttribute('optional-attr', 'opt-value')
+    c.setAttribute('required-attr', 'req-value')
+    await c.connectedCallback()
+
+    // Both should be accessible via property name without bang
+    assert.equal(c['optional-attr'], 'opt-value')
+    assert.equal(c['required-attr'], 'req-value')
+  })
+
+  test('bang suffix is stripped from subElement names at declaration time', async () => {
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('bang-strip'))
+      .wElement('email!')
+      .wElement('status')
+      .wShadowDOM('none')
+      .wRender(function () {
+        this.root.innerHTML = `
+          <input id="email" />
+          <div id="status"></div>
+        `
+        return {
+          email: '#email',
+          status: '#status'
+        }
+      })
+      .bwild()
+
+    const c = new MyComponentClass()
+    await c.connectedCallback()
+
+    // Verify keys in subElements are without bangs
+    const keys = Object.keys(c.subElements)
+    assert.ok(keys.includes('email'), 'Should have "email" key without bang')
+    assert.ok(keys.includes('status'), 'Should have "status" key')
+    assert.ok(!keys.includes('email!'), 'Should NOT have "email!" key with bang')
+  })
+
 })
