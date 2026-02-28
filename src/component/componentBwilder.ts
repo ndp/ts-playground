@@ -16,7 +16,7 @@ export class ComponentBwilder<
   SubElements extends SubElementsMap = {},
   StateRecord extends Record<string, unknown> = {},
   AttrsRecord extends {} = {},
-  ComponentType extends RenderContext<{}, SubElementsMap> = HTMLElement & RenderContext<AttrsRecord, SubElements, StateRecord> & {requestUpdate: () => void|Promise<void>}> {
+  ComponentType extends RenderContext<{}, SubElementsMap> = Prettify<HTMLElement & RenderContext<AttrsRecord, SubElements, StateRecord> & {requestUpdate: () => void|Promise<void>}>> {
 
   private tagName?: string | null
   private css: { text: string, requestedMode: CSSMode } | undefined
