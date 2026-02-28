@@ -16,8 +16,7 @@ export class ComponentBwilder<
   SubElements extends SubElementsMap = {},
   StateRecord extends Record<string, unknown> = {},
   AttrsRecord extends {} = {},
-  RenderingContext extends RenderContext<{}, SubElementsMap> = RenderContext<AttrsRecord, SubElements, StateRecord>,
-  ComponentType = HTMLElement & RenderingContext & {requestUpdate: () => void|Promise<void>}> {
+  ComponentType extends RenderContext<{}, SubElementsMap> = HTMLElement & RenderContext<AttrsRecord, SubElements, StateRecord> & {requestUpdate: () => void|Promise<void>}> {
 
   private tagName?: string | null
   private css: { text: string, requestedMode: CSSMode } | undefined
@@ -30,7 +29,7 @@ export class ComponentBwilder<
   private unobservedAttrs: Record<string, string | null> = {}
   private subElementNames: string[] = []
   private stateDefinitions: Record<string, unknown | (() => unknown)> = {}
-  private renderFn: ComponentBwilderRenderer<RenderingContext, SubElements> | undefined
+  private renderFn: ComponentBwilderRenderer<ComponentType, SubElements> | undefined
   private postMountFn?: (this: ComponentType, context: ComponentType) => void | (() => void) | Promise<void> | Promise<() => void>
   private postRenderFn?: (this: ComponentType, context: ComponentType) => void | Promise<void>
   private slotAddedHandler: (<TEl extends HTMLElement>(this: ComponentType, context: ComponentType, slottedEl: TEl) => () => void) | undefined
@@ -95,7 +94,7 @@ export class ComponentBwilder<
     return this as unknown as ComponentBwilder<SubElements, StateRecord & Record<ExtractFieldName<N>, T>, AttrsRecord>
   }
 
-  wRender(renderFn: ComponentBwilderRenderer<RenderingContext, SubElements>) {
+  wRender(renderFn: ComponentBwilderRenderer<ComponentType, SubElements>) {
     this.renderFn = renderFn
     return this as this & { wRender: never };
   }
@@ -126,7 +125,7 @@ export class ComponentBwilder<
     if (!this.renderFn) throw new Error('No render function provided to component')
     if (this.tagName === undefined) throw new Error('tagName must be explicitly set to a string or null')
 
-    const renderFn: ComponentBwilderRenderer<RenderingContext, SubElements> = this.renderFn
+    const renderFn: ComponentBwilderRenderer<ComponentType, SubElements> = this.renderFn
 
     const builder = this
     const elementClass = class extends HTMLElement {
@@ -206,7 +205,7 @@ export class ComponentBwilder<
 
       render(): Promise<void> {
 
-        const context = this as unknown as RenderingContext
+        const context = this as unknown as ComponentType
         const renderResult = renderFn.call(context, context)
 
         return Promise.resolve(renderResult)
@@ -309,7 +308,7 @@ export class ComponentBwilder<
     if (this.tagName !== null)
       customElements.define(this.tagName, elementClass)
 
-    return elementClass as unknown as ConstructorOf<BuiltComponentInstance<RenderingContext, SubElements>>
+    return elementClass as unknown as ConstructorOf<BuiltComponentInstance<ComponentType, SubElements>>
   }
 }
 
