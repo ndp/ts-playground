@@ -1,9 +1,8 @@
 import {type RenderContext, type SubElementInputMap, type SubElementsMap} from './render.ts'
 import {type TagName, type TagNameLiteral} from './TagName.ts'
-import {type ExtractFieldName, type IsRequired, type OptionalIfNeeded, type StringIfRequired, parseFieldName} from './element-name-parser.ts'
+import {type ExtractFieldName, type OptionalIfNeeded, parseFieldName} from './element-name-parser.ts'
 import {Tracker} from '@ndp-software/util'
 
-type Push<Tuple extends readonly string[], S extends string> = readonly [...Tuple, S]
 type SubElementKeys<T extends SubElementsMap> = Extract<keyof T, string>
 type BwilderRendererReturn<TSubElements extends SubElementsMap>
   = SubElementInputMap<SubElementKeys<TSubElements>> | void
@@ -14,12 +13,9 @@ type CSSMode = 'adopted' | 'inline'
 let gWarnedCSSFallback = false
 
 export class ComponentBwilder<
-  ObservedAttrs extends readonly string[] = [],
-  UnobservedAttrs extends readonly string[] = [],
   SubElements extends SubElementsMap = {},
   StateRecord extends Record<string, unknown> = {},
-  AllAttrs extends readonly string[] = [...ObservedAttrs, ...UnobservedAttrs],
-  AttrsRecord extends {} = AllAttrs[number] extends string ? Record<AllAttrs[number], string> : {},
+  AttrsRecord extends {} = {},
   RenderingContext extends RenderContext<{}, SubElementsMap> = RenderContext<AttrsRecord, SubElements, StateRecord>,
   ComponentType = HTMLElement & RenderingContext & {requestUpdate: () => void|Promise<void>}> {
 
@@ -62,10 +58,9 @@ export class ComponentBwilder<
     const parsed = parseFieldName(attr)
     this.unobservedAttrs[parsed.name] = defaultValue ?? null
     return this as unknown as ComponentBwilder<
-      ObservedAttrs,
-      Push<UnobservedAttrs, ExtractFieldName<A>>,
       SubElements,
-      StateRecord
+      StateRecord,
+      AttrsRecord & Record<ExtractFieldName<A>, string>
     >;
   }
 
@@ -76,10 +71,9 @@ export class ComponentBwilder<
       throw new Error(`Attr "${parsed.name}" is already observed.`)
     this.observedAttrs[parsed.name] = onChange ?? null
     return this as unknown as ComponentBwilder<
-      Push<ObservedAttrs, ExtractFieldName<A>>,
-      UnobservedAttrs,
       SubElements,
-      StateRecord>;
+      StateRecord,
+      AttrsRecord & Record<ExtractFieldName<A>, string>>;
   }
 
   wElement<A extends string, T extends HTMLElement = HTMLElement>(
@@ -89,17 +83,16 @@ export class ComponentBwilder<
     const parsed = parseFieldName(elementName)
     this.subElementNames.push(parsed.name);
     return this as unknown as ComponentBwilder<
-      ObservedAttrs,
-      UnobservedAttrs,
       {[k in keyof SubElements]: SubElements[k]} & Record<ExtractFieldName<A>, OptionalIfNeeded<T, A>>,
-      StateRecord
+      StateRecord,
+      AttrsRecord
     >;
   }
 
   wState<N extends string, T>(name: N, initial: T | (() => T)) {
     const parsed = parseFieldName(name)
     this.stateDefinitions[parsed.name] = initial
-    return this as unknown as ComponentBwilder<ObservedAttrs, UnobservedAttrs, SubElements, StateRecord & Record<ExtractFieldName<N>, T>>
+    return this as unknown as ComponentBwilder<SubElements, StateRecord & Record<ExtractFieldName<N>, T>, AttrsRecord>
   }
 
   wRender(renderFn: ComponentBwilderRenderer<RenderingContext, SubElements>) {
