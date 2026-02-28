@@ -1,7 +1,7 @@
 import {type RenderContext, type SubElementInputMap, type SubElementsMap} from './render.ts'
 import {type TagName, type TagNameLiteral} from './TagName.ts'
 import {type ExtractFieldName, type OptionalIfNeeded, parseFieldName} from './element-name-parser.ts'
-import {Tracker} from '@ndp-software/util'
+import {Tracker, type Prettify} from '@ndp-software/util'
 
 type SubElementKeys<T extends SubElementsMap> = Extract<keyof T, string>
 type BwilderRendererReturn<TSubElements extends SubElementsMap>
@@ -316,14 +316,14 @@ type ConstructorOf<T> = new (...args: any[]) => T;
 type BuiltComponentInstance<
   TComponent,
   TSubElements extends SubElementsMap
-> = TComponent & HTMLElement & {
+> = Prettify<TComponent & HTMLElement & {
   connectedCallback(): Promise<void>
   render(): Promise<void>
   requestUpdate(): Promise<void>
   disconnectedCallback(): void
   root: ShadowRoot | HTMLElement
   subElements: TSubElements
-}
+}>
 
 type AdoptedStylesHost = {
   adoptedStyleSheets: CSSStyleSheet[]
