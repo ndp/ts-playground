@@ -82,7 +82,6 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
                 nodes.push({ kind: 'code', lang, text: code, title })
               }
             }
-            visitStatements(body.statements)
             return
           }
         }
@@ -123,22 +122,29 @@ function getFnBody(call: ts.CallExpression, index: number): ts.Block | null {
 function extractBodyCode(src: string, block: ts.Block): string {
   const stmts = block.statements
   if (!stmts.length) return ''
-  // Use the full range from first statement's line start to last statement end,
-  // then dedent by the block's indentation level.
-  const firstStart = stmts[0]!.getStart()
-  const lastEnd = stmts[stmts.length - 1]!.getEnd()
-  // Find start of the line that contains the first statement
-  const lineStart = src.lastIndexOf('\n', firstStart) + 1
-  const indent = firstStart - lineStart
-  const raw = src.slice(firstStart, lastEnd)
-  return dedent(raw, indent)
-}
 
-function dedent(code: string, indent: number): string {
-  if (indent === 0) return code.trim()
-  return code
+  // Compute block indentation from the column of the first statement token
+  const firstStart = stmts[0]!.getStart()
+  const lineStart = src.lastIndexOf('\n', firstStart - 1) + 1
+  const indent = firstStart - lineStart
+
+  // Include trailing // comment on the last statement's line
+  const lastStmt = stmts[stmts.length - 1]!
+  const lastEnd = lastStmt.getEnd()
+  const lastLineEnd = src.indexOf('\n', lastEnd)
+  const textAfterLast = src.slice(lastEnd, lastLineEnd === -1 ? src.length : lastLineEnd)
+  const extractEnd = /^\s*\/\//.test(textAfterLast)
+    ? (lastLineEnd === -1 ? src.length : lastLineEnd)
+    : lastEnd
+
+  // Extract from the full start of the first statement (includes leading whitespace/comments)
+  const raw = src.slice(stmts[0]!.getFullStart(), extractEnd)
+
+  // Dedent: remove `indent` leading spaces from any line that starts with at least that many spaces.
+  // Lines with fewer leading spaces (e.g. template literal content) are kept as-is.
+  return raw
     .split('\n')
-    .map((l, i) => (i === 0 ? l : l.slice(indent)))
+    .map(line => (line.length >= indent && line.slice(0, indent).trim() === '') ? line.slice(indent) : line)
     .join('\n')
     .trim()
 }
