@@ -10,6 +10,11 @@ type ComponentBwilderRenderer<TContext extends RenderContext, TSubElements exten
   = (this: TContext, context: TContext) => BwilderRendererReturn<TSubElements> | Promise<BwilderRendererReturn<TSubElements>>
 type CSSMode = 'adopted' | 'inline'
 
+type AttrOptions<TContext> = {
+  ifMissing?: string
+  onChange?: true | ((this: TContext, args: { name: string, newValue: unknown, oldValue: unknown }) => void)
+}
+
 let gWarnedCSSFallback = false
 
 export class ComponentBwilder<
@@ -53,26 +58,24 @@ export class ComponentBwilder<
     return this as this & { wCSS: never }
   }
 
-  wAttr<A extends string>(attr: A, defaultValue?: string) {
+  wAttr<A extends string>(attr: A, options?: string | AttrOptions<ComponentType>) {
     const parsed = parseFieldName(attr)
-    this.unobservedAttrs[parsed.name] = defaultValue ?? null
+    const onChange = typeof options === 'string' ? undefined : options?.onChange
+    const ifMissing = typeof options === 'string' ? options : options?.ifMissing
+    if (onChange !== undefined) {
+      if (parsed.name in this.observedAttrs)
+        throw new Error(`Attr "${parsed.name}" is already observed.`)
+      this.observedAttrs[parsed.name] = onChange === true ? null : onChange
+      if (ifMissing !== undefined)
+        this.unobservedAttrs[parsed.name] = ifMissing
+    } else {
+      this.unobservedAttrs[parsed.name] = ifMissing ?? null
+    }
     return this as unknown as ComponentBwilder<
       SubElements,
       StateRecord,
       AttrsRecord & Record<ExtractFieldName<A>, string>
     >;
-  }
-
-  wObservedAttr<A extends string>(attr: A,
-                                  onChange?: (this: ComponentType, args: { name: string, newValue: unknown, oldValue: unknown }) => void) {
-    const parsed = parseFieldName(attr)
-    if (parsed.name in this.observedAttrs)
-      throw new Error(`Attr "${parsed.name}" is already observed.`)
-    this.observedAttrs[parsed.name] = onChange ?? null
-    return this as unknown as ComponentBwilder<
-      SubElements,
-      StateRecord,
-      AttrsRecord & Record<ExtractFieldName<A>, string>>;
   }
 
   wElement<A extends string, T extends HTMLElement = HTMLElement>(
@@ -290,20 +293,21 @@ export class ComponentBwilder<
     for (let a in builder.observedAttrs)
       Object.defineProperty(elementClass.prototype, a, {
         get: function (this: HTMLElement) {
-          return this.getAttribute(a)
+          return this.getAttribute(a) ?? builder.unobservedAttrs[a] ?? null
         },
         enumerable: true,
         configurable: true
       });
 
     for (let a in builder.unobservedAttrs)
-      Object.defineProperty(elementClass.prototype, a, {
-        get: function (this: HTMLElement) {
-          return this.getAttribute(a) ?? builder.unobservedAttrs[a];
-        },
-        enumerable: true,
-        configurable: true
-      });
+      if (!(a in builder.observedAttrs))
+        Object.defineProperty(elementClass.prototype, a, {
+          get: function (this: HTMLElement) {
+            return this.getAttribute(a) ?? builder.unobservedAttrs[a];
+          },
+          enumerable: true,
+          configurable: true
+        });
 
     if (this.tagName !== null)
       customElements.define(this.tagName, elementClass)
