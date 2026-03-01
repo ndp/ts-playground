@@ -304,3 +304,95 @@ describe('parse: full document model (fixture)', () => {
   })
 
 })
+
+describe('parse: assertion rewriting', () => {
+
+  test('assert.equal(a, b) → a // => b', () => {
+    const nodes = parse(`
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+test('t', () => {
+  const result = compute()
+  assert.equal(result, 42)
+})
+`)
+    const code = nodes.find(n => n.kind === 'code') as any
+    assert.equal(code?.text, "const result = compute()\nresult // => 42")
+  })
+
+  test('assert.deepEqual(a, b) single-line → a // => b', () => {
+    const nodes = parse(`
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+test('t', () => {
+  assert.deepEqual(arr, [1, 2, 3])
+})
+`)
+    const code = nodes.find(n => n.kind === 'code') as any
+    assert.equal(code?.text, "arr // => [1, 2, 3]")
+  })
+
+  test('assert.deepEqual(a, b) multi-line → preserves formatting as comment lines', () => {
+    const nodes = parse(`
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+test('t', () => {
+  assert.deepEqual(nodes, [
+    { kind: 'prose' }
+  ])
+})
+`)
+    const code = nodes.find(n => n.kind === 'code') as any
+    assert.equal(code?.text, "nodes // => [\n//   { kind: 'prose' }\n// ]")
+  })
+
+  test('assert.notEqual(a, b) → a // != b', () => {
+    const nodes = parse(`
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+test('t', () => {
+  assert.notEqual(x, null)
+})
+`)
+    const code = nodes.find(n => n.kind === 'code') as any
+    assert.equal(code?.text, "x // != null")
+  })
+
+  test('assert.throws(() => expr, pattern) → expr // throws pattern', () => {
+    const nodes = parse(`
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+test('t', () => {
+  assert.throws(() => riskyFn(), /expected error/)
+})
+`)
+    const code = nodes.find(n => n.kind === 'code') as any
+    assert.equal(code?.text, "riskyFn() // throws /expected error/")
+  })
+
+  test('assert.throws(() => expr) with no pattern → expr // throws', () => {
+    const nodes = parse(`
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+test('t', () => {
+  assert.throws(() => riskyFn())
+})
+`)
+    const code = nodes.find(n => n.kind === 'code') as any
+    assert.equal(code?.text, "riskyFn() // throws")
+  })
+
+  test('assert.ok is left unchanged', () => {
+    const nodes = parse(`
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+test('t', () => {
+  const result = check()
+  assert.ok(result)
+})
+`)
+    const code = nodes.find(n => n.kind === 'code') as any
+    assert.equal(code?.text, "const result = check()\nassert.ok(result)")
+  })
+
+})

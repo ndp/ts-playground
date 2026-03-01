@@ -29,16 +29,16 @@ Blank `//` lines become paragraph breaks.
 
 ```typescript line comments → prose
 const nodes = parse('// Hello, **world**.\n//\n// Second paragraph.')
-assert.deepEqual(nodes, [
-  { kind: 'prose', text: 'Hello, **world**.\n\nSecond paragraph.' }
-])
+nodes // => [
+//   { kind: 'prose', text: 'Hello, **world**.\n\nSecond paragraph.' }
+// ]
 ```
 
 ```typescript block comments → prose (strips leading asterisks)
 const nodes = parse('/*\n * ## Section\n *\n * A description.\n */')
-assert.deepEqual(nodes, [
-  { kind: 'prose', text: '## Section\n\nA description.' }
-])
+nodes // => [
+//   { kind: 'prose', text: '## Section\n\nA description.' }
+// ]
 ```
 
 ### test() bodies become code blocks
@@ -56,9 +56,9 @@ test('greet', () => {
 })
 `
 const nodes = parse(src)
-assert.deepEqual(nodes, [
-  { kind: 'code', lang: 'typescript', text: `const msg = 'Hello, world!'\nassert.equal(msg.length, 13)`, title: 'greet' }
-])
+nodes // => [
+//   { kind: 'code', lang: 'typescript', text: `const msg = 'Hello, world!'\nmsg.length // => 13`, title: 'greet' }
+// ]
 ```
 
 ### describe() is transparent
@@ -88,13 +88,13 @@ would clutter the docs. Add `// keep` to show an import:
 import { greet } from './greet.ts' // keep   ← shown
 import { test } from 'node:test'             ← hidden
 const nodes = parse(`import { test } from 'node:test'`)
-assert.deepEqual(nodes, [])
+nodes // => []
 ```
 
 ```typescript // keep shows the import in a code block
 const nodes = parse(`import { greet } from './greet.ts' // keep`)
-assert.equal(nodes.length, 1)
-assert.equal(nodes[0]!.kind, 'code')
+nodes.length // => 1
+nodes[0]!.kind // => 'code'
 assert.ok((nodes[0] as any).text.includes("import { greet }"))
 ```
 
@@ -141,7 +141,7 @@ test('labeled', () => {
 `
 const nodes = parse(src)
 const code = nodes.find(n => n.kind === 'code') as any
-assert.equal(code?.title, 'greet-usage.ts')
+code?.title // => 'greet-usage.ts'
 ```
 
 ## The document model
@@ -154,7 +154,7 @@ const md = render([
   { kind: 'prose', text: '## Example' },
   { kind: 'code', lang: 'typescript', text: 'const x = 1', title: undefined }
 ])
-assert.equal(md, '## Example\n\n```typescript\nconst x = 1\n```')
+md // => '## Example\n\n```typescript\nconst x = 1\n```'
 ```
 
 ## CLI

@@ -13,13 +13,13 @@ Pass any string to `encode` and get a base64 result:
 ```typescript encode-example.ts
 import { encode } from './encoder.ts'
 const result = encode('hello')
-assert.equal(result, 'aGVsbG8=')
+result // => 'aGVsbG8='
 ```
 
 You can also encode empty strings:
 
 ```typescript handles empty string
-assert.equal(encode(''), '')
+encode('') // => ''
 ```
 
 ## Round-trip
@@ -27,7 +27,7 @@ assert.equal(encode(''), '')
 `decode` reverses `encode`:
 
 ```typescript round-trips a string
-assert.equal(decode(encode('world')), 'world')
+decode(encode('world')) // => 'world'
 ```
 
 ## Illustrative

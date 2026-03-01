@@ -138,7 +138,21 @@ function extractBodyCode(src: string, block: ts.Block): string {
     : lastEnd
 
   // Extract from the full start of the first statement (includes leading whitespace/comments)
-  const raw = src.slice(stmts[0]!.getFullStart(), extractEnd)
+  const base = stmts[0]!.getFullStart()
+  let raw = src.slice(base, extractEnd)
+
+  // Rewrite recognised assertion statements (end-to-start to preserve offsets)
+  const replacements: Array<{ start: number; end: number; text: string }> = []
+  for (const stmt of stmts) {
+    const rewritten = tryRewriteAssertion(src, stmt)
+    if (rewritten !== null) {
+      replacements.push({ start: stmt.getStart() - base, end: stmt.getEnd() - base, text: rewritten })
+    }
+  }
+  replacements.sort((a, b) => b.start - a.start)
+  for (const r of replacements) {
+    raw = raw.slice(0, r.start) + r.text + raw.slice(r.end)
+  }
 
   // Dedent: remove `indent` leading spaces from any line that starts with at least that many spaces.
   // Lines with fewer leading spaces (e.g. template literal content) are kept as-is.
@@ -169,6 +183,83 @@ function commentToProse(raw: string, kind: ts.CommentKind): string | null {
 function isKeptImport(text: string): boolean {
   return /\/\/\s*keep\b/.test(text)
 }
+
+/** Rewrite a recognised assert.X(actual, expected) statement to a readable comment form.
+ *  Returns the rewritten string, or null if the statement is not a recognised assertion. */
+function tryRewriteAssertion(src: string, stmt: ts.Statement): string | null {
+  if (!ts.isExpressionStatement(stmt)) return null
+  const expr = stmt.expression
+  if (!ts.isCallExpression(expr)) return null
+  if (!ts.isPropertyAccessExpression(expr.expression)) return null
+
+  const obj = expr.expression.expression
+  const method = expr.expression.name.text
+  if (!ts.isIdentifier(obj) || obj.text !== 'assert') return null
+
+  // assert.throws(() => expr, pattern?) → expr // throws [pattern]
+  if (method === 'throws') {
+    const fn = expr.arguments[0]
+    if (!fn) return null
+    if (ts.isArrowFunction(fn) && !ts.isBlock(fn.body)) {
+      const exprText = src.slice(fn.body.getStart(), fn.body.getEnd())
+      const patternArg = expr.arguments[1]
+      const patternText = patternArg ? src.slice(patternArg.getStart(), patternArg.getEnd()) : null
+      return patternText ? `${exprText} // throws ${patternText}` : `${exprText} // throws`
+    }
+    return null
+  }
+
+  const [actual, expected] = expr.arguments
+  if (!actual || !expected) return null
+
+  const actualText = src.slice(actual.getStart(), actual.getEnd())
+
+  if (['equal', 'strictEqual', 'deepEqual', 'deepStrictEqual'].includes(method)) {
+    return formatComparison(src, actual, expected, '=>')
+  }
+  if (['notEqual', 'notStrictEqual', 'notDeepEqual', 'notDeepStrictEqual'].includes(method)) {
+    return formatComparison(src, actual, expected, '!=')
+  }
+
+  return null
+}
+
+function formatComparison(
+  src: string,
+  actual: ts.Expression,
+  expected: ts.Expression,
+  op: string
+): string {
+  const actualText = src.slice(actual.getStart(), actual.getEnd())
+  const expectedRaw = src.slice(expected.getStart(), expected.getEnd())
+
+  // Dedent continuation lines by their minimum indentation
+  const expectedText = dedentContinuationLines(expectedRaw)
+
+  const lines = expectedText.split('\n')
+  if (lines.length === 1) {
+    return `${actualText} // ${op} ${expectedText}`
+  }
+  // Multi-line: first line appended to actual, remaining lines become // comments
+  const first = lines[0]!
+  const rest = lines.slice(1).map(l => `// ${l}`)
+  return [`${actualText} // ${op} ${first}`, ...rest].join('\n')
+}
+
+/** Dedent continuation lines (lines after the first) by their minimum indentation. */
+function dedentContinuationLines(text: string): string {
+  const lines = text.split('\n')
+  if (lines.length === 1) return text
+  const contLines = lines.slice(1).filter(l => l.trim().length > 0)
+  if (!contLines.length) return text
+  const minInd = Math.min(...contLines.map(l => l.length - l.trimStart().length))
+  if (minInd === 0) return text
+  return [
+    lines[0]!,
+    ...lines.slice(1).map(l => (l.length >= minInd && l.slice(0, minInd).trim() === '') ? l.slice(minInd) : l)
+  ].join('\n')
+}
+
 
 /** If prose ends with a ```…``` fence, split it off. Returns null if no trailing fence. */
 function extractTrailingFence(prose: string): { prose: string; fenceCode: string } | null {

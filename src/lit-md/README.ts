@@ -68,7 +68,7 @@ test('greet', () => {
 `
     const nodes = parse(src)
     assert.deepEqual(nodes, [
-      { kind: 'code', lang: 'typescript', text: `const msg = 'Hello, world!'\nassert.equal(msg.length, 13)`, title: 'greet' }
+      { kind: 'code', lang: 'typescript', text: `const msg = 'Hello, world!'\nmsg.length // => 13`, title: 'greet' }
     ])
   })
 
