@@ -20,6 +20,7 @@ A literate file is a normal `node:test` file. The rules are simple:
 | `import … // keep`                              | Shown as a code block         |
 | `describe(name, fn)`                            | Transparent — name dropped, body kept |
 | `test(name, fn)`                                | Body → fenced code block      |
+| `assert.equal(x, y)` inside a test body         | Transformed to `x // => y` |
 | Comment ending with a code fence, then `test()` | Merged into one block         |
 | `// file: name.ts` before a block               | Filename label on that fence  |
 ### Comments become prose
@@ -30,14 +31,14 @@ Blank `//` lines become paragraph breaks.
 ```typescript line comments → prose
 const nodes = parse('// Hello, **world**.\n//\n// Second paragraph.')
 nodes // => [
-//   { kind: 'prose', text: 'Hello, **world**.\n\nSecond paragraph.' }
+//   {kind: 'prose', text: 'Hello, **world**.\n\nSecond paragraph.'}
 // ]
 ```
 
 ```typescript block comments → prose (strips leading asterisks)
 const nodes = parse('/*\n * ## Section\n *\n * A description.\n */')
 nodes // => [
-//   { kind: 'prose', text: '## Section\n\nA description.' }
+//   {kind: 'prose', text: '## Section\n\nA description.'}
 // ]
 ```
 
@@ -51,13 +52,13 @@ in Docusaurus, silently ignored by GitHub.
 const src = `
 import { test } from 'node:test'
 test('greet', () => {
-  const msg = 'Hello, world!'
-  assert.equal(msg.length, 13)
+const msg = 'Hello, world!'
+assert.equal(msg.length, 13)
 })
 `
 const nodes = parse(src)
 nodes // => [
-//   { kind: 'code', lang: 'typescript', text: `const msg = 'Hello, world!'\nmsg.length // => 13`, title: 'greet' }
+//   {kind: 'code', lang: 'typescript', text: `const msg = 'Hello, world!'\nmsg.length // => 13`, title: 'greet'}
 // ]
 ```
 
@@ -71,7 +72,7 @@ the generated docs.
 const src = `
 import { describe, test } from 'node:test'
 describe('My Group', () => {
-  test('inner', () => { const x = 1 })
+test('inner', () => { const x = 1 })
 })
 `
 const nodes = parse(src)
@@ -116,8 +117,8 @@ import { test } from 'node:test'
 // import { parse } from '@ndp-software/lit-md'
 // \`\`\`
 test('example', () => {
-  const nodes = parse('// Hello')
-  assert.equal(nodes[0]?.kind, 'prose')
+const nodes = parse('// Hello')
+assert.equal(nodes[0]?.kind, 'prose')
 })
 `
 const nodes = parse(src)
@@ -136,7 +137,7 @@ const src = `
 import { test } from 'node:test'
 // file: greet-usage.ts
 test('labeled', () => {
-  const msg = greet('world')
+const msg = greet('world')
 })
 `
 const nodes = parse(src)
@@ -151,8 +152,8 @@ to a markdown string. You can use these directly if you need custom output.
 
 ```typescript render converts DocNode[] to a markdown string
 const md = render([
-  { kind: 'prose', text: '## Example' },
-  { kind: 'code', lang: 'typescript', text: 'const x = 1', title: undefined }
+  {kind: 'prose', text: '## Example'},
+  {kind: 'code', lang: 'typescript', text: 'const x = 1', title: undefined}
 ])
 md // => '## Example\n\n```typescript\nconst x = 1\n```'
 ```
