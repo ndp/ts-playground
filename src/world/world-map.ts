@@ -1,5 +1,5 @@
-import {multiPolygonToPath, polygonToPath} from './polygon-to-path.js'
-import {maybeFetchText} from './util.js'
+import {multiPolygonToPath, polygonToPath} from './polygon-to-path.ts'
+import {maybeFetchText} from './util.ts'
 
 const SVG_NS = "http://www.w3.org/2000/svg" as "http://www.w3.org/1999/xhtml";
 
