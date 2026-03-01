@@ -160,14 +160,7 @@ export class ComponentBwilder<
             ? (initialOrFactory as () => unknown)()
             : initialOrFactory
         }
-        const self = this
-        ;(this as any).state = new Proxy(stateData, {
-          set(target, prop, value) {
-            target[prop as string] = value
-            self.render()
-            return true
-          }
-        })
+        ;(this as any).state = stateData
       }
 
       static get observedAttributes() {

@@ -1601,7 +1601,7 @@ describe('wState', () => {
     assert.deepEqual(b.state.items, [], 'b should have its own independent array')
   })
 
-  test('assigning to this.state triggers re-render with new value', () => {
+  test('assigning to this.state does NOT trigger re-render; requestUpdate() does', async () => {
     let renderCount = 0
 
     const MyComponentClass = new ComponentBwilder()
@@ -1615,16 +1615,19 @@ describe('wState', () => {
       .bwild()
 
     const c = new MyComponentClass()
-    c.connectedCallback()
+    await c.connectedCallback()
     assert.equal(renderCount, 1)
     assert.equal(c.querySelector('div')!.textContent, '0')
 
     c.state.count = 42
+    assert.equal(renderCount, 1, 'no re-render on assignment alone')
+
+    await c.requestUpdate()
     assert.equal(renderCount, 2)
     assert.equal(c.querySelector('div')!.textContent, '42')
   })
 
-  test('two instances have independent state', () => {
+  test('two instances have independent state', async () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('wstate-independent'))
       .wShadowDOM('none')
@@ -1636,19 +1639,23 @@ describe('wState', () => {
 
     const a = new MyComponentClass()
     const b = new MyComponentClass()
-    a.connectedCallback()
-    b.connectedCallback()
+    await a.connectedCallback()
+    await b.connectedCallback()
 
     a.state.count = 10
     b.state.count = 99
 
     assert.equal(a.state.count, 10)
     assert.equal(b.state.count, 99)
+
+    await a.requestUpdate()
+    await b.requestUpdate()
+
     assert.equal(a.querySelector('div')!.textContent, '10')
     assert.equal(b.querySelector('div')!.textContent, '99')
   })
 
-  test('multiple wState values are all accessible on this.state', () => {
+  test('multiple wState values are all accessible on this.state', async () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('wstate-multiple'))
       .wShadowDOM('none')
@@ -1660,14 +1667,13 @@ describe('wState', () => {
       .bwild()
 
     const c = new MyComponentClass()
-    c.connectedCallback()
+    await c.connectedCallback()
 
     assert.equal(c.querySelector('div')!.textContent, 'Alice:30')
 
     c.state.name = 'Bob'
-    assert.equal(c.querySelector('div')!.textContent, 'Bob:30')
-
     c.state.age = 25
+    await c.requestUpdate()
     assert.equal(c.querySelector('div')!.textContent, 'Bob:25')
   })
 
