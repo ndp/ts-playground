@@ -382,7 +382,7 @@ test('t', () => {
     assert.equal(code?.text, "riskyFn() // throws")
   })
 
-  test('assert.ok is left unchanged', () => {
+  test('assert.ok at statement level is dropped', () => {
     const nodes = parse(`
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
@@ -392,7 +392,23 @@ test('t', () => {
 })
 `)
     const code = nodes.find(n => n.kind === 'code') as any
-    assert.equal(code?.text, "const result = check()\nassert.ok(result)")
+    assert.equal(code?.text, "const result = check()")
+  })
+
+  test('assert.ok nested in callback body is transformed to expr // OK', () => {
+    const nodes = parse(`
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+test('t', () => {
+  const x = new ComponentBwilder()
+    .wAfterUpdateFn(function() {
+      assert.ok(subElements)
+    })
+})
+`)
+    const code = nodes.find(n => n.kind === 'code') as any
+    assert.ok(code?.text.includes('subElements // OK'))
+    assert.ok(!code?.text.includes('assert.ok'))
   })
 
 })

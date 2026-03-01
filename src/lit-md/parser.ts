@@ -156,11 +156,19 @@ function extractBodyCode(src: string, block: ts.Block): string {
 
   // Dedent: remove `indent` leading spaces from any line that starts with at least that many spaces.
   // Lines with fewer leading spaces (e.g. template literal content) are kept as-is.
-  return raw
+  let result = raw
     .split('\n')
     .map(line => (line.length >= indent && line.slice(0, indent).trim() === '') ? line.slice(indent) : line)
     .join('\n')
     .trim()
+
+  // Clean up consecutive blank lines from dropped statements
+  result = result.replace(/\n\n+/g, '\n')
+
+  // Transform nested assert.ok(expr) → expr // OK
+  result = transformNestedAssertOk(result)
+
+  return result
 }
 
 function commentToProse(raw: string, kind: ts.CommentKind): string | null {
@@ -185,7 +193,8 @@ function isKeptImport(text: string): boolean {
 }
 
 /** Rewrite a recognised assert.X(actual, expected) statement to a readable comment form.
- *  Returns the rewritten string, or null if the statement is not a recognised assertion. */
+ *  Returns the rewritten string, or null if the statement is not a recognised assertion.
+ *  Special case: assert.ok() at statement level returns empty string (drops the line). */
 function tryRewriteAssertion(src: string, stmt: ts.Statement): string | null {
   if (!ts.isExpressionStatement(stmt)) return null
   const expr = stmt.expression
@@ -195,6 +204,11 @@ function tryRewriteAssertion(src: string, stmt: ts.Statement): string | null {
   const obj = expr.expression.expression
   const method = expr.expression.name.text
   if (!ts.isIdentifier(obj) || obj.text !== 'assert') return null
+
+  // assert.ok(value) at statement level → drop the line (empty string)
+  if (method === 'ok') {
+    return ''
+  }
 
   // assert.throws(() => expr, pattern?) → expr // throws [pattern]
   if (method === 'throws') {
@@ -289,4 +303,13 @@ function mergeOrPushProse(nodes: DocNode[], text: string): void {
   } else {
     nodes.push({ kind: 'prose', text })
   }
+}
+
+/** Transform nested assert.ok(expr) calls to expr // OK */
+function transformNestedAssertOk(code: string): string {
+  // Match assert.ok(...) but only those NOT at statement level
+  // Simple approach: match assert.ok(identifier) or assert.ok(expr)
+  // We use a regex to find and replace: assert\.ok\(([^)]+)\) → $1 // OK
+  // This is a heuristic that works for simple cases
+  return code.replace(/assert\.ok\(([^)]+)\)/g, '$1 // OK')
 }
