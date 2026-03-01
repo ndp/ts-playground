@@ -1,0 +1,306 @@
+import { describe, test } from 'node:test'
+import assert from 'node:assert/strict'
+import { parse } from './parser.ts'
+
+describe('parse: comments → prose', () => {
+
+  test('single line comment becomes prose', () => {
+    const nodes = parse('// Hello world')
+    assert.deepEqual(nodes, [
+      { kind: 'prose', text: 'Hello world' }
+    ])
+  })
+
+  test('multiple consecutive line comments merge into one prose node', () => {
+    const nodes = parse('// Hello\n// world')
+    assert.deepEqual(nodes, [
+      { kind: 'prose', text: 'Hello\nworld' }
+    ])
+  })
+
+  test('blank // line becomes blank line in prose', () => {
+    const nodes = parse('// First\n//\n// Second')
+    assert.deepEqual(nodes, [
+      { kind: 'prose', text: 'First\n\nSecond' }
+    ])
+  })
+
+  test('block comment becomes prose', () => {
+    const nodes = parse('/* Hello world */')
+    assert.deepEqual(nodes, [
+      { kind: 'prose', text: 'Hello world' }
+    ])
+  })
+
+  test('multi-line block comment strips leading asterisks', () => {
+    const nodes = parse('/*\n * ## Usage\n *\n * A description.\n */')
+    assert.deepEqual(nodes, [
+      { kind: 'prose', text: '## Usage\n\nA description.' }
+    ])
+  })
+
+  test('empty file produces no nodes', () => {
+    const nodes = parse('')
+    assert.deepEqual(nodes, [])
+  })
+
+})
+
+describe('parse: test() with no body statements produces no code node', () => {
+  test('empty test body', () => {
+    const nodes = parse(`
+import { test } from 'node:test'
+test('empty', () => {})
+`)
+    assert.deepEqual(nodes, [])
+  })
+})
+
+describe('parse: test() → code block', () => {
+
+  test('test() body becomes a code node', () => {
+    const nodes = parse(`
+import { test } from 'node:test'
+test('example', () => {
+  const x = 1
+})
+`)
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'typescript', text: 'const x = 1', title: 'example' }
+    ])
+  })
+
+  test('test() body with multiple statements is dedented', () => {
+    const nodes = parse(`
+import { test } from 'node:test'
+test('example', () => {
+  const a = 1
+  const b = 2
+})
+`)
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'typescript', text: 'const a = 1\nconst b = 2', title: 'example' }
+    ])
+  })
+
+})
+
+describe('parse: describe() transparency', () => {
+
+  test('describe wrapper is transparent — code inside is still extracted', () => {
+    const nodes = parse(`
+import { describe, test } from 'node:test'
+describe('group', () => {
+  test('inner', () => {
+    const x = 42
+  })
+})
+`)
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'typescript', text: 'const x = 42', title: 'inner' }
+    ])
+  })
+
+  test('describe name is discarded', () => {
+    const nodes = parse(`
+import { describe, test } from 'node:test'
+describe('My Group', () => {
+  test('t', () => { const x = 1 })
+})
+`)
+    // no node should contain the describe name
+    assert.ok(!JSON.stringify(nodes).includes('My Group'))
+  })
+
+  test('prose comments between tests inside describe are captured', () => {
+    const nodes = parse(`
+import { describe, test } from 'node:test'
+describe('group', () => {
+  // before second test
+  test('second', () => {
+    const y = 2
+  })
+})
+`)
+    assert.deepEqual(nodes, [
+      { kind: 'prose', text: 'before second test' },
+      { kind: 'code', lang: 'typescript', text: 'const y = 2', title: 'second' }
+    ])
+  })
+
+  test('nested describe is transparent', () => {
+    const nodes = parse(`
+import { describe, test } from 'node:test'
+describe('outer', () => {
+  describe('inner', () => {
+    test('deep', () => {
+      const z = 3
+    })
+  })
+})
+`)
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'typescript', text: 'const z = 3', title: 'deep' }
+    ])
+  })
+
+})
+
+
+
+describe('parse: import filtering', () => {
+
+  test('import without // keep is hidden', () => {
+    const nodes = parse(`import { foo } from './foo.ts'`)
+    assert.deepEqual(nodes, [])
+  })
+
+  test('import with // keep becomes a code node', () => {
+    const nodes = parse(`import { foo } from './foo.ts' // keep`)
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'typescript', text: `import { foo } from './foo.ts' // keep`, title: undefined }
+    ])
+  })
+
+  test('multiple kept imports become one code node', () => {
+    const nodes = parse(
+      `import { foo } from './foo.ts' // keep\nimport { bar } from './bar.ts' // keep`
+    )
+    assert.deepEqual(nodes, [
+      {
+        kind: 'code',
+        lang: 'typescript',
+        text: `import { foo } from './foo.ts' // keep\nimport { bar } from './bar.ts' // keep`,
+        title: undefined
+      }
+    ])
+  })
+
+  test('mixed: only kept imports appear', () => {
+    const nodes = parse(
+      `import { test } from 'node:test'\nimport { foo } from './foo.ts' // keep`
+    )
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'typescript', text: `import { foo } from './foo.ts' // keep`, title: undefined }
+    ])
+  })
+
+})
+
+describe('parse: code block merge (comment fence + test body)', () => {
+
+  test('comment ending with code fence merges with next test body', () => {
+    const nodes = parse(`
+import { test } from 'node:test'
+import { encode } from './encoder.ts'
+// Here is how to use it:
+//
+// \`\`\`ts
+// import { encode } from './encoder.ts'
+// \`\`\`
+test('basic', () => {
+  const r = encode('hi')
+})
+`)
+    // should produce: prose + one merged code block
+    const prose = nodes.find(n => n.kind === 'prose') as any
+    const code = nodes.find(n => n.kind === 'code') as any
+    assert.equal(nodes.length, 2)
+    assert.ok(prose.text.includes('Here is how to use it'))
+    assert.ok(code.text.includes("import { encode } from './encoder.ts'"))
+    assert.ok(code.text.includes("const r = encode('hi')"))
+  })
+
+  test('comment NOT ending with code fence does not merge', () => {
+    const nodes = parse(`
+import { test } from 'node:test'
+// Just some prose
+test('basic', () => {
+  const r = 1
+})
+`)
+    assert.equal(nodes.length, 2)
+    assert.equal(nodes[0]!.kind, 'prose')
+    assert.equal(nodes[1]!.kind, 'code')
+    // The code block should NOT contain the prose
+    assert.ok(!(nodes[1] as any).text.includes('Just some prose'))
+  })
+
+})
+
+describe('parse: // file: filename label', () => {
+
+  test('// file: before test() sets title on that code block', () => {
+    const nodes = parse(`
+import { test } from 'node:test'
+// file: my-example.ts
+test('basic', () => {
+  const x = 1
+})
+`)
+    const code = nodes.find(n => n.kind === 'code') as any
+    assert.equal(code?.title, 'my-example.ts')
+  })
+
+  test('// file: does not appear in prose', () => {
+    const nodes = parse(`
+import { test } from 'node:test'
+// file: my-example.ts
+test('basic', () => {
+  const x = 1
+})
+`)
+    const prose = nodes.find(n => n.kind === 'prose')
+    assert.equal(prose, undefined)
+  })
+
+  test('// file: before a kept import sets title on that code block', () => {
+    const nodes = parse(
+      `// file: header.ts\nimport { foo } from './foo.ts' // keep`
+    )
+    const code = nodes.find(n => n.kind === 'code') as any
+    assert.equal(code?.title, 'header.ts')
+  })
+
+})
+
+describe('parse: full document model (fixture)', () => {
+
+  test('parses the encoder fixture into correct node sequence', async () => {
+    const { readFileSync } = await import('fs')
+    const src = readFileSync(
+      new URL('./fixtures/encoder/README.ts', import.meta.url),
+      'utf8'
+    )
+    const nodes = parse(src)
+
+    // Should start with prose (the # Encoder heading)
+    assert.equal(nodes[0]?.kind, 'prose')
+    assert.ok((nodes[0] as any).text.startsWith('# Encoder'))
+
+    // Should have a kept import code block
+    const importNode = nodes.find(n => n.kind === 'code' && (n as any).text.includes('encoder.ts'))
+    assert.ok(importNode, 'should have kept import code block')
+
+    // Should have the merged code block with // keep import + test body
+    const mergedNode = nodes.find(n =>
+      n.kind === 'code' &&
+      (n as any).text.includes("import { encode }") &&
+      (n as any).text.includes("encode('hello')")
+    )
+    assert.ok(mergedNode, 'should have merged code block')
+    assert.equal((mergedNode as any).title, 'encode-example.ts')
+
+    // Should have the round-trip test code
+    const roundTripNode = nodes.find(n =>
+      n.kind === 'code' && (n as any).text.includes('decode(encode')
+    )
+    assert.ok(roundTripNode, 'should have round-trip test code')
+
+    // Should end with prose containing the illustrative code fence
+    const lastNode = nodes[nodes.length - 1]
+    assert.equal(lastNode?.kind, 'prose')
+    assert.ok((lastNode as any).text.includes('```ts'))
+  })
+
+})
