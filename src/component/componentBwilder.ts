@@ -42,22 +42,35 @@ export class ComponentBwilder<
   constructor() {
   }
 
+  /**
+   * Set the custom element tag name. Pass null to skip defining a custom element.
+   */
   wTagName<T extends string>(tagName: TagNameLiteral<T> | TagName | null) {
     this.tagName = tagName
     return this as this & { wTagName: never }
   }
 
 
+  /**
+   * Set Shadow DOM mode for the component ('open', 'closed', 'none').
+   */
   wShadowDOM(mode: typeof this.shadowDOM) {
     this.shadowDOM = mode
     return this as this & { wShadowDOM: never }
   }
 
+  /**
+   * Provide component CSS. `requestedMode` prefers 'adopted' (adoptedStyleSheets) or 'inline'.
+   */
   wCSS(css: string, requestedMode: CSSMode = 'adopted') {
     this.css = {text: css, requestedMode}
     return this as this & { wCSS: never }
   }
 
+  /**
+   * Declare an attribute for the component.
+   * `options` may be a fallback string or an AttrOptions object ({onChange, ifMissing}).
+   */
   wAttr<A extends string>(attr: A, options?: string | AttrOptions<ComponentType>) {
     const parsed = parseFieldName(attr)
     const onChange = typeof options === 'string' ? undefined : options?.onChange
@@ -78,6 +91,10 @@ export class ComponentBwilder<
     >;
   }
 
+  /**
+   * Declare a named sub-element returned by the render function.
+   * Adds a typed key to `subElements` accessible in `this.subElements`.
+   */
   wElement<A extends string, T extends HTMLElement = HTMLElement>(
     elementName: A,
     elementType?: new (...args: any[]) => T
@@ -91,30 +108,42 @@ export class ComponentBwilder<
     >;
   }
 
+  /**
+   * Declare a typed per-instance field. `initial` may be a value or a factory called per instance.
+   */
   wState<N extends string, T>(name: N, initial: T | (() => T)) {
     const parsed = parseFieldName(name)
     this.stateDefinitions[parsed.name] = initial
     return this as unknown as ComponentBwilder<SubElements, StateRecord & Record<ExtractFieldName<N>, T>, AttrsRecord>
   }
 
+  /**
+   * Provide the render function. Called with the component context as `this` and `context`.
+   */
   wRender(renderFn: ComponentBwilderRenderer<ComponentType, SubElements>) {
     this.renderFn = renderFn
     return this as this & { wRender: never };
   }
 
+  /**
+   * Run after the first render; may return a cleanup function or a Promise of one.
+   */
   wConnectedFn(postMountFn: (this: ComponentType, context: ComponentType) => void | (() => void) | Promise<void> | Promise<() => void>) {
     this.postMountFn = postMountFn as any
     return this as this & { wConnectedFn: never }
   }
 
+  /**
+   * Hook executed after each render; intended for side-effects.
+   */
   wAfterUpdateFn(postRenderFn: (this: ComponentType & {render: never}, context: ComponentType & {requestUpdate: never}) => void | Promise<void>) {
     this.postRenderFn = postRenderFn as any
     return this as this & { wAfterUpdateFn: never }
   }
 
-  // Add handler for slot changes that will be wired up in post-mount.
-  // Handler is called with the component context and the slotted element that triggered the change.
-  // @returns a cleanup function that will be called on component disconnect, if needed.
+  /**
+   * Register a handler invoked when slotted elements are added. Handler receives the component context and slotted element and may return a cleanup function.
+   */
   wSlotAddedHandler(handler: <TEl extends HTMLElement>(this: ComponentType,
                                                        context: ComponentType,
                                                        slottedEl: TEl) => () => void) {
@@ -123,6 +152,9 @@ export class ComponentBwilder<
 
   }
 
+  /**
+   * Finalize the builder and return the constructed component class. Registers the tag if a tag name was provided.
+   */
   bwild() {
 
     if (!this.renderFn) throw new Error('No render function provided to component')
