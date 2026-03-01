@@ -54,10 +54,10 @@ describe('ComponentBwilder observed attributes', () => {
     const MyBuilder =
       new ComponentBwilder()
         .wTagName('observed-attrs-component' as TagName)
-        .wObservedAttr('data-id', ({newValue, oldValue}) => {
+        .wAttr('data-id', { onChange: ({newValue, oldValue}) => {
           console.log(`data-id changed from ${oldValue} to ${newValue}`)
-        })
-        .wObservedAttr('role')
+        } })
+        .wAttr('role', { onChange: true })
         .wRender(stubRender)
 
     const MyComponent = MyBuilder.bwild()
@@ -69,68 +69,14 @@ describe('ComponentBwilder observed attributes', () => {
     c.setAttribute('role', 'admin')
   })
 
-  test('same attribute defined twice', () => {
-    assert.throws(() => {
-      new ComponentBwilder()
-        .wObservedAttr('data-id', ({newValue, oldValue}) => {
-          console.log(`data-id changed from ${oldValue} to ${newValue}`)
-        })
-        .wObservedAttr('data-id')
-    }, /Attr "data-id" is already observed/)
-
-  })
-
-  test('callback', () => {
-
-    let dataParms = null as null | { newValue: unknown, oldValue: unknown }
-
-    const MyComponentClass = new ComponentBwilder()
-      .wTagName('observed-attrs-callback-component' as TagName)
-      .wObservedAttr('data-id', function ({newValue, oldValue}) {
-        dataParms = {newValue, oldValue}
-      })
-      .wRender(stubRender)
-      .bwild()
-
-    const c = new MyComponentClass()
-
-    c.setAttribute('data-id', '123')
-
-    assert.equal(dataParms!.oldValue, null)
-    assert.equal(dataParms!.newValue, '123')
-  })
-
-  test('callback receives attr name and component as context', () => {
-
-    let callbackThis: unknown = null
-    let callbackArgs: any = null
-
-    const MyComponentClass = new ComponentBwilder()
-      .wTagName(nextTag('observed-attrs-context'))
-      .wObservedAttr('data-id', function (this: HTMLElement, args) {
-        callbackThis = this
-        callbackArgs = args
-      })
-      .wRender(stubRender)
-      .bwild()
-
-    const c = new MyComponentClass()
-    c.setAttribute('data-id', '42')
-
-    assert.equal(callbackThis, c)
-    assert.equal(callbackArgs.name, 'data-id')
-    assert.equal(callbackArgs.oldValue, null)
-    assert.equal(callbackArgs.newValue, '42')
-  })
-
   test('callback receives null when observed attribute is removed', () => {
     const transitions: Array<{ oldValue: unknown, newValue: unknown }> = []
 
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('observed-attrs-remove'))
-      .wObservedAttr('data-id', ({oldValue, newValue}) => {
+      .wAttr('data-id', { onChange: ({oldValue, newValue}) => {
         transitions.push({oldValue, newValue})
-      })
+      } })
       .wRender(stubRender)
       .bwild()
 
@@ -232,7 +178,7 @@ describe('ComponentBwilder render', () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName('rendered-component-with-unobs-attr-default' as TagName)
       .wShadowDOM('none')
-      .wAttr('data-info', 'a default value')
+      .wAttr('data-info', { ifMissing: 'a default value' })
       .wRender(function () {
         this.root.innerHTML = `<div>Info: ${this['data-info']}</div>`;
       })
@@ -250,7 +196,7 @@ describe('ComponentBwilder render', () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('rendered-component-with-empty-string-default'))
       .wShadowDOM('none')
-      .wAttr('data-info', 'fallback-default')
+      .wAttr('data-info', { ifMissing: 'fallback-default' })
       .wRender(function () {
         this.root.innerHTML = `<div>Info: ${this['data-info']}</div>`
       })
@@ -275,7 +221,7 @@ describe('ComponentBwilder render', () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName('rendered-component-with-attr' as TagName)
       .wShadowDOM('none')
-      .wObservedAttr('data-name')
+      .wAttr('data-name', { onChange: true })
       .wRender(function () {
         observedValue = this['data-name']
         this.root.innerHTML = `<div>Hello, ${observedValue}</div>`;
@@ -322,8 +268,8 @@ describe('ComponentBwilder render', () => {
   test('observedAttributes include only observed attrs in order', () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('observed-order'))
-      .wObservedAttr('data-first')
-      .wObservedAttr('data-second')
+      .wAttr('data-first', { onChange: true })
+      .wAttr('data-second', { onChange: true })
       .wAttr('data-unobserved')
       .wRender(stubRender)
       .bwild()
@@ -339,9 +285,9 @@ describe('ComponentBwilder render', () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('obs-callback-no-rerender'))
       .wShadowDOM('none')
-      .wObservedAttr('data-id', () => {
+      .wAttr('data-id', { onChange: () => {
         callbackCount += 1
-      })
+      } })
       .wRender(function () {
         renderCount += 1
         this.root.innerHTML = `<div>${renderCount}</div>`
@@ -358,35 +304,13 @@ describe('ComponentBwilder render', () => {
     assert.equal(c.querySelector('div')!.innerHTML, '1')
   })
 
-  test('observed attr without callback auto-renders', () => {
-    let renderCount = 0
-
-    const MyComponentClass = new ComponentBwilder()
-      .wTagName(nextTag('obs-rerender'))
-      .wShadowDOM('none')
-      .wObservedAttr('data-name')
-      .wRender(function () {
-        renderCount += 1
-        this.root.innerHTML = `<div>${this['data-name']}</div>`
-      })
-      .bwild()
-
-    const c = new MyComponentClass()
-    c.connectedCallback()
-    assert.equal(renderCount, 1)
-
-    c.setAttribute('data-name', 'Frank')
-    assert.equal(renderCount, 2)
-    assert.equal(c.querySelector('div')!.innerHTML, 'Frank')
-  })
-
   test('render receives context as first argument', () => {
     let sameContextObject = false
 
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('render-context-arg'))
       .wShadowDOM('none')
-      .wObservedAttr('data-name')
+      .wAttr('data-name', { onChange: true })
       .wRender(function (context) {
         sameContextObject = this === context
         this.root.innerHTML = `<div>${context['data-name'] ?? 'none'}</div>`
@@ -405,7 +329,7 @@ describe('ComponentBwilder render', () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('render-context-destructure'))
       .wShadowDOM('none')
-      .wObservedAttr('data-name')
+      .wAttr('data-name', { onChange: true })
       .wRender(function ({root, 'data-name': dataName}) {
         root.innerHTML = `<div>${dataName ?? 'none'}</div>`
       })
@@ -425,7 +349,7 @@ describe('ComponentBwilder render', () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('post-mount'))
       .wShadowDOM('none')
-      .wObservedAttr('data-v')
+      .wAttr('data-v', { onChange: true })
       .wRender(function () {
         events.push('render')
         this.root.innerHTML = `<div>${this['data-v'] ?? 'init'}</div>`
@@ -456,7 +380,7 @@ describe('ComponentBwilder render', () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('post-render'))
       .wShadowDOM('none')
-      .wObservedAttr('data-v')
+      .wAttr('data-v', { onChange: true })
       .wRender(function () {
         renderCount += 1
         this.root.innerHTML = `<div>${this['data-v'] ?? 'init'}</div>`
@@ -488,7 +412,7 @@ describe('ComponentBwilder render', () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('post-render-context-destructure'))
       .wShadowDOM('none')
-      .wObservedAttr('data-v')
+      .wAttr('data-v', { onChange: true })
       .wRender(function ({root, 'data-v': dataV}) {
         root.innerHTML = `<div>${dataV ?? 'init'}</div>`
       })
@@ -895,7 +819,7 @@ describe('ComponentBwilder render', () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('single-style'))
       .wShadowDOM('none')
-      .wObservedAttr('data-v')
+      .wAttr('data-v', { onChange: true })
       .wCSS(css)
       .wRender(function () {
         this.root.innerHTML = '<div class="single-style">Text</div>'
@@ -918,7 +842,7 @@ describe('ComponentBwilder render', () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('single-style-shadow'))
       .wShadowDOM('open')
-      .wObservedAttr('data-v')
+      .wAttr('data-v', { onChange: true })
       .wCSS(css)
       .wRender(function () {
         this.root.innerHTML = '<div class="single-style-shadow">Shadow Text</div>'
@@ -948,7 +872,7 @@ describe('ComponentBwilder render', () => {
       const MyComponentClass = new ComponentBwilder()
         .wTagName(nextTag('css-fallback-inline'))
         .wShadowDOM('none')
-        .wObservedAttr('data-v')
+        .wAttr('data-v', { onChange: true })
         .wCSS(css)
         .wRender(function () {
           this.root.innerHTML = '<div class="fallback-style">Fallback</div>'
@@ -1035,7 +959,7 @@ describe('ComponentBwilder render', () => {
       const MyComponentClass = new ComponentBwilder()
         .wTagName(nextTag('adopted-no-warning'))
         .wShadowDOM('open')
-        .wObservedAttr('data-v')
+        .wAttr('data-v', { onChange: true })
         .wCSS(css)
         .wRender(function () {
           this.root.innerHTML = '<div class="adopted-no-warning">Text</div>'
@@ -1210,14 +1134,14 @@ describe('ComponentBwilder render', () => {
         assert.equal(subElements.content?.textContent, 'Mounted Content')
         assert.equal(this.subElements.content?.textContent, 'Mounted Content')
       })
-      .wObservedAttr('data-update', function() {
+      .wAttr('data-update', { onChange: function() {
         assert.equal(this.subElements.content?.textContent, 'Mounted Content')
-      })
+      } })
       .wElement<'more', HTMLSlotElement>('more')
-      .wObservedAttr('data-more', function() {
+      .wAttr('data-more', { onChange: function() {
         assert.equal(this.subElements.content?.textContent, 'Mounted Content')
         assert.equal(this.subElements.more, null)
-      })
+      } })
       .bwild()
   })
 
@@ -1402,9 +1326,9 @@ describe('ComponentBwilder render', () => {
 
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('old-value-second'))
-      .wObservedAttr('data-val', ({oldValue, newValue}) => {
+      .wAttr('data-val', { onChange: ({oldValue, newValue}) => {
         transitions.push({oldValue, newValue})
-      })
+      } })
       .wRender(stubRender)
       .bwild()
 
@@ -1850,6 +1774,188 @@ describe('wState', () => {
     assert.ok(keys.includes('email'), 'Should have "email" key without bang')
     assert.ok(keys.includes('status'), 'Should have "status" key')
     assert.ok(!keys.includes('email!'), 'Should NOT have "email!" key with bang')
+  })
+
+})
+
+describe('wAttr options object', () => {
+
+  test('wAttr with { ifMissing } returns fallback when attribute is absent', async () => {
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('wattr-ifmissing'))
+      .wShadowDOM('none')
+      .wAttr('data-color', { ifMissing: 'blue' })
+      .wRender(stubRender)
+      .bwild()
+
+    const c = new MyComponentClass()
+    await c.connectedCallback()
+    assert.equal(c['data-color'], 'blue', 'should return ifMissing when attr absent')
+
+    c.setAttribute('data-color', 'red')
+    assert.equal(c['data-color'], 'red', 'should return actual value when attr present')
+  })
+
+  test('wAttr with { ifMissing } returns fallback after attribute is removed', async () => {
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('wattr-ifmissing-null'))
+      .wShadowDOM('none')
+      .wAttr('data-color', { ifMissing: 'blue' })
+      .wRender(stubRender)
+      .bwild()
+
+    const c = new MyComponentClass()
+    c.setAttribute('data-color', 'red')
+    await c.connectedCallback()
+    c.removeAttribute('data-color')
+    assert.equal(c['data-color'], 'blue', 'should return ifMissing after removal')
+  })
+
+  test('wAttr with { onChange: true } observes attribute and auto-rerenders', async () => {
+    let renderCount = 0
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('wattr-observe-rerender'))
+      .wShadowDOM('none')
+      .wAttr('data-v', { onChange: true })
+      .wRender(function () {
+        renderCount++
+        this.root.innerHTML = `<div>${this['data-v']}</div>`
+      })
+      .bwild()
+
+    const c = new MyComponentClass()
+    await c.connectedCallback()
+    assert.equal(renderCount, 1)
+
+    c.setAttribute('data-v', 'hello')
+    assert.equal(renderCount, 2, 'should re-render on attribute change')
+  })
+
+  test('wAttr with { onChange: fn } observes attribute and calls fn', () => {
+    let received: unknown = null
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('wattr-observe-fn'))
+      .wShadowDOM('none')
+      .wAttr('data-v', { onChange: ({ newValue }) => { received = newValue } })
+      .wRender(stubRender)
+      .bwild()
+
+    const c = new MyComponentClass()
+    c.setAttribute('data-v', 'world')
+    assert.equal(received, 'world')
+  })
+
+  test('wAttr { onChange: fn } callback receives name, newValue, oldValue and this context', () => {
+    let callbackArgs: any = null
+    let callbackThis: unknown = null
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('wattr-observe-fn-args'))
+      .wShadowDOM('none')
+      .wAttr('data-v', { onChange: function (this: HTMLElement, args) {
+        callbackThis = this
+        callbackArgs = args
+      }})
+      .wRender(stubRender)
+      .bwild()
+
+    const c = new MyComponentClass()
+    c.setAttribute('data-v', '42')
+
+    assert.equal(callbackThis, c)
+    assert.equal(callbackArgs.name, 'data-v')
+    assert.equal(callbackArgs.oldValue, null)
+    assert.equal(callbackArgs.newValue, '42')
+  })
+
+  test('wAttr { onChange: fn } does not auto-rerender', async () => {
+    let renderCount = 0
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('wattr-no-rerender'))
+      .wShadowDOM('none')
+      .wAttr('data-v', { onChange: () => {} })
+      .wRender(function () {
+        renderCount++
+        this.root.innerHTML = '<div></div>'
+      })
+      .bwild()
+
+    const c = new MyComponentClass()
+    await c.connectedCallback()
+    assert.equal(renderCount, 1)
+
+    c.setAttribute('data-v', 'x')
+    assert.equal(renderCount, 1, 'onChange fn prevents auto-rerender')
+  })
+
+  test('wAttr { onChange: fn, ifMissing } — observed with callback and fallback', async () => {
+    let received: unknown = null
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('wattr-fn-ifmissing'))
+      .wShadowDOM('none')
+      .wAttr('data-v', { onChange: ({ newValue }) => { received = newValue }, ifMissing: 'default' })
+      .wRender(stubRender)
+      .bwild()
+
+    const c = new MyComponentClass()
+    await c.connectedCallback()
+
+    assert.equal(c['data-v'], 'default', 'should return ifMissing when absent')
+    c.setAttribute('data-v', 'actual')
+    assert.equal(received, 'actual', 'callback fires on change')
+    assert.equal(c['data-v'], 'actual', 'getter returns actual value')
+  })
+
+  test('wAttr { onChange: true, ifMissing } — observed with rerender and fallback', async () => {
+    let renderCount = 0
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('wattr-rerender-ifmissing'))
+      .wShadowDOM('none')
+      .wAttr('data-v', { onChange: true, ifMissing: 'fallback' })
+      .wRender(function () {
+        renderCount++
+        this.root.innerHTML = `<div>${this['data-v']}</div>`
+      })
+      .bwild()
+
+    const c = new MyComponentClass()
+    await c.connectedCallback()
+
+    assert.equal(c['data-v'], 'fallback', 'should return ifMissing when absent')
+    assert.equal(renderCount, 1)
+
+    c.setAttribute('data-v', 'live')
+    assert.equal(renderCount, 2, 'rerenders on change')
+    assert.equal(c['data-v'], 'live')
+  })
+
+  test('wAttr { onChange } with same attr name twice throws', () => {
+    assert.throws(() => {
+      new ComponentBwilder()
+        .wAttr('data-id', { onChange: true })
+        .wAttr('data-id', { onChange: true })
+    }, /Attr "data-id" is already observed/)
+  })
+
+  test('wAttr { onChange } attr appears in observedAttributes, unobserved attr does not', () => {
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('wattr-observed-list'))
+      .wShadowDOM('none')
+      .wAttr('data-x', { onChange: true })
+      .wAttr('data-y', { onChange: () => {} })
+      .wAttr('data-z')
+      .wRender(stubRender)
+      .bwild()
+
+    const observed = (MyComponentClass as any).observedAttributes
+    assert.ok(observed.includes('data-x'), 'data-x should be observed')
+    assert.ok(observed.includes('data-y'), 'data-y should be observed')
+    assert.ok(!observed.includes('data-z'), 'data-z should NOT be observed')
   })
 
 })

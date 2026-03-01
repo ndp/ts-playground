@@ -7,7 +7,7 @@ const LocaleSelector = (new ComponentBwilder())
   .wShadowDOM('none')
   .wElement('segmentedButtons')
   .wState('languages', () => new RiggedQueue<string>(10, [navigator.language]))
-  .wObservedAttr('data-country', function ({newValue}) {
+  .wAttr('data-country', { onChange: function ({newValue}) {
     if (!newValue) return // Don't change if they don't send any value
 
     const countryLocales = teenyDb.langs(newValue as ISO2CountryCode);
@@ -26,7 +26,7 @@ const LocaleSelector = (new ComponentBwilder())
     this.subElements.segmentedButtons!.setAttribute('data-value', countryLocales[0])
     this.root.dispatchEvent(new CustomEvent('change', {bubbles: true, detail: {value: countryLocales[0]}}))
 
-  })
+  }})
   .wRender(function () {
     let segmentedButtons = this.subElements.segmentedButtons
     if (!segmentedButtons) {
