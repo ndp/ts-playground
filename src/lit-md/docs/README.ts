@@ -14,7 +14,7 @@ lit-md README.ts        # generate README.md
 
 import {describe, test} from 'node:test'
 import assert from 'node:assert/strict'
-import {parse, render} from './index.ts'
+import {parse, render} from '../index.ts'
 
 /*
 ## How it works
@@ -193,3 +193,79 @@ test('render converts DocNode[] to a markdown string', () => {
 //
 // The generated file ends with a trailing newline. The input file is never
 // modified — `lit-md` is read-only with respect to your source.
+
+// ## Command-line examples
+//
+// Use `shell` or `shellExample` to include executable shell examples in your
+// documentation. Both helpers register a `node:test` test that runs the command
+// and verifies any annotations at test time.
+//
+// Import from `@ndp-software/lit-md`:
+//
+// ```typescript
+// import { shell, shellExample } from '@ndp-software/lit-md'
+// ```
+//
+// ### `shell` — compact tagged template
+//
+// Best for simple, readable inline examples. Annotations live alongside the commands.
+
+// #### Verify exit 0 only
+
+// file: usage-basic.ts
+test('shell basic: just verify the command succeeds', () => {
+  const nodes = parse(`shell\`echo "hello"\``)
+  assert.equal(nodes[0]?.kind, 'code')
+  assert.equal((nodes[0] as any).lang, 'sh')
+})
+
+// #### With stdout assertion (`# =>` mirrors `// =>`)
+
+test('shell # => example renders with annotation', () => {
+  const nodes = parse('shell`\n  echo "hello world"\n  # => hello world\n`')
+  assert.ok((nodes[0] as any).text.includes('# => hello world'))
+})
+
+// #### With output file assertion
+
+test('shell # file: example renders with annotation', () => {
+  const nodes = parse('shell`\n  lit-md README.ts\n  # file: README.md contains "# Title"\n`')
+  assert.ok((nodes[0] as any).text.includes('# file: README.md'))
+})
+
+// ### `shellExample` — structured function
+//
+// Best when assertions need explicit naming or multi-line file content.
+
+// #### Simplest form
+
+test('shellExample basic renders as sh block', () => {
+  const nodes = parse(`shellExample('echo "hello"', {})`)
+  assert.equal((nodes[0] as any).lang, 'sh')
+  assert.equal((nodes[0] as any).text, 'echo "hello"')
+})
+
+// #### With stdout and multi-line file output assertion
+
+test('shellExample with stdout and outputFiles renders annotations', () => {
+  const nodes = parse(
+    `shellExample('lit-md README.ts', { stdout: 'wrote README.md', outputFiles: [{ path: 'README.md', contains: '# Title\\n\\nA library.' }] })`
+  )
+  const text = (nodes[0] as any).text as string
+  assert.ok(text.includes('# => wrote README.md'))
+  assert.ok(text.includes('# output-file: README.md contains:'))
+  assert.ok(text.includes('#   # Title'))
+})
+
+// #### With inputFiles fixture
+
+test('shellExample with inputFiles renders command only (no inputFiles shown)', () => {
+  const nodes = parse(
+    `shellExample('lit-md tmp/README.ts', { inputFiles: [{ path: 'tmp/README.ts', content: '// # Hi' }], outputFiles: [{ path: 'tmp/README.md', contains: '# Hi' }] })`
+  )
+  const text = (nodes[0] as any).text as string
+  // The command is shown
+  assert.ok(text.startsWith('lit-md tmp/README.ts'))
+  // inputFiles are not shown in the rendered markdown (invisible setup)
+  assert.ok(!text.includes('inputFiles'))
+})

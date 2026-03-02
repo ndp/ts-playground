@@ -9,6 +9,7 @@
     "lit-md": "./cli.ts"
   },
   "scripts": {
+    "readme": "node ./cli.ts ./docs/README.ts",
     "test": "node --test './**/*.test.ts'",
     "test:watch": "node --test --watch './**/*.test.ts'",
     "typecheck": "tsc -p ./tsconfig.check.json",

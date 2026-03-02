@@ -412,3 +412,67 @@ test('t', () => {
   })
 
 })
+
+describe('parse: shell`` tagged template → sh code block', () => {
+
+  test('bare shell template → sh CodeNode', () => {
+    const nodes = parse('shell`cat "foo.txt"`')
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'sh', text: 'cat "foo.txt"', title: undefined }
+    ])
+  })
+
+  test('shell template with # => annotation → preserved in code text', () => {
+    const nodes = parse('shell`\n  lit-md README.ts\n  # => wrote README.md\n`')
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'sh', text: 'lit-md README.ts\n# => wrote README.md', title: undefined }
+    ])
+  })
+
+  test('shell template with # file: annotation → preserved in code text', () => {
+    const nodes = parse('shell`\n  lit-md README.ts\n  # file: README.md contains "# Title"\n`')
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'sh', text: 'lit-md README.ts\n# file: README.md contains "# Title"', title: undefined }
+    ])
+  })
+
+})
+
+describe('parse: shellExample() → sh code block', () => {
+
+  test('shellExample call with empty options → sh CodeNode', () => {
+    const nodes = parse(`shellExample('echo "hello"', {})`)
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'sh', text: 'echo "hello"', title: undefined }
+    ])
+  })
+
+  test('shellExample with stdout option → # => annotation in code text', () => {
+    const nodes = parse(`shellExample('lit-md README.ts', { stdout: 'wrote README.md' })`)
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'sh', text: 'lit-md README.ts\n# => wrote README.md', title: undefined }
+    ])
+  })
+
+  test('shellExample with single-line outputFiles contains → annotation in code text', () => {
+    const nodes = parse(`shellExample('lit-md README.ts', { outputFiles: [{ path: 'README.md', contains: '# My Lib' }] })`)
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'sh', text: 'lit-md README.ts\n# output-file: README.md contains "# My Lib"', title: undefined }
+    ])
+  })
+
+  test('shellExample with multi-line outputFiles contains → indented # lines', () => {
+    const nodes = parse(`shellExample('lit-md README.ts', { outputFiles: [{ path: 'README.md', contains: '# Title\\n\\nBody.' }] })`)
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'sh', text: 'lit-md README.ts\n# output-file: README.md contains:\n#   # Title\n#\n#   Body.', title: undefined }
+    ])
+  })
+
+  test('shellExample with outputFiles matches → annotation in code text', () => {
+    const nodes = parse(`shellExample('lit-md README.ts', { outputFiles: [{ path: 'README.md', matches: /## How it works/ }] })`)
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'sh', text: 'lit-md README.ts\n# output-file: README.md matches /## How it works/', title: undefined }
+    ])
+  })
+
+})

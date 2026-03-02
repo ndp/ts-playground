@@ -57,6 +57,16 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
     // Detect test('name', () => { ... }) calls
     if (ts.isExpressionStatement(stmt)) {
       const expr = stmt.expression
+
+      // Detect shell`...` tagged template
+      if (ts.isTaggedTemplateExpression(expr) && ts.isIdentifier(expr.tag) && expr.tag.text === 'shell') {
+        const title = pendingFileLabel
+        pendingFileLabel = undefined
+        const text = extractShellTemplateText(src, expr.template)
+        nodes.push({ kind: 'code', lang: 'sh', text, title })
+        return
+      }
+
       if (ts.isCallExpression(expr) && ts.isIdentifier(expr.expression)) {
         const name = expr.expression.text
       if (name === 'test' || name === 'it') {
@@ -91,6 +101,20 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
             visitStatements(body.statements)
             return
           }
+        }
+        if (name === 'shellExample') {
+          const cmd = getStringArg(expr, 0)
+          if (cmd !== null) {
+            const title = pendingFileLabel
+            pendingFileLabel = undefined
+            const lines: string[] = [cmd]
+            const optsArg = expr.arguments[1]
+            if (optsArg && ts.isObjectLiteralExpression(optsArg)) {
+              appendShellExampleAnnotations(src, optsArg, lines)
+            }
+            nodes.push({ kind: 'code', lang: 'sh', text: lines.join('\n'), title })
+          }
+          return
         }
       }
     }
@@ -312,4 +336,61 @@ function transformNestedAssertOk(code: string): string {
   // We use a regex to find and replace: assert\.ok\(([^)]+)\) → $1 // OK
   // This is a heuristic that works for simple cases
   return code.replace(/assert\.ok\(([^)]+)\)/g, '$1 // OK')
+}
+
+/** Extracts dedented text from a template literal used in shell`...` */
+function extractShellTemplateText(src: string, template: ts.TemplateLiteral): string {
+  const raw = ts.isNoSubstitutionTemplateLiteral(template)
+    ? template.text
+    : template.head.text
+  const lines = raw.split('\n')
+  // Dedent: find minimum indentation of non-empty lines
+  const nonEmpty = lines.filter(l => l.trim().length > 0)
+  if (!nonEmpty.length) return raw.trim()
+  const minInd = Math.min(...nonEmpty.map(l => l.length - l.trimStart().length))
+  return lines
+    .map(l => (minInd > 0 && l.startsWith(' '.repeat(minInd))) ? l.slice(minInd) : l)
+    .join('\n')
+    .trim()
+}
+
+/** Reads shellExample options and appends annotation lines (# => ..., # output-file: ...) */
+function appendShellExampleAnnotations(src: string, opts: ts.ObjectLiteralExpression, lines: string[]): void {
+  for (const prop of opts.properties) {
+    if (!ts.isPropertyAssignment(prop) || !ts.isIdentifier(prop.name)) continue
+    const key = prop.name.text
+
+    if (key === 'stdout' && ts.isStringLiteralLike(prop.initializer)) {
+      lines.push(`# => ${prop.initializer.text}`)
+    }
+
+    if (key === 'outputFiles' && ts.isArrayLiteralExpression(prop.initializer)) {
+      for (const el of prop.initializer.elements) {
+        if (!ts.isObjectLiteralExpression(el)) continue
+        const pathProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'path')
+        const containsProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'contains')
+        const matchesProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'matches')
+
+        if (!pathProp || !ts.isPropertyAssignment(pathProp) || !ts.isStringLiteralLike(pathProp.initializer)) continue
+        const filePath = pathProp.initializer.text
+
+        if (containsProp && ts.isPropertyAssignment(containsProp) && ts.isStringLiteralLike(containsProp.initializer)) {
+          const text = containsProp.initializer.text
+          if (text.includes('\n')) {
+            lines.push(`# output-file: ${filePath} contains:`)
+            for (const line of text.split('\n')) {
+              lines.push(line.length === 0 ? '#' : `#   ${line}`)
+            }
+          } else {
+            lines.push(`# output-file: ${filePath} contains "${text}"`)
+          }
+        }
+
+        if (matchesProp && ts.isPropertyAssignment(matchesProp) && ts.isRegularExpressionLiteral(matchesProp.initializer)) {
+          const regexText = src.slice(matchesProp.initializer.getStart(), matchesProp.initializer.getEnd())
+          lines.push(`# output-file: ${filePath} matches ${regexText}`)
+        }
+      }
+    }
+  }
 }
