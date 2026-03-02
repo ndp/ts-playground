@@ -1,4 +1,4 @@
-import { test } from 'node:test'
+import { example } from '../../lit-md/index.ts'
 import assert from 'assert'
 import { ComponentBwilder } from '../componentBwilder.ts'
 import { type ElementDescriptor } from '../render.ts'
@@ -21,7 +21,7 @@ import { type ElementDescriptor } from '../render.ts'
 
 // ## Quick example
 
-test('quick example', () => {
+example('quick example', () => {
   const Greeting = new ComponentBwilder()
     .wTagName('x-greeting')
     .wShadowDOM('open')
@@ -54,7 +54,7 @@ test('quick example', () => {
 
 // ### 1. Observed vs unobserved attributes
 
-test('observed attributes', () => {
+example('observed attributes', () => {
   const Observed = new ComponentBwilder()
     .wTagName('c-observed')
     .wAttr('data-count')
@@ -67,7 +67,7 @@ test('observed attributes', () => {
   assert.ok(customElements.get('c-observed'))
 })
 
-test('unobserved attributes', () => {
+example('unobserved attributes', () => {
   const Unobserved = new ComponentBwilder()
     .wTagName('c-unobserved')
     .wAttr('info', 'default')
@@ -83,7 +83,7 @@ test('unobserved attributes', () => {
 
 // ### 2. Sub-element wiring
 
-test('sub-element wiring', () => {
+example('sub-element wiring', () => {
   const SubElems = new ComponentBwilder()
     .wTagName('c-subelems')
     .wElement('title')
@@ -104,7 +104,7 @@ test('sub-element wiring', () => {
 
 // **Marking elements as required vs. optional** — Append `!` to a field name to mark it as required (non-null):
 
-test('required vs optional sub-elements', () => {
+example('required vs optional sub-elements', () => {
   const Form = new ComponentBwilder()
     .wTagName('c-form')
     .wElement('email!')                    // Required: HTMLElement (no null check needed)
@@ -136,7 +136,7 @@ test('required vs optional sub-elements', () => {
 
 // **Sub-element type hints** — pass a type parameter to `.wElement()` for type-safe property access:
 
-test('typed sub-elements', () => {
+example('typed sub-elements', () => {
   const FormTyped = new ComponentBwilder()
     .wTagName('c-form-typed')
     .wElement('email', HTMLInputElement)     // Typed as HTMLInputElement | null
@@ -166,7 +166,7 @@ test('typed sub-elements', () => {
 
 // ### 3. CSS modes and sharing
 
-test('CSS modes', () => {
+example('CSS modes', () => {
   const CSSAdopted = new ComponentBwilder()
     .wTagName('c-css-adopted')
     .wCSS('.foo { color: red }')      // requests adopted, falls back to inline if unsupported
@@ -187,7 +187,7 @@ test('CSS modes', () => {
 
 // ### 4. Async render / lifecycle hooks
 
-test('async lifecycle hooks', async () => {
+example('async lifecycle hooks', async () => {
   const AsyncComponent = new ComponentBwilder()
     .wTagName('c-async')
     .wShadowDOM('none')
@@ -218,7 +218,7 @@ test('async lifecycle hooks', async () => {
 
 // ### 5. State management
 
-test('state management', () => {
+example('state management', () => {
   const Counter = new ComponentBwilder()
     .wTagName('c-counter')
     .wShadowDOM('none')
@@ -249,7 +249,7 @@ test('state management', () => {
 //
 // When using render factories (`makeComponentRendererFromString`, `makeComponentRendererFromFn`) outside of ComponentBwilder, you can also use `ElementDescriptor` to preserve specific element types:
 
-test('ElementDescriptor for type-safe sub-elements', () => {
+example('ElementDescriptor for type-safe sub-elements', () => {
   // This test demonstrates the ElementDescriptor pattern
   // In real code, you would use: makeComponentRendererFromString()
   const descriptor: Record<string, string | ElementDescriptor> = {
@@ -263,7 +263,7 @@ test('ElementDescriptor for type-safe sub-elements', () => {
 
 // Or mix string selectors (generic HTMLElement) with typed descriptors:
 
-test('mixed ElementDescriptor selectors', () => {
+example('mixed ElementDescriptor selectors', () => {
   const descriptor: Record<string, string | ElementDescriptor> = {
     email: { selector: '#email', type: HTMLInputElement },  // Typed
     status: '#status'                                       // Generic HTMLElement | null
@@ -277,7 +277,7 @@ test('mixed ElementDescriptor selectors', () => {
 
 // ### 7. Slot assigned-element handling
 
-test('slot assigned-element handling', () => {
+example('slot assigned-element handling', () => {
   const SlotComponent = new ComponentBwilder()
     .wTagName('c-slot-demo')
     .wShadowDOM('open')

@@ -12,7 +12,7 @@ lit-md README.ts        # generate README.md
 ```
 */
 
-import {describe, test} from 'node:test'
+import {describe, example} from '../index.ts'
 import assert from 'node:assert/strict'
 import {parse, render} from '../index.ts'
 
@@ -38,14 +38,14 @@ A literate file is a normal `node:test` file. The rules are simple:
 // `//` line comments and `/* block */` comments both become markdown.
 // Blank `//` lines become paragraph breaks.
 
-test('line comments → prose', () => {
+example('line comments → prose', () => {
   const nodes = parse('// Hello, **world**.\n//\n// Second paragraph.')
   assert.deepEqual(nodes, [
     {kind: 'prose', text: 'Hello, **world**.\n\nSecond paragraph.'}
   ])
 })
 
-test('block comments → prose (strips leading asterisks)', () => {
+example('block comments → prose (strips leading asterisks)', () => {
   const nodes = parse('/*\n * ## Section\n *\n * A description.\n */')
   assert.deepEqual(nodes, [
     {kind: 'prose', text: '## Section\n\nA description.'}
@@ -58,10 +58,10 @@ test('block comments → prose (strips leading asterisks)', () => {
 // The test name is stored as a fence `title` — rendered as a tab label
 // in Docusaurus, silently ignored by GitHub.
 
-test('test body → fenced code block', () => {
+example('test body → fenced code block', () => {
   const src = `
 import { test } from 'node:test'
-test('greet', () => {
+example('greet', () => {
   const msg = 'Hello, world!'
   assert.equal(msg.length, 13)
 })
@@ -78,7 +78,7 @@ test('greet', () => {
 // the body is kept. Use `describe` to group related tests without affecting
 // the generated docs.
 
-test('describe is transparent — name is discarded', () => {
+example('describe is transparent — name is discarded', () => {
   const src = `
 import { describe, test } from 'node:test'
 describe('My Group', () => {
@@ -100,12 +100,12 @@ describe('My Group', () => {
 // import { test } from 'node:test'             ← hidden
 // ```
 
-test('imports are hidden by default', () => {
+example('imports are hidden by default', () => {
   const nodes = parse(`import { test } from 'node:test'`)
   assert.deepEqual(nodes, [])
 })
 
-test('// keep shows the import in a code block', () => {
+example('// keep shows the import in a code block', () => {
   const nodes = parse(`import { greet } from './greet.ts' // keep`)
   assert.equal(nodes.length, 1)
   assert.equal(nodes[0]!.kind, 'code')
@@ -125,7 +125,7 @@ test('// keep shows the import in a code block', () => {
 // import { parse } from '@ndp-software/lit-md'
 // ```
 
-test('merged block includes both the fence and the test body', () => {
+example('merged block includes both the fence and the test body', () => {
   const src = `
 import { test } from 'node:test'
 // Use it like this:
@@ -133,7 +133,7 @@ import { test } from 'node:test'
 // \`\`\`typescript
 // import { parse } from '@ndp-software/lit-md'
 // \`\`\`
-test('example', () => {
+example('example', () => {
   const nodes = parse('// Hello')
   assert.equal(nodes[0]?.kind, 'prose')
 })
@@ -152,11 +152,11 @@ test('example', () => {
 
 
 // file: greet-usage.ts
-test('// file: sets the fence label', () => {
+example('// file: sets the fence label', () => {
   const src = `
 import { test } from 'node:test'
 // file: greet-usage.ts
-test('labeled', () => {
+example('labeled', () => {
   const msg = greet('world')
 })
 `
@@ -172,7 +172,7 @@ test('labeled', () => {
 // to a markdown string. You can use these directly if you need custom output.
 
 
-test('render converts DocNode[] to a markdown string', () => {
+example('render converts DocNode[] to a markdown string', () => {
   const md = render([
     {kind: 'prose', text: '## Example'},
     {kind: 'code', lang: 'typescript', text: 'const x = 1', title: undefined}
@@ -213,7 +213,7 @@ test('render converts DocNode[] to a markdown string', () => {
 // #### Verify exit 0 only
 
 // file: usage-basic.ts
-test('shell basic: just verify the command succeeds', () => {
+example('shell basic: just verify the command succeeds', () => {
   const nodes = parse(`shell\`echo "hello"\``)
   assert.equal(nodes[0]?.kind, 'code')
   assert.equal((nodes[0] as any).lang, 'sh')
@@ -221,14 +221,14 @@ test('shell basic: just verify the command succeeds', () => {
 
 // #### With stdout assertion (`# =>` mirrors `// =>`)
 
-test('shell # => example renders with annotation', () => {
+example('shell # => example renders with annotation', () => {
   const nodes = parse('shell`\n  echo "hello world"\n  # => hello world\n`')
   assert.ok((nodes[0] as any).text.includes('# => hello world'))
 })
 
 // #### With output file assertion
 
-test('shell # file: example renders with annotation', () => {
+example('shell # file: example renders with annotation', () => {
   const nodes = parse('shell`\n  lit-md README.ts\n  # file: README.md contains "# Title"\n`')
   assert.ok((nodes[0] as any).text.includes('# file: README.md'))
 })
@@ -239,7 +239,7 @@ test('shell # file: example renders with annotation', () => {
 
 // #### Simplest form
 
-test('shellExample basic renders as sh block', () => {
+example('shellExample basic renders as sh block', () => {
   const nodes = parse(`shellExample('echo "hello"', {})`)
   assert.equal((nodes[0] as any).lang, 'sh')
   assert.equal((nodes[0] as any).text, 'echo "hello"')
@@ -247,7 +247,7 @@ test('shellExample basic renders as sh block', () => {
 
 // #### With stdout and multi-line file output assertion
 
-test('shellExample with stdout and outputFiles renders annotations', () => {
+example('shellExample with stdout and outputFiles renders annotations', () => {
   const nodes = parse(
     `shellExample('lit-md README.ts', { stdout: 'wrote README.md', outputFiles: [{ path: 'README.md', contains: '# Title\\n\\nA library.' }] })`
   )
@@ -259,7 +259,7 @@ test('shellExample with stdout and outputFiles renders annotations', () => {
 
 // #### With inputFiles fixture
 
-test('shellExample with inputFiles renders command only (no inputFiles shown)', () => {
+example('shellExample with inputFiles renders command only (no inputFiles shown)', () => {
   const nodes = parse(
     `shellExample('lit-md tmp/README.ts', { inputFiles: [{ path: 'tmp/README.ts', content: '// # Hi' }], outputFiles: [{ path: 'tmp/README.md', contains: '# Hi' }] })`
   )

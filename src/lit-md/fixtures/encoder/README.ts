@@ -2,7 +2,7 @@
 //
 // A TypeScript utility for base64 encoding strings.
 
-import { describe, test } from 'node:test'
+import { describe, example } from '../index.ts'
 import assert from 'node:assert/strict'
 import { encode, decode } from './encoder.ts' // keep
 
@@ -18,14 +18,14 @@ import { encode, decode } from './encoder.ts' // keep
 
 // file: encode-example.ts
 describe('encode', () => {
-  test('returns base64', () => {
+  example('returns base64', () => {
     const result = encode('hello')
     assert.equal(result, 'aGVsbG8=')
   })
 
   // You can also encode empty strings:
 
-  test('handles empty string', () => {
+  example('handles empty string', () => {
     assert.equal(encode(''), '')
   })
 })
@@ -35,7 +35,7 @@ describe('encode', () => {
 // `decode` reverses `encode`:
 
 describe('decode', () => {
-  test('round-trips a string', () => {
+  example('round-trips a string', () => {
     assert.equal(decode(encode('world')), 'world')
   })
 })

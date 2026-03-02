@@ -69,7 +69,7 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
 
       if (ts.isCallExpression(expr) && ts.isIdentifier(expr.expression)) {
         const name = expr.expression.text
-      if (name === 'test' || name === 'it') {
+      if (name === 'test' || name === 'it' || name === 'example') {
           const testName = getStringArg(expr, 0)
           const body = getFnBody(expr, 1)
           if (body) {
