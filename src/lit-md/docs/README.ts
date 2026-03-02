@@ -31,13 +31,11 @@ A literate file is a normal `node:test` file. The rules are simple:
 | `assert.equal(x, y)` inside a test body         | Transformed to `x // => y` |
 | Comment ending with a code fence, then `test()` | Merged into one block         |
 | `// file: name.ts` before a block               | Filename label on that fence  |
+
+### Comments become prose
+`//` line comments and `/* block *\/` comments both become markdown.
+Blank `//` lines become paragraph breaks.
 */
-
-// ### Comments become prose
-//
-// `//` line comments and `/* block */` comments both become markdown.
-// Blank `//` lines become paragraph breaks.
-
 example('line comments → prose', () => {
   const nodes = parse('// Hello, **world**.\n//\n// Second paragraph.')
   assert.deepEqual(nodes, [
