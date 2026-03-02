@@ -35,7 +35,7 @@ describe('comments become prose', () => {
   shellExample('node ./cli.ts tmp.ts', {
     inputFiles: [{
       path: 'tmp.ts',
-      content: `/*\n * # Section\n * \n * A description.\n */\nimport { example } from 'node:test'`
+      content: `/*\n * # Section\n * \n * A description.\n */`
     }],
     outputFiles: [{
       path: 'tmp.md',

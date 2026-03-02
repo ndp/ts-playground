@@ -25,6 +25,14 @@ The CLI processes the file:
 
 Line and block comments both become markdown.
 
+```typescript tmp.ts
+/*
+ * # Section
+ * 
+ * A description.
+ */
+```
+
 ```sh
 node ./cli.ts tmp.ts
 # output-file: tmp.md contains:
@@ -38,6 +46,16 @@ node ./cli.ts tmp.ts
 
 The body of each example call becomes a fenced code block.
 
+```typescript tmp.ts
+import { example } from 'node:test'
+import assert from 'node:assert/strict'
+
+example('greet', () => {
+  const msg = 'Hello, world!'
+  assert.equal(msg.length, 13)
+})
+```
+
 ```sh
 node ./cli.ts tmp.ts
 # output-file: tmp.md contains "greet"
@@ -48,6 +66,18 @@ node ./cli.ts tmp.ts
 
 describe() wrappers are stripped - only the body is kept.
 
+```typescript tmp.ts
+import { describe, example } from 'node:test'
+import assert from 'node:assert/strict'
+
+describe('Math tests', () => {
+  example('add', () => {
+    const x = 1 + 1
+    assert.equal(x, 2)
+  })
+})
+```
+
 ```sh
 node ./cli.ts tmp.ts
 # output-file: tmp.md contains "add"
@@ -57,9 +87,27 @@ node ./cli.ts tmp.ts
 
 All import lines are hidden by default. Add // keep to show an import.
 
+```typescript tmp.ts
+import { example } from 'node:test'
+import { parse } from './parser.ts'
+
+example('test', () => {
+  const x = 1
+})
+```
+
 ```sh
 node ./cli.ts tmp.ts
 # output-file: tmp.md contains "const x = 1"
+```
+
+```typescript tmp.ts
+import { example } from 'node:test'
+import { greet } from './greet.ts' // keep
+
+example('test', () => {
+  const msg = greet('world')
+})
 ```
 
 ```sh
@@ -72,6 +120,22 @@ node ./cli.ts tmp.ts
 If a comment ends with a code fence and an example follows,
 they merge into one code block.
 
+```typescript tmp.ts
+import { example } from 'node:test'
+import assert from 'node:assert/strict'
+
+// Use it like this:
+//
+// ```typescript
+// import { parse } from '@ndp-software/lit-md'
+// ```
+
+example('example', () => {
+  const x = 1
+  assert.equal(x, 1)
+})
+```
+
 ```sh
 node ./cli.ts tmp.ts
 # output-file: tmp.md contains "import { parse }"
@@ -82,6 +146,16 @@ node ./cli.ts tmp.ts
 
 Place // file: before an example to add a label.
 
+```typescript tmp.ts
+import { example } from 'node:test'
+import assert from 'node:assert/strict'
+
+// file: greet.ts
+example('greet example', () => {
+  const msg = 'hello'
+})
+```
+
 ```sh
 node ./cli.ts tmp.ts
 # output-file: tmp.md contains "greet.ts"
@@ -91,6 +165,16 @@ node ./cli.ts tmp.ts
 
 Assertions inside examples are transformed to annotations:
 - assert.equal(a, b) becomes a // => b
+
+```typescript tmp.ts
+import { example } from 'node:test'
+import assert from 'node:assert/strict'
+
+example('equal', () => {
+  const msg = 'hello'
+  assert.equal(msg.length, 5)
+})
+```
 
 ```sh
 node ./cli.ts tmp.ts
@@ -107,6 +191,12 @@ node ./cli.ts README.ts
 # generates README.md next to README.ts
 ```
 
+```typescript tmp.ts
+// # My Document
+import { example } from 'node:test'
+example('test', () => {})
+```
+
 ```sh
 node ./cli.ts tmp.ts
 # output-file: tmp.md contains "# My Document"
@@ -115,6 +205,11 @@ node ./cli.ts tmp.ts
 ### Custom output path
 
 Use --out to write to a different location.
+
+```typescript tmp.ts
+// # Documentation
+import { example } from 'node:test'
+```
 
 ```sh
 node ./cli.ts tmp.ts --out /tmp/docs.md

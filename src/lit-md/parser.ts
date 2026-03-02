@@ -107,8 +107,15 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
           if (cmd !== null) {
             const title = pendingFileLabel
             pendingFileLabel = undefined
-            const lines: string[] = [cmd]
             const optsArg = expr.arguments[1]
+            
+            // Extract multi-line input files and create separate code blocks
+            if (optsArg && ts.isObjectLiteralExpression(optsArg)) {
+              processShellExampleInputFiles(src, optsArg, nodes)
+            }
+            
+            // Add the shell command block
+            const lines: string[] = [cmd]
             if (optsArg && ts.isObjectLiteralExpression(optsArg)) {
               appendShellExampleAnnotations(src, optsArg, lines)
             }
@@ -354,7 +361,61 @@ function extractShellTemplateText(src: string, template: ts.TemplateLiteral): st
     .trim()
 }
 
-/** Reads shellExample options and appends annotation lines (# => ..., # output-file: ...) */
+/** Helper to detect language from file extension */
+function getLanguageFromExtension(filePath: string): string {
+  const ext = filePath.split('.').pop()?.toLowerCase() || ''
+  const langMap: Record<string, string> = {
+    ts: 'typescript',
+    tsx: 'typescript',
+    js: 'javascript',
+    jsx: 'javascript',
+    json: 'json',
+    md: 'markdown',
+    yaml: 'yaml',
+    yml: 'yaml',
+    sh: 'sh',
+    bash: 'bash',
+    py: 'python',
+    rs: 'rust',
+    go: 'go',
+    java: 'java',
+    cs: 'csharp',
+    rb: 'ruby',
+    php: 'php',
+    html: 'html',
+    css: 'css',
+    xml: 'xml',
+    txt: 'text'
+  }
+  return langMap[ext] || ext || 'text'
+}
+
+/** Extracts input files from shellExample options and creates separate code blocks */
+function processShellExampleInputFiles(src: string, opts: ts.ObjectLiteralExpression, nodes: DocNode[]): void {
+  const inputFilesProp = opts.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'inputFiles')
+  
+  if (!inputFilesProp || !ts.isPropertyAssignment(inputFilesProp) || !ts.isArrayLiteralExpression(inputFilesProp.initializer)) {
+    return
+  }
+
+  for (const el of inputFilesProp.initializer.elements) {
+    if (!ts.isObjectLiteralExpression(el)) continue
+    const pathProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'path')
+    const contentProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'content')
+
+    if (!pathProp || !ts.isPropertyAssignment(pathProp) || !ts.isStringLiteralLike(pathProp.initializer)) continue
+    const filePath = pathProp.initializer.text
+
+    if (contentProp && ts.isPropertyAssignment(contentProp) && ts.isStringLiteralLike(contentProp.initializer)) {
+      const content = contentProp.initializer.text
+      const lang = getLanguageFromExtension(filePath)
+      // Create separate code blocks for ALL input files
+      nodes.push({ kind: 'code', lang, text: content, title: filePath })
+    }
+  }
+}
+
+/** Reads shellExample options and appends annotation lines (# => ..., # output-file: ..., single-line # input-file: ...) */
 function appendShellExampleAnnotations(src: string, opts: ts.ObjectLiteralExpression, lines: string[]): void {
   for (const prop of opts.properties) {
     if (!ts.isPropertyAssignment(prop) || !ts.isIdentifier(prop.name)) continue
@@ -362,6 +423,25 @@ function appendShellExampleAnnotations(src: string, opts: ts.ObjectLiteralExpres
 
     if (key === 'stdout' && ts.isStringLiteralLike(prop.initializer)) {
       lines.push(`# => ${prop.initializer.text}`)
+    }
+
+    if (key === 'inputFiles' && ts.isArrayLiteralExpression(prop.initializer)) {
+      for (const el of prop.initializer.elements) {
+        if (!ts.isObjectLiteralExpression(el)) continue
+        const pathProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'path')
+        const contentProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'content')
+
+        if (!pathProp || !ts.isPropertyAssignment(pathProp) || !ts.isStringLiteralLike(pathProp.initializer)) continue
+        const filePath = pathProp.initializer.text
+
+        if (contentProp && ts.isPropertyAssignment(contentProp) && ts.isStringLiteralLike(contentProp.initializer)) {
+          const content = contentProp.initializer.text
+          // Only add single-line files as annotations; multi-line files are separate code blocks
+          if (!content.includes('\n')) {
+            lines.push(`# input-file: ${filePath} contains "${content}"`)
+          }
+        }
+      }
     }
 
     if (key === 'outputFiles' && ts.isArrayLiteralExpression(prop.initializer)) {
