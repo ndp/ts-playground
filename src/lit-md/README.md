@@ -26,6 +26,7 @@ The CLI processes the file:
 Line and block comments both become markdown.
 
 ```typescript tmp.ts
+// input-file: tmp.ts
 /*
  * # Section
  * 
@@ -47,6 +48,7 @@ node ./cli.ts tmp.ts
 The body of each example call becomes a fenced code block.
 
 ```typescript tmp.ts
+// input-file: tmp.ts
 import { example } from 'node:test'
 import assert from 'node:assert/strict'
 
@@ -67,6 +69,7 @@ node ./cli.ts tmp.ts
 describe() wrappers are stripped - only the body is kept.
 
 ```typescript tmp.ts
+// input-file: tmp.ts
 import { describe, example } from 'node:test'
 import assert from 'node:assert/strict'
 
@@ -88,6 +91,7 @@ node ./cli.ts tmp.ts
 All import lines are hidden by default. Add // keep to show an import.
 
 ```typescript tmp.ts
+// input-file: tmp.ts
 import { example } from 'node:test'
 import { parse } from './parser.ts'
 
@@ -102,6 +106,7 @@ node ./cli.ts tmp.ts
 ```
 
 ```typescript tmp.ts
+// input-file: tmp.ts
 import { example } from 'node:test'
 import { greet } from './greet.ts' // keep
 
@@ -121,6 +126,7 @@ If a comment ends with a code fence and an example follows,
 they merge into one code block.
 
 ```typescript tmp.ts
+// input-file: tmp.ts
 import { example } from 'node:test'
 import assert from 'node:assert/strict'
 
@@ -147,6 +153,7 @@ node ./cli.ts tmp.ts
 Place // file: before an example to add a label.
 
 ```typescript tmp.ts
+// input-file: tmp.ts
 import { example } from 'node:test'
 import assert from 'node:assert/strict'
 
@@ -167,6 +174,7 @@ Assertions inside examples are transformed to annotations:
 - assert.equal(a, b) becomes a // => b
 
 ```typescript tmp.ts
+// input-file: tmp.ts
 import { example } from 'node:test'
 import assert from 'node:assert/strict'
 
@@ -192,6 +200,7 @@ node ./cli.ts README.ts
 ```
 
 ```typescript tmp.ts
+// input-file: tmp.ts
 // # My Document
 import { example } from 'node:test'
 example('test', () => {})
@@ -207,6 +216,7 @@ node ./cli.ts tmp.ts
 Use --out to write to a different location.
 
 ```typescript tmp.ts
+// input-file: tmp.ts
 // # Documentation
 import { example } from 'node:test'
 ```

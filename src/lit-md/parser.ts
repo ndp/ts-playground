@@ -390,6 +390,15 @@ function getLanguageFromExtension(filePath: string): string {
   return langMap[ext] || ext || 'text'
 }
 
+/** Helper to detect if a language supports C-style comments (// ...) */
+function supportsCStyleComments(lang: string): boolean {
+  const cStyleLangs = new Set([
+    'typescript', 'javascript', 'java', 'csharp', 'go', 'rust',
+    'cpp', 'c', 'objc', 'swift', 'kotlin', 'scala', 'groovy'
+  ])
+  return cStyleLangs.has(lang)
+}
+
 /** Extracts input files from shellExample options and creates separate code blocks */
 function processShellExampleInputFiles(src: string, opts: ts.ObjectLiteralExpression, nodes: DocNode[]): void {
   const inputFilesProp = opts.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'inputFiles')
@@ -409,8 +418,20 @@ function processShellExampleInputFiles(src: string, opts: ts.ObjectLiteralExpres
     if (contentProp && ts.isPropertyAssignment(contentProp) && ts.isStringLiteralLike(contentProp.initializer)) {
       const content = contentProp.initializer.text
       const lang = getLanguageFromExtension(filePath)
-      // Create separate code blocks for ALL input files
-      nodes.push({ kind: 'code', lang, text: content, title: filePath })
+      
+      // Add label/prose based on language type
+      if (!supportsCStyleComments(lang)) {
+        // Non-C-style: add prose label before code block
+        nodes.push({ kind: 'prose', text: `With input file ${filePath}:` })
+      }
+      
+      // Create code block with label for C-style languages
+      let blockText = content
+      if (supportsCStyleComments(lang)) {
+        blockText = `// input-file: ${filePath}\n${content}`
+      }
+      
+      nodes.push({ kind: 'code', lang, text: blockText, title: filePath })
     }
   }
 }
