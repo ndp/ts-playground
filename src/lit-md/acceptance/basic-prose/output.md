@@ -1,0 +1,32 @@
+# Basic Prose
+
+In lit-md, comments become the prose sections of your markdown.
+Both `//` line comments and `/* */` block comments are supported.
+## Line Comments
+
+Consecutive `//` lines merge into one paragraph.
+Leave a blank `//` to start a new paragraph.
+
+This sentence is a second paragraph.
+
+```typescript line comment demo
+const msg = 'line comments become markdown'
+typeof msg // => 'string'
+```
+
+## Block Comments
+Block comments also work.
+Leading `*` characters and indentation are stripped.
+
+```typescript block comment demo
+const msg = 'block comments also become prose'
+typeof msg // => 'string'
+```
+
+## Markdown Formatting
+
+Comments support full Markdown: **bold**, `inline code`, and lists.
+
+- `parse()` — extracts structure
+- `render()` — emits markdown
+- `example()` — creates code blocks
