@@ -1,247 +1,126 @@
 # @ndp-software/lit-md
 
-Write your documentation as a TypeScript (or JavaScript) test file.
-`lit-md` generates the markdown — after your tests have verified
+Write your documentation as a TypeScript or JavaScript test file.
+lit-md generates the markdown after your tests have verified
 that every example actually works.
 
 ```sh
 node --test README.ts   # run examples as tests
 tsc README.ts           # typecheck
-lit-md README.ts        # generate README.md
+node ./cli.ts README.ts  # generate README.md
 ```
 ## How it works
 
-A literate file is a normal `node:test` file. The rules are simple:
+A lit-md file contains:
+1. Comments (prose) - become markdown text
+2. example() tests - become code blocks
+3. Assertions - become annotations
 
-| Source construct                                | Output                        |
-|-------------------------------------------------|-------------------------------|
-| `//` or block comments                          | Markdown prose                |
-| `import …`                                      | Hidden by default             |
-| `import … // keep`                              | Shown as a code block         |
-| `describe(name, fn)`                            | Transparent — name dropped, body kept |
-| `example(name, fn)`                             | Body → fenced code block      |
-| `assert.equal(x, y)` inside a test body         | Transformed to `x // => y` |
-| Comment ending with a code fence, then `example()` | Merged into one block         |
-| `// file: name.ts` before a block               | Filename label on that fence  |
-To use lit-md, create a TypeScript file with comments and tests, then run:
+The CLI processes the file:
+1. Parse and extract comments/examples
+2. Run as node:test tests  
+3. Generate README.md
+## Core concepts
+### Comments become prose
+
+Line and block comments both become markdown.
 
 ```sh
-node --test README.ts   # run examples as tests
-tsc README.ts           # typecheck
-node src/lit-md/cli.ts README.ts  # generate README.md
-```
-## How to use lit-md
-
-A lit-md file is a normal TypeScript file with comments and tests.
-The tool runs the file with `node --test`, then generates markdown from it.
-### 1. Comments become prose
-
-`//` line comments and `/* block */` comments both become markdown.
-Blank `//` lines become paragraph breaks.
-
-```typescript line comments → prose
-const nodes = parse('// Hello, **world**.\n//\n// Second paragraph.')
-nodes // => [
-//   {kind: 'prose', text: 'Hello, **world**.\n\nSecond paragraph.'}
-// ]
+node ./cli.ts tmp.ts
+# output-file: tmp.md contains:
+#   # Section
+#
+#   A description
 ```
 
-```typescript block comments → prose (strips leading asterisks)
-const nodes = parse('/*\n * ## Section\n *\n * A description.\n */')
-nodes // => [
-//   {kind: 'prose', text: '## Section\n\nA description.'}
-// ]
+// comments are also supported.
+### example() bodies become code blocks
+
+The body of each example call becomes a fenced code block.
+
+```sh
+node ./cli.ts tmp.ts
+# output-file: tmp.md contains "greet"
+# output-file: tmp.md contains "const msg = 'Hello, world!'"
 ```
 
-### 2. example() bodies become code blocks
+### describe() is transparent
 
-The body of each `example()` call becomes a fenced code block.
-The example name is stored as a fence `title` — rendered as a tab label
-in Docusaurus, silently ignored by GitHub.
+describe() wrappers are stripped - only the body is kept.
 
-```typescript example body → fenced code block
-const src = `
-import { example } from 'node:test'
-example('greet', () => {
-  const msg = 'Hello, world!'
-  assert.equal(msg.length, 13)
-})
-`
-const nodes = parse(src)
-nodes // => [
-//   {kind: 'code', lang: 'typescript', text: `const msg = 'Hello, world!'\nmsg.length // => 13`, title: 'greet'}
-// ]
+```sh
+node ./cli.ts tmp.ts
+# output-file: tmp.md contains "add"
 ```
 
-### 3. describe() is transparent
+### Import filtering
 
-`describe()` wrappers are stripped entirely. The name is discarded and
-the body is kept. Use `describe` to group related tests without affecting
-the generated docs.
+All import lines are hidden by default. Add // keep to show an import.
 
-```typescript describe is transparent — name is discarded
-const src = `
-import { describe, example } from 'node:test'
-describe('My Group', () => {
-  example('inner', () => { const x = 1 })
-})
-`
-const nodes = parse(src)
-// Verify 'My Group' does not appear anywhere in the output
+```sh
+node ./cli.ts tmp.ts
+# output-file: tmp.md contains "const x = 1"
 ```
 
-### 4. Import filtering
-
-All `import` lines are hidden by default — test infrastructure imports
-would clutter the docs. Add `// keep` to show an import:
-
-```typescript imports are hidden by default
-import { greet } from './greet.ts' // keep   ← shown
-import { example } from 'node:test'          ← hidden
-const nodes = parse(`import { example } from 'node:test'`)
-nodes // => []
-```
-
-```typescript // keep shows the import in a code block
-const nodes = parse(`import { greet } from './greet.ts' // keep`)
-nodes.length // => 1
-nodes[0]!.kind // => 'code'
+```sh
+node ./cli.ts tmp.ts
+# output-file: tmp.md contains "import { greet }"
 ```
 
 ## Merging imports into examples
 
-If a comment section ends with a fenced code block **and** an `example()` follows
-immediately, the fence and the example body merge into one code block.
-This lets you show the import alongside the usage without a separate block.
+If a comment ends with a code fence and an example follows,
+they merge into one code block.
 
-```typescript merged block includes both the fence and the example body
-const src = `
-import { example } from 'node:test'
-// Use it like this:
-//
-// \`\`\`typescript
-// import { parse } from '@ndp-software/lit-md'
-// \`\`\`
-example('example', () => {
-  const nodes = parse('// Hello')
-  assert.equal(nodes[0]?.kind, 'prose')
-})
-`
-const nodes = parse(src)
-const code = nodes.find(n => n.kind === 'code') as any
+```sh
+node ./cli.ts tmp.ts
+# output-file: tmp.md contains "import { parse }"
+# output-file: tmp.md contains "const x = 1"
 ```
 
 ## Filename labels
 
-Place `// file: name.ts` on the line immediately before an `example()` or a
-kept import to add a filename label to that code block.
+Place // file: before an example to add a label.
 
-```typescript // file: sets the fence label
-const src = `
-import { example } from 'node:test'
-// file: greet-usage.ts
-example('labeled', () => {
-  const msg = greet('world')
-})
-`
-const nodes = parse(src)
-const code = nodes.find(n => n.kind === 'code') as any
-code?.title // => 'greet-usage.ts'
+```sh
+node ./cli.ts tmp.ts
+# output-file: tmp.md contains "greet.ts"
 ```
 
-## The document model
+## Assertion transformation
 
-`parse()` returns an array of `DocNode` objects. `render()` converts them
-to a markdown string. You can use these directly if you need custom output.
+Assertions inside examples are transformed to annotations:
+- assert.equal(a, b) becomes a // => b
 
-```typescript render converts DocNode[] to a markdown string
-const md = render([
-  {kind: 'prose', text: '## Example'},
-  {kind: 'code', lang: 'typescript', text: 'const x = 1', title: undefined}
-])
-md // => '## Example\n\n```typescript\nconst x = 1\n```'
+```sh
+node ./cli.ts tmp.ts
+# output-file: tmp.md contains "// => 5"
 ```
 
 ## CLI
 
-The generated file ends with a trailing newline. The input file is never
-modified — `lit-md` is read-only with respect to your source.
-
-To generate documentation:
+The lit-md CLI generates markdown from TypeScript files.
+### Basic usage
 
 ```sh
-# Write README.md next to README.ts
-node src/lit-md/cli.ts README.ts
-
-# Write to a custom path
-node src/lit-md/cli.ts README.ts --out docs/index.md
-```
-## Shell examples in documentation
-
-Use `shell` or `shellExample` to include executable shell examples in your
-documentation. Both helpers register an `example` test that runs the command
-and verifies any annotations at test time.
-
-Import from `@ndp-software/lit-md`:
-
-```typescript
-import { shell, shellExample } from '@ndp-software/lit-md'
-```
-### `shell` — compact tagged template
-
-Best for simple, readable inline examples. Annotations live alongside the commands.
-Here's how a shell example looks in a README.ts file:
-
-```typescript
-shell`
-  npm test
-  # => 100 tests pass
-`
+node ./cli.ts README.ts
+# generates README.md next to README.ts
 ```
 
-When parsed, it becomes a code block that documents and verifies shell commands.
-
-```typescript shell basic: just verify the command succeeds
-const nodes = parse(`shell\`echo "hello"\``)
-nodes[0]?.kind // => 'code'
-(nodes[0] as any).lang // => 'sh'
+```sh
+node ./cli.ts tmp.ts
+# output-file: tmp.md contains "# My Document"
 ```
 
-```typescript shell # => example renders with annotation
-const nodes = parse('shell`\n  echo "hello world"\n  # => hello world\n`')
+### Custom output path
+
+Use --out to write to a different location.
+
+```sh
+node ./cli.ts tmp.ts --out /tmp/docs.md
+# output-file: /tmp/docs.md contains "# Documentation"
 ```
 
-```typescript shell # file: example renders with annotation
-const nodes = parse('shell`\n  node cli.ts README.ts\n  # file: README.md contains "# Title"\n`')
-```
+## Shell examples
 
-### `shellExample` — structured function
-
-Best when assertions need explicit naming or multi-line file content.
-#### Simplest form
-
-```typescript shellExample basic renders as sh block
-const nodes = parse(`shellExample('echo "hello"', {})`)
-(nodes[0] as any).lang // => 'sh'
-(nodes[0] as any).text // => 'echo "hello"'
-```
-
-#### With stdout and multi-line file output assertion
-
-```typescript shellExample with stdout and outputFiles renders annotations
-const nodes = parse(
-  `shellExample('lit-md README.ts', { stdout: 'wrote README.md', outputFiles: [{ path: 'README.md', contains: '# Title\\n\\nA library.' }] })`
-)
-const text = (nodes[0] as any).text as string
-```
-
-#### With inputFiles fixture
-
-```typescript shellExample with inputFiles renders command only (no inputFiles shown)
-const nodes = parse(
-  `shellExample('lit-md tmp/README.ts', { inputFiles: [{ path: 'tmp/README.ts', content: '// # Hi' }], outputFiles: [{ path: 'tmp/README.md', contains: '# Hi' }] })`
-)
-const text = (nodes[0] as any).text as string
-// The command is shown
-// inputFiles are not shown in the rendered markdown (invisible setup)
-```
+Use shell or shellExample to include executable shell commands.
