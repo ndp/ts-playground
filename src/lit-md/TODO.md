@@ -1,7 +1,8 @@
 ## Support for demonstrating command line usage
 
-- [x] create an acceptance folder with subfolders of examples. Each subfolder has a descriptive name, kabob-case, and contains a lit-md typescript file that demonstrates a specific feature or use case. This will serve as a comprehensive set of examples for users to reference when using the tool. The examples should cover a wide range of scenarios, including basic usage, advanced features, and edge cases. Each example should be well-documented and include explanations of the code and expected output. Each folder should also have the generated markdown file for reference. 
+## Engine
 
+Let's support an "alias" function. THis can be imported into the typescript like the other few methods. It takes two parameters. The first is a string that is the "alias" or name. The second is the path to a shell command. This can be a full path, or it can be relative to the cwd. If it is relative, it will need to be converted to a full path internally. A call to this method does not show up in the markdown output. When a shell command is issued, this alias is established in the shell. This will allow commands to be written with shorter, perhaps more correct names. It will also allow running commands in tmp directories and not polluting the current repository. Now input/output files can be generated in tmp directories and the command can be run their. The alias will fine the correct command path. Full tests to support this feature. This may mean reworking some of the existing test to use aliases instead of hard-coded paths. Add examples to acceptance test. Make sure you're no longer generating tmp.md and tmp.ts files in the lit-md folder.
  
 ## Markdown output
 
@@ -14,6 +15,12 @@
 hello world
 ``` 
 - [ ] add support for generating documentation from JavaScript files in addition to TypeScript files. This would allow users who are not using TypeScript to still benefit from the tool. The cli would detect the file type based on the extension (.js or .ts) and would process the files accordingly. For JavaScript files, type checking would be skipped, but tests would still be run if the --test option is specified. The generated markdown files would have the same name as the input files, but with a .md extension.
+
+## Acceptance tests
+
+### Generate one test per example directory
+
+This will just require using the test runner's `describe()` function to group the examples in each directory, and then using `example()` to create a test for each example file. The test would run the cli on the example file and compare the generated markdown output to a reference markdown file that contains the expected output. This will ensure that each example is tested independently and that any changes to the code will not affect other examples.
 
 
 ## CLI
