@@ -2,7 +2,7 @@
 
 A TypeScript utility for base64 encoding strings.
 
-```typescript
+```ts
 import { encode, decode } from './encoder.ts' // keep
 ```
 
@@ -10,7 +10,7 @@ import { encode, decode } from './encoder.ts' // keep
 
 Pass any string to `encode` and get a base64 result:
 
-```typescript encode-example.ts
+```ts encode-example.ts
 import { encode } from './encoder.ts'
 const result = encode('hello')
 result // => 'aGVsbG8='
@@ -18,7 +18,7 @@ result // => 'aGVsbG8='
 
 You can also encode empty strings:
 
-```typescript handles empty string
+```ts
 encode('') // => ''
 ```
 
@@ -26,7 +26,7 @@ encode('') // => ''
 
 `decode` reverses `encode`:
 
-```typescript round-trips a string
+```ts
 decode(encode('world')) // => 'world'
 ```
 

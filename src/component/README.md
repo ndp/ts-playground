@@ -15,7 +15,7 @@ This package exposes a small, TypeScript-first fluent API for defining custom el
 - **Primary class**: `ComponentBwilder` — use its chained helpers (tag name, shadow DOM, CSS, attributes, sub-elements, render/lifecycle hooks) and call `.bwild()` to return (and register) the strongly-typed component class.
 ## Quick example
 
-```typescript quick example
+```ts
 const Greeting = new ComponentBwilder()
   .wTagName('x-greeting')
   .wShadowDOM('open')
@@ -44,7 +44,7 @@ const Greeting = new ComponentBwilder()
 ## Usage recipes
 ### 1. Observed vs unobserved attributes
 
-```typescript observed attributes
+```ts
 const Observed = new ComponentBwilder()
   .wTagName('c-observed')
   .wAttr('data-count')
@@ -55,7 +55,7 @@ const Observed = new ComponentBwilder()
   .bwild()
 ```
 
-```typescript unobserved attributes
+```ts
 const Unobserved = new ComponentBwilder()
   .wTagName('c-unobserved')
   .wAttr('info', 'default')
@@ -69,7 +69,7 @@ const Unobserved = new ComponentBwilder()
 
 ### 2. Sub-element wiring
 
-```typescript sub-element wiring
+```ts
 const SubElems = new ComponentBwilder()
   .wTagName('c-subelems')
   .wElement('title')
@@ -88,7 +88,7 @@ const SubElems = new ComponentBwilder()
 
 **Marking elements as required vs. optional** — Append `!` to a field name to mark it as required (non-null):
 
-```typescript required vs optional sub-elements
+```ts
 const Form = new ComponentBwilder()
   .wTagName('c-form')
   .wElement('email!')                    // Required: HTMLElement (no null check needed)
@@ -117,7 +117,7 @@ const Form = new ComponentBwilder()
 
 **Sub-element type hints** — pass a type parameter to `.wElement()` for type-safe property access:
 
-```typescript typed sub-elements
+```ts
 const FormTyped = new ComponentBwilder()
   .wTagName('c-form-typed')
   .wElement('email', HTMLInputElement)     // Typed as HTMLInputElement | null
@@ -144,7 +144,7 @@ const FormTyped = new ComponentBwilder()
 The type parameter is optional and TypeScript-only (zero runtime cost). The bang suffix applies to all field types: `.wElement()`, `.wAttr()`, `.wObservedAttr()`, and `.wState()`.
 ### 3. CSS modes and sharing
 
-```typescript CSS modes
+```ts
 const CSSAdopted = new ComponentBwilder()
   .wTagName('c-css-adopted')
   .wCSS('.foo { color: red }')      // requests adopted, falls back to inline if unsupported
@@ -161,7 +161,7 @@ const CSSInline = new ComponentBwilder()
 
 ### 4. Async render / lifecycle hooks
 
-```typescript async lifecycle hooks
+```ts
 const AsyncComponent = new ComponentBwilder()
   .wTagName('c-async')
   .wShadowDOM('none')
@@ -190,7 +190,7 @@ if (typeof el.connectedCallback === 'function') {
 
 ### 5. State management
 
-```typescript state management
+```ts
 const Counter = new ComponentBwilder()
   .wTagName('c-counter')
   .wShadowDOM('none')
@@ -218,7 +218,7 @@ State properties are reactive: assigning to `this.state.propName` automatically 
 
 When using render factories (`makeComponentRendererFromString`, `makeComponentRendererFromFn`) outside of ComponentBwilder, you can also use `ElementDescriptor` to preserve specific element types:
 
-```typescript ElementDescriptor for type-safe sub-elements
+```ts
 // This test demonstrates the ElementDescriptor pattern
 // In real code, you would use: makeComponentRendererFromString()
 const descriptor: Record<string, string | ElementDescriptor> = {
@@ -229,7 +229,7 @@ const descriptor: Record<string, string | ElementDescriptor> = {
 
 Or mix string selectors (generic HTMLElement) with typed descriptors:
 
-```typescript mixed ElementDescriptor selectors
+```ts
 const descriptor: Record<string, string | ElementDescriptor> = {
   email: { selector: '#email', type: HTMLInputElement },  // Typed
   status: '#status'                                       // Generic HTMLElement | null
@@ -239,7 +239,7 @@ const descriptor: Record<string, string | ElementDescriptor> = {
 The `type` property in `ElementDescriptor` is optional and TypeScript-only (zero runtime cost).
 ### 7. Slot assigned-element handling
 
-```typescript slot assigned-element handling
+```ts
 const SlotComponent = new ComponentBwilder()
   .wTagName('c-slot-demo')
   .wShadowDOM('open')

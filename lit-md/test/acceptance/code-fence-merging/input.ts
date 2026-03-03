@@ -13,7 +13,7 @@ import { render } from '../../../src/renderer.ts'
 //
 // Show an import in the comment fence; the example body continues it.
 //
-// ```typescript
+// ```ts
 // import { parse } from '@ndp-software/lit-md'
 // ```
 
@@ -26,7 +26,7 @@ example('parse usage', () => {
 //
 // The merge produces a single cohesive block: import, usage, and annotation.
 //
-// ```typescript
+// ```ts
 // import { render } from '@ndp-software/lit-md'
 // ```
 

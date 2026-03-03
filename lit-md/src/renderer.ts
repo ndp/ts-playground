@@ -1,5 +1,10 @@
 import type { DocNode } from './parser.ts'
 
+const langAliases: Record<string, string> = {
+  typescript: 'ts',
+  javascript: 'js',
+}
+
 export function render(nodes: DocNode[]): string {
   if (!nodes.length) return ''
   return nodes
@@ -9,6 +14,7 @@ export function render(nodes: DocNode[]): string {
 
 function renderNode(node: DocNode): string {
   if (node.kind === 'prose') return node.text
-  const info = node.title ? `${node.lang} ${node.title}` : node.lang
+  const lang = langAliases[node.lang] ?? node.lang
+  const info = node.title ? `${lang} ${node.title}` : lang
   return `\`\`\`${info}\n${node.text}\n\`\`\``
 }

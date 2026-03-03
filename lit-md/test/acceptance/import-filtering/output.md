@@ -7,7 +7,7 @@ Add `// keep` at the end of an import to include it in the output.
 The two imports above (`example` and `assert`) do not appear in the output.
 Only the example body is shown.
 
-```typescript hidden imports
+```ts
 const x = 1
 x // => 1
 ```
@@ -17,11 +17,11 @@ x // => 1
 Mark a specific import with `// keep` to include it.
 This is useful when the import is part of the documentation story.
 
-```typescript usage.ts
+```ts usage.ts
 import { parse } from '../../../src/parser.ts' // keep
 ```
 
-```typescript parse usage
+```ts
 const nodes = parse('// hello')
 nodes.length // => 1
 ```
@@ -30,12 +30,12 @@ nodes.length // => 1
 
 Any number of imports can be marked `// keep`.
 
-```typescript
+```ts
 import { render } from '../../../src/renderer.ts' // keep
 import type { DocNode } from '../../../src/parser.ts' // keep
 ```
 
-```typescript parse and render
+```ts
 const src = '// # Title'
 const nodes = parse(src)
 const md = render(nodes)

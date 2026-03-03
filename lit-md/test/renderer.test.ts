@@ -14,14 +14,14 @@ describe('render: markdown output', () => {
     const nodes: DocNode[] = [
       { kind: 'code', lang: 'typescript', text: 'const x = 1', title: undefined }
     ]
-    assert.equal(render(nodes), '```typescript\nconst x = 1\n```')
+    assert.equal(render(nodes), '```ts\nconst x = 1\n```')
   })
 
   test('code node with title includes title in fence info string', () => {
     const nodes: DocNode[] = [
       { kind: 'code', lang: 'typescript', text: 'const x = 1', title: 'example.ts' }
     ]
-    assert.equal(render(nodes), '```typescript example.ts\nconst x = 1\n```')
+    assert.equal(render(nodes), '```ts example.ts\nconst x = 1\n```')
   })
 
   test('prose followed by code has blank line between them', () => {
@@ -29,7 +29,7 @@ describe('render: markdown output', () => {
       { kind: 'prose', text: 'Some prose.' },
       { kind: 'code', lang: 'typescript', text: 'const x = 1', title: undefined }
     ]
-    assert.equal(render(nodes), 'Some prose.\n\n```typescript\nconst x = 1\n```')
+    assert.equal(render(nodes), 'Some prose.\n\n```ts\nconst x = 1\n```')
   })
 
   test('code followed by prose has blank line between them', () => {
@@ -37,7 +37,7 @@ describe('render: markdown output', () => {
       { kind: 'code', lang: 'typescript', text: 'const x = 1', title: undefined },
       { kind: 'prose', text: 'After code.' }
     ]
-    assert.equal(render(nodes), '```typescript\nconst x = 1\n```\n\nAfter code.')
+    assert.equal(render(nodes), '```ts\nconst x = 1\n```\n\nAfter code.')
   })
 
   test('empty node list produces empty string', () => {

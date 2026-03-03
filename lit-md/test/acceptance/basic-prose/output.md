@@ -9,7 +9,7 @@ Leave a blank `//` to start a new paragraph.
 
 This sentence is a second paragraph.
 
-```typescript line comment demo
+```ts
 const msg = 'line comments become markdown'
 typeof msg // => 'string'
 ```
@@ -18,7 +18,7 @@ typeof msg // => 'string'
 Block comments also work.
 Leading `*` characters and indentation are stripped.
 
-```typescript block comment demo
+```ts
 const msg = 'block comments also become prose'
 typeof msg // => 'string'
 ```

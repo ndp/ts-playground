@@ -75,7 +75,7 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
           if (body) {
             const code = extractBodyCode(src, body)
             if (code.trim()) {
-              const title = pendingFileLabel ?? testName ?? undefined
+              const title = pendingFileLabel ?? undefined
               pendingFileLabel = undefined
               // Check if the previous prose node ended with a code fence → merge
               const prev = nodes[nodes.length - 1]

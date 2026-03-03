@@ -4,7 +4,7 @@ Assertions inside `example()` bodies are rewritten as inline annotations,
 turning passing tests into self-documenting code examples.
 ## assert.equal → `// => value`
 
-```typescript equal
+```ts
 const len = 'hello'.length
 len // => 5
 ```
@@ -13,7 +13,7 @@ len // => 5
 
 When the expected value fits on one line, it appears inline.
 
-```typescript deepEqual single-line
+```ts
 const nums = [1, 2, 3]
 nums // => [1, 2, 3]
 ```
@@ -23,7 +23,7 @@ nums // => [1, 2, 3]
 When the expected value spans multiple lines, the annotation wraps
 across comment lines following the variable.
 
-```typescript deepEqual multi-line
+```ts
 const point = { x: 1, y: 2 }
 point // => {
 //   x: 1,
@@ -33,20 +33,20 @@ point // => {
 
 ## assert.notEqual → `// != value`
 
-```typescript notEqual
+```ts
 const value = getValue()
 value // != null
 ```
 
 ## assert.throws — With Pattern
 
-```typescript throws with pattern
+```ts
 divide(1, 0) // throws /division by zero/
 ```
 
 ## assert.throws — No Pattern
 
-```typescript throws no pattern
+```ts
 divide(1, 0) // throws
 ```
 
@@ -55,7 +55,7 @@ divide(1, 0) // throws
 `assert.ok(expr)` as a standalone statement is silently removed from output.
 It still runs and guards correctness, but doesn't clutter the docs.
 
-```typescript ok dropped
+```ts
 const items = [1, 2, 3]
 ```
 

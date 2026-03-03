@@ -67,7 +67,7 @@ test('example', () => {
 })
 `)
     assert.deepEqual(nodes, [
-      { kind: 'code', lang: 'typescript', text: 'const x = 1', title: 'example' }
+      { kind: 'code', lang: 'typescript', text: 'const x = 1', title: undefined }
     ])
   })
 
@@ -80,7 +80,7 @@ test('example', () => {
 })
 `)
     assert.deepEqual(nodes, [
-      { kind: 'code', lang: 'typescript', text: 'const a = 1\nconst b = 2', title: 'example' }
+      { kind: 'code', lang: 'typescript', text: 'const a = 1\nconst b = 2', title: undefined }
     ])
   })
 
@@ -98,7 +98,7 @@ describe('group', () => {
 })
 `)
     assert.deepEqual(nodes, [
-      { kind: 'code', lang: 'typescript', text: 'const x = 42', title: 'inner' }
+      { kind: 'code', lang: 'typescript', text: 'const x = 42', title: undefined }
     ])
   })
 
@@ -125,7 +125,7 @@ describe('group', () => {
 `)
     assert.deepEqual(nodes, [
       { kind: 'prose', text: 'before second test' },
-      { kind: 'code', lang: 'typescript', text: 'const y = 2', title: 'second' }
+      { kind: 'code', lang: 'typescript', text: 'const y = 2', title: undefined }
     ])
   })
 
@@ -141,7 +141,7 @@ describe('outer', () => {
 })
 `)
     assert.deepEqual(nodes, [
-      { kind: 'code', lang: 'typescript', text: 'const z = 3', title: 'deep' }
+      { kind: 'code', lang: 'typescript', text: 'const z = 3', title: undefined }
     ])
   })
 

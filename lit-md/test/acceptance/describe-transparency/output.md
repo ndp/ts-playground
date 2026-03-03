@@ -6,7 +6,7 @@ The describe name is discarded; only the examples and comments inside appear.
 
 The word "Math" never appears in the output — only the example body does.
 
-```typescript add
+```ts
 const sum = 1 + 1
 sum // => 2
 ```
@@ -16,14 +16,14 @@ sum // => 2
 Comments between examples inside `describe()` become interleaved prose blocks.
 Convert a string to upper case:
 
-```typescript toUpperCase
+```ts
 const result = 'hello'.toUpperCase()
 result // => 'HELLO'
 ```
 
 And back to lower:
 
-```typescript toLowerCase
+```ts
 const result = 'WORLD'.toLowerCase()
 result // => 'world'
 ```
@@ -32,7 +32,7 @@ result // => 'world'
 
 Deeply nested `describe()` wrappers are also transparent.
 
-```typescript deep
+```ts
 const x = 6 * 7
 x // => 42
 ```

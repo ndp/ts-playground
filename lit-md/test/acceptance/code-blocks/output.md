@@ -6,7 +6,7 @@ The test name becomes the label in the fence info string.
 
 A one-liner body produces a single-line code block.
 
-```typescript single statement
+```ts
 const greeting = 'Hello, world!'
 greeting.length // => 13
 ```
@@ -15,7 +15,7 @@ greeting.length // => 13
 
 All statements are included with one level of indentation stripped.
 
-```typescript multiple statements
+```ts
 const a = 10
 const b = 20
 const sum = a + b
@@ -27,12 +27,12 @@ sum // => 30
 `describe()` is transparent — examples inside it still emit code blocks.
 See also: `describe-transparency`.
 
-```typescript trim
+```ts
 const raw = '  hello  '
 raw.trim() // => 'hello'
 ```
 
-```typescript split
+```ts
 const parts = 'a,b,c'.split(',')
 parts.length // => 3
 ```

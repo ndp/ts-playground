@@ -22,7 +22,7 @@ node --version
 `outputFiles` verifies that specified files exist after the command runs
 and contain expected content.
 
-```typescript tmp.ts
+```ts tmp.ts
 // Input file "tmp.ts":
 // # Hello
 import { example } from 'node:test'
@@ -36,7 +36,7 @@ lit-md tmp.ts
 
 ## shellExample — With Regex Match
 
-```typescript tmp.ts
+```ts tmp.ts
 // Input file "tmp.ts":
 // ## Section
 import { example } from 'node:test'

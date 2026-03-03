@@ -6,14 +6,14 @@ filename label to that code block's fence info string.
 
 A single-expression example labeled as a TypeScript config file.
 
-```typescript config.ts
+```ts config.ts
 const port = 3000
 port // => 3000
 ```
 
 ## Label on a Multi-Statement Block
 
-```typescript server.ts
+```ts server.ts
 const host = 'localhost'
 const port = 8080
 const url = `http://${host}:${port}`
@@ -24,23 +24,23 @@ url // => 'http://localhost:8080'
 
 Each `// file:` directive labels only the immediately following block.
 
-```typescript step-1.ts
+```ts step-1.ts
 const a = 1
 a // => 1
 ```
 
-```typescript step-2.ts
+```ts step-2.ts
 const b = 2
 b // => 2
 ```
 
 ## Label on a Kept Import
 
-```typescript my-module.ts
+```ts my-module.ts
 import { parse } from '../../../src/parser.ts' // keep
 ```
 
-```typescript parse call
+```ts
 const nodes = parse('// hello')
 nodes.length // => 1
 ```
