@@ -1,6 +1,6 @@
 import ts from 'typescript'
 
-export type ProseNode = { kind: 'prose'; text: string; terminal?: true }
+export type ProseNode = { kind: 'prose'; text: string; terminal?: true; noBlankAfter?: true }
 export type CodeNode = { kind: 'code'; lang: string; text: string; title?: string }
 export type DocNode = ProseNode | CodeNode
 
@@ -11,6 +11,8 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
   const nodes: DocNode[] = []
   const processedCommentRanges = new Set<number>()
   let pendingFileLabel: string | undefined = undefined
+  let lastCommentEnd = 0
+  let pendingNewParagraph = false
 
   function extractLeadingComments(pos: number): void {
     const ranges = ts.getLeadingCommentRanges(src, pos) ?? []
@@ -18,6 +20,10 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
       if (processedCommentRanges.has(r.pos)) continue
       processedCommentRanges.add(r.pos)
       const raw = src.slice(r.pos, r.end)
+
+      const gap = lastCommentEnd > 0 ? src.slice(lastCommentEnd, r.pos) : ''
+      const hasBlankLineBefore = gap !== '' && /^[ \t\n]*$/.test(gap) && /\n[ \t]*\n/.test(gap)
+      lastCommentEnd = r.end
 
       // Check for // file: directive first
       if (r.kind === ts.SyntaxKind.SingleLineCommentTrivia) {
@@ -29,7 +35,19 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
       }
 
       const prose = commentToProse(raw, r.kind)
-      if (prose !== null) mergeOrPushProse(nodes, prose)
+      if (prose !== null) {
+        if (hasBlankLineBefore && prose !== '') {
+          nodes.push({ kind: 'prose', text: prose })
+          pendingNewParagraph = false
+        } else if (hasBlankLineBefore && prose === '') {
+          pendingNewParagraph = true
+        } else if (pendingNewParagraph && prose !== '') {
+          nodes.push({ kind: 'prose', text: prose })
+          pendingNewParagraph = false
+        } else {
+          mergeOrPushProse(nodes, prose)
+        }
+      }
     }
   }
 
@@ -427,7 +445,7 @@ function processShellExampleInputFiles(src: string, opts: ts.ObjectLiteralExpres
       // Add label/prose based on language type
       if (!supportsCStyleComments(lang)) {
         // Non-C-style: add prose label before code block
-        nodes.push({ kind: 'prose', text: `With input file ${filePath}:` })
+        nodes.push({ kind: 'prose', text: `With input file \`${filePath}\`:`, noBlankAfter: true })
       }
       
       // Create code block with label for C-style languages
@@ -473,7 +491,7 @@ function processShellExampleOutputFiles(src: string, opts: ts.ObjectLiteralExpre
 
     if (matchesProp && ts.isPropertyAssignment(matchesProp) && ts.isRegularExpressionLiteral(matchesProp.initializer)) {
       const regexText = src.slice(matchesProp.initializer.getStart(), matchesProp.initializer.getEnd())
-      nodes.push({ kind: 'prose', text: `Output file \`${filePath}\` matches ${regexText}`, terminal: true })
+      nodes.push({ kind: 'prose', text: `Output file \`${filePath}\` matches \`${regexText}\``, terminal: true })
     }
   }
 }
@@ -499,8 +517,9 @@ function appendShellExampleAnnotations(src: string, opts: ts.ObjectLiteralExpres
 
         if (contentProp && ts.isPropertyAssignment(contentProp) && ts.isStringLiteralLike(contentProp.initializer)) {
           const content = contentProp.initializer.text
-          // Only add single-line files as annotations; multi-line files are separate code blocks
-          if (!content.includes('\n')) {
+          const lang = getLanguageFromExtension(filePath)
+          // Only add single-line annotation for C-style languages; others emit a separate code block
+          if (!content.includes('\n') && supportsCStyleComments(lang)) {
             lines.push(`# Input file \`${filePath}\` contains \`${content}\``)
           }
         }

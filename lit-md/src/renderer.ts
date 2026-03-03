@@ -7,9 +7,15 @@ const langAliases: Record<string, string> = {
 
 export function render(nodes: DocNode[]): string {
   if (!nodes.length) return ''
-  return nodes
-    .map(node => renderNode(node))
-    .join('\n\n')
+  let out = ''
+  for (let i = 0; i < nodes.length; i++) {
+    if (i > 0) {
+      const prev = nodes[i - 1]!
+      out += prev.kind === 'prose' && prev.noBlankAfter ? '\n' : '\n\n'
+    }
+    out += renderNode(nodes[i]!)
+  }
+  return out
 }
 
 function renderNode(node: DocNode): string {

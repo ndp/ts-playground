@@ -15,6 +15,7 @@ typeof msg // => 'string'
 ```
 
 ## Block Comments
+
 Block comments also work.
 Leading `*` characters and indentation are stripped.
 

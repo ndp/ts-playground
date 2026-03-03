@@ -27,23 +27,20 @@ node --version
 `outputFiles` verifies that specified files exist after the command runs
 and contain expected content.
 
-With input file input.txt:
-
+With input file `input.txt`:
 ```text input.txt
 hello world
 ```
 
 ```sh
 cp input.txt output.txt
-# Input file `input.txt` contains `hello world`
 ```
 
 Output file `output.txt` contains "hello world"
 
 File contents can assert that they match a regex pattern:
 
-With input file input.txt:
-
+With input file `input.txt`:
 ```text input.txt
 first line
 second line
@@ -53,4 +50,4 @@ second line
 cp input.txt output.txt
 ```
 
-Output file `output.txt` matches /^first/
+Output file `output.txt` matches `/^first/`

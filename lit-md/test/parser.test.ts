@@ -45,6 +45,29 @@ describe('parse: comments → prose', () => {
     assert.deepEqual(nodes, [])
   })
 
+  test('blank uncommented line between two comment blocks → two separate prose nodes', () => {
+    const nodes = parse('// First paragraph.\n\n// Second paragraph.')
+    assert.deepEqual(nodes, [
+      { kind: 'prose', text: 'First paragraph.' },
+      { kind: 'prose', text: 'Second paragraph.' }
+    ])
+  })
+
+  test('no blank line between comment blocks → merged into one prose node', () => {
+    const nodes = parse('// First line.\n// Second line.')
+    assert.deepEqual(nodes, [
+      { kind: 'prose', text: 'First line.\nSecond line.' }
+    ])
+  })
+
+  test('multiple blank lines between comment blocks → still two prose nodes', () => {
+    const nodes = parse('// First.\n\n\n// Second.')
+    assert.deepEqual(nodes, [
+      { kind: 'prose', text: 'First.' },
+      { kind: 'prose', text: 'Second.' }
+    ])
+  })
+
 })
 
 describe('parse: test() with no body statements produces no code node', () => {
@@ -484,7 +507,7 @@ describe('parse: shellExample() → sh code block', () => {
     const nodes = parse(`shellExample('sort input.txt', { outputFiles: [{ path: 'output.txt', matches: /## How it works/ }] })`)
     assert.deepEqual(nodes, [
       { kind: 'code', lang: 'sh', text: 'sort input.txt', title: undefined },
-      { kind: 'prose', text: 'Output file `output.txt` matches /## How it works/', terminal: true }
+      { kind: 'prose', text: 'Output file `output.txt` matches `/## How it works/`', terminal: true }
     ])
   })
 
@@ -507,19 +530,19 @@ describe('parse: shellExample() → sh code block', () => {
   test('shellExample with JSON input file → prose label before code block', () => {
     const nodes = parse(`shellExample('node cli.ts', { inputFiles: [{ path: 'config.json', content: '{ }' }] })`)
     assert.deepEqual(nodes, [
-      { kind: 'prose', text: 'With input file config.json:' },
+      { kind: 'prose', text: 'With input file `config.json`:', noBlankAfter: true },
       { kind: 'code', lang: 'json', text: '{ }', title: 'config.json' },
-      { kind: 'code', lang: 'sh', text: 'node cli.ts\n# Input file `config.json` contains `{ }`', title: undefined }
+      { kind: 'code', lang: 'sh', text: 'node cli.ts', title: undefined }
     ])
   })
 
   test('shellExample with multiple inputFiles mixed single and multi-line', () => {
     const nodes = parse(`shellExample('node cli.ts', { inputFiles: [{ path: 'config.json', content: '{  }' }, { path: 'main.ts', content: '// Line 1\\n// Line 2\\n// Line 3' }] })`)
     assert.deepEqual(nodes, [
-      { kind: 'prose', text: 'With input file config.json:' },
+      { kind: 'prose', text: 'With input file `config.json`:', noBlankAfter: true },
       { kind: 'code', lang: 'json', text: '{  }', title: 'config.json' },
       { kind: 'code', lang: 'typescript', text: '// Input file "main.ts":\n// Line 1\n// Line 2\n// Line 3', title: 'main.ts' },
-      { kind: 'code', lang: 'sh', text: 'node cli.ts\n# Input file `config.json` contains `{  }`', title: undefined }
+      { kind: 'code', lang: 'sh', text: 'node cli.ts', title: undefined }
     ])
   })
 
