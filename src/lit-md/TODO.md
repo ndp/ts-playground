@@ -2,7 +2,7 @@
 
 ## Engine
 
-Let's support an "alias" function. THis can be imported into the typescript like the other few methods. It takes two parameters. The first is a string that is the "alias" or name. The second is the path to a shell command. This can be a full path, or it can be relative to the cwd. If it is relative, it will need to be converted to a full path internally. A call to this method does not show up in the markdown output. When a shell command is issued, this alias is established in the shell. This will allow commands to be written with shorter, perhaps more correct names. It will also allow running commands in tmp directories and not polluting the current repository. Now input/output files can be generated in tmp directories and the command can be run their. The alias will fine the correct command path. Full tests to support this feature. This may mean reworking some of the existing test to use aliases instead of hard-coded paths. Add examples to acceptance test. Make sure you're no longer generating tmp.md and tmp.ts files in the lit-md folder.
+
  
 ## Markdown output
 
