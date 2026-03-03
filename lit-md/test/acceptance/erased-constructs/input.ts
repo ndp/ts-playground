@@ -1,14 +1,15 @@
-// # describe() Transparency
+// # Erased Constructs
 //
-// `describe()` wrappers are completely transparent in generated output.
-// The describe name is discarded; only the examples and comments inside appear.
+// Some TypeScript constructs are silently erased from the generated output.
+// They run (and assert correctness), but don't clutter the docs.
 
 import { describe, example } from '../../../src/index.ts'
 import assert from 'node:assert/strict'
 
-// ## Basic Transparency
+// ## describe() Wrappers
 //
-// The word "Math" never appears in the output — only the example body does.
+// describe() names are discarded — only the examples and comments inside appear.
+// The word "Math" never appears in the output.
 
 describe('Math', () => {
   example('add', () => {
@@ -49,3 +50,15 @@ describe('outer', () => {
     })
   })
 })
+
+// ## Top-Level Helper Functions
+//
+// Functions (and variables) defined at the top level are invisible — they
+// exist to support examples but don't appear in the output.
+
+example('helpers', () => {
+  const result = double(21)
+  assert.equal(result, 42)
+})
+
+function double(n: number) { return n * 2 }

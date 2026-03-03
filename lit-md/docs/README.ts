@@ -67,7 +67,7 @@ describe('example bodies become code blocks', () => {
 
 // ### describe() is transparent
 //
-// describe() wrappers are stripped - only the body is kept.
+// describe() wrappers are stripped — only the body is kept.
 
     shellExample('node ./cli.ts tmp.ts', {
       inputFiles: [{
@@ -80,11 +80,10 @@ describe('example bodies become code blocks', () => {
       }]
     })
 
-// ### Import filtering
+// ### Imports are hidden by default
 //
-// All import lines are hidden by default. Add // keep to show an import.
+// All import lines are filtered out. Use `// keep` to show one.
 
-describe('import filtering', () => {
     shellExample('node ./cli.ts tmp.ts', {
       inputFiles: [{
         path: 'tmp.ts',
@@ -94,7 +93,7 @@ describe('import filtering', () => {
         path: 'tmp.md',
         contains: 'const x = 1'
       }]
-  })
+    })
 
     shellExample('node ./cli.ts tmp.ts', {
       inputFiles: [{
@@ -105,8 +104,23 @@ describe('import filtering', () => {
         path: 'tmp.md',
         contains: "import { greet }"
       }]
-  })
-})
+    })
+
+// ### Top-level helpers are invisible
+//
+// Functions and variables defined outside `example()` don't appear in output.
+// They run and can be called inside examples, but stay out of the docs.
+
+    shellExample('node ./cli.ts tmp.ts', {
+      inputFiles: [{
+        path: 'tmp.ts',
+        content: `import { example } from 'node:test'\nimport assert from 'node:assert/strict'\n\nexample('greet', () => {\n  const msg = greet('world')\n  assert.equal(msg, 'Hello, world!')\n})\n\nfunction greet(name: string) { return \`Hello, \${name}!\` }`
+      }],
+      outputFiles: [{
+        path: 'tmp.md',
+        contains: "const msg = greet('world')"
+      }]
+    })
 
 // ## Merging imports into examples
 //

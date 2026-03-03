@@ -64,7 +64,6 @@ example('ok dropped', () => {
   assert.ok(items.length > 0)
 })
 
-// Helpers used above:
 function getValue() { return 42 }
 function divide(a: number, b: number) {
   if (b === 0) throw new Error('division by zero')

@@ -58,5 +58,3 @@ It still runs and guards correctness, but doesn't clutter the docs.
 ```ts
 const items = [1, 2, 3]
 ```
-
-Helpers used above:
