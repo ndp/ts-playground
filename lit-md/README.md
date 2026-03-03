@@ -1,13 +1,25 @@
 # @ndp-software/lit-md
 
-Write your documentation as a TypeScript or JavaScript test file.
+Literate test files that generate `README.md`s.
+
+Some projects require quite detailed examples, and it can be challenging
+to keep them up-to-date and correct in documentation. With lit-md,
+write your documentation as a TypeScript or JavaScript test file.
 lit-md generates the markdown after your tests have verified
 that every example actually works.
+
+There are other tools with the same aims (e.g. docco, literate.js),
+but this follows in the Literate programming tradition but updated
+for the Typescript and TDD era.
+
+lit-md is designed to work with Node's built-in test runner and
+assertion library. Typescript is optional but fully-supported.
 
 ```sh
 node --test README.md.test.ts   # run examples as tests
 tsc README.md.test.ts           # typecheck
-node ./cli.ts README.md.test.ts  # generate README.md
+lit-md README.md.test.ts        # generate README.md
+lit-md --test --typecheck README.md.test.ts  # all-in-one!
 ```
 ## How it works
 
@@ -18,7 +30,7 @@ A lit-md file contains:
 
 The CLI processes the file:
 1. Parse and extract comments/examples
-2. Run as node:test tests  
+2. Run as node:test tests
 3. Generate README.md
 
 ## Core concepts
@@ -71,9 +83,10 @@ lit-md tmp.ts
 
 Output file `tmp.md` contains "const msg = 'Hello, world!'"
 
-### describe() is transparent
+### describe() and imports are hidden by default
 
-describe() wrappers are stripped — only the body is kept.
+Imports, describe() and non-example code are stripped from the output by default,
+but they still run and can be used inside examples.
 
 ```ts tmp.ts
 // Input file "tmp.ts":
@@ -94,25 +107,7 @@ lit-md tmp.ts
 
 Output file `tmp.md` contains "const x = 1 + 1"
 
-### Imports are hidden by default
-
-All import lines are filtered out. Use `// keep` to show one.
-
-```ts tmp.ts
-// Input file "tmp.ts":
-import { example } from 'node:test'
-import { parse } from './parser.ts'
-
-example('test', () => {
-  const x = 1
-})
-```
-
-```sh
-lit-md tmp.ts
-```
-
-Output file `tmp.md` contains "const x = 1"
+Use `// keep` to show one.
 
 ```ts tmp.ts
 // Input file "tmp.ts":
@@ -129,8 +124,6 @@ lit-md tmp.ts
 ```
 
 Output file `tmp.md` contains "import { greet }"
-
-### Top-level helpers are invisible
 
 Functions and variables defined outside `example()` don't appear in output.
 They run and can be called inside examples, but stay out of the docs.
@@ -304,19 +297,19 @@ shellExample('echo "hello world"')
 ```
 
 ```ts
-shellExample('echo "ok"', { stdout: 'ok' })
+shellExample('echo "ok"', {stdout: 'ok'})
 ```
 
 ```ts
 shellExample('cp input.txt output.txt', {
-  inputFiles: [{ path: 'input.txt', content: 'hello world' }],
-  outputFiles: [{ path: 'output.txt', contains: 'hello world' }]
+  inputFiles: [{path: 'input.txt', content: 'hello world'}],
+  outputFiles: [{path: 'output.txt', contains: 'hello world'}]
 })
 ```
 
 ```ts
 shellExample('cp input.txt output.txt', {
-  inputFiles: [{ path: 'input.txt', content: 'first line\nsecond line' }],
-  outputFiles: [{ path: 'output.txt', matches: /^first/ }]
+  inputFiles: [{path: 'input.txt', content: 'first line\nsecond line'}],
+  outputFiles: [{path: 'output.txt', matches: /^first/}]
 })
 ```
