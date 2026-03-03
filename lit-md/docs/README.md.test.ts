@@ -5,13 +5,16 @@
 // that every example actually works.
 //
 // ```sh
-// node --test README.ts   # run examples as tests
-// tsc README.ts           # typecheck
-// node ./cli.ts README.ts  # generate README.md
+// node --test README.md.test.ts   # run examples as tests
+// tsc README.md.test.ts           # typecheck
+// node ./cli.ts README.md.test.ts  # generate README.md
 // ```
 
-import {describe, example, shell, shellExample} from '../src/index.ts'
+import {describe, example, shell, shellExample, alias, stripTypesFlag} from '../src/index.ts'
 import assert from 'node:assert/strict'
+
+const _flag = stripTypesFlag()
+alias('lit-md', ['node', _flag, './src/cli.ts'].filter(Boolean).join(' '))
 
 // ## How it works
 //
@@ -32,7 +35,7 @@ import assert from 'node:assert/strict'
 // Line and block comments both become markdown.
 
 describe('comments become prose', () => {
-  shellExample('node ./cli.ts tmp.ts', {
+  shellExample('lit-md tmp.ts', {
     inputFiles: [{
       path: 'tmp.ts',
       content: `/*\n * # Section\n * \n * A description.\n */`
@@ -50,15 +53,12 @@ describe('comments become prose', () => {
 // The body of each example call becomes a fenced code block.
 
 describe('example bodies become code blocks', () => {
-    shellExample('node ./cli.ts tmp.ts', {
+    shellExample('lit-md tmp.ts', {
       inputFiles: [{
         path: 'tmp.ts',
         content: `import { example } from 'node:test'\nimport assert from 'node:assert/strict'\n\nexample('greet', () => {\n  const msg = 'Hello, world!'\n  assert.equal(msg.length, 13)\n})`
       }],
       outputFiles: [{
-        path: 'tmp.md',
-        contains: 'greet'
-      }, {
         path: 'tmp.md',
         contains: `const msg = 'Hello, world!'`
       }]
@@ -69,14 +69,14 @@ describe('example bodies become code blocks', () => {
 //
 // describe() wrappers are stripped — only the body is kept.
 
-    shellExample('node ./cli.ts tmp.ts', {
+    shellExample('lit-md tmp.ts', {
       inputFiles: [{
         path: 'tmp.ts',
         content: `import { describe, example } from 'node:test'\nimport assert from 'node:assert/strict'\n\ndescribe('Math tests', () => {\n  example('add', () => {\n    const x = 1 + 1\n    assert.equal(x, 2)\n  })\n})`
       }],
       outputFiles: [{
         path: 'tmp.md',
-        contains: 'add'
+        contains: 'const x = 1 + 1'
       }]
     })
 
@@ -84,7 +84,7 @@ describe('example bodies become code blocks', () => {
 //
 // All import lines are filtered out. Use `// keep` to show one.
 
-    shellExample('node ./cli.ts tmp.ts', {
+    shellExample('lit-md tmp.ts', {
       inputFiles: [{
         path: 'tmp.ts',
         content: `import { example } from 'node:test'\nimport { parse } from './parser.ts'\n\nexample('test', () => {\n  const x = 1\n})`
@@ -95,7 +95,7 @@ describe('example bodies become code blocks', () => {
       }]
     })
 
-    shellExample('node ./cli.ts tmp.ts', {
+    shellExample('lit-md tmp.ts', {
       inputFiles: [{
         path: 'tmp.ts',
         content: `import { example } from 'node:test'\nimport { greet } from './greet.ts' // keep\n\nexample('test', () => {\n  const msg = greet('world')\n})`
@@ -111,7 +111,7 @@ describe('example bodies become code blocks', () => {
 // Functions and variables defined outside `example()` don't appear in output.
 // They run and can be called inside examples, but stay out of the docs.
 
-    shellExample('node ./cli.ts tmp.ts', {
+    shellExample('lit-md tmp.ts', {
       inputFiles: [{
         path: 'tmp.ts',
         content: `import { example } from 'node:test'\nimport assert from 'node:assert/strict'\n\nexample('greet', () => {\n  const msg = greet('world')\n  assert.equal(msg, 'Hello, world!')\n})\n\nfunction greet(name: string) { return \`Hello, \${name}!\` }`
@@ -127,7 +127,7 @@ describe('example bodies become code blocks', () => {
 // If a comment ends with a code fence and an example follows,
 // they merge into one code block.
 
-    shellExample('node ./cli.ts tmp.ts', {
+    shellExample('lit-md tmp.ts', {
       inputFiles: [{
         path: 'tmp.ts',
         content: `import { example } from 'node:test'\nimport assert from 'node:assert/strict'\n\n// Use it like this:\n//\n// \`\`\`typescript\n// import { parse } from '@ndp-software/lit-md'\n// \`\`\`\n\nexample('example', () => {\n  const x = 1\n  assert.equal(x, 1)\n})`
@@ -145,7 +145,7 @@ describe('example bodies become code blocks', () => {
 //
 // Place // file: before an example to add a label.
 
-    shellExample('node ./cli.ts tmp.ts', {
+    shellExample('lit-md tmp.ts', {
       inputFiles: [{
         path: 'tmp.ts',
         content: `import { example } from 'node:test'\nimport assert from 'node:assert/strict'\n\n// file: greet.ts\nexample('greet example', () => {\n  const msg = 'hello'\n})`
@@ -161,7 +161,7 @@ describe('example bodies become code blocks', () => {
 // Assertions inside examples are transformed to annotations:
 // - assert.equal(a, b) becomes a // => b
 
-    shellExample('node ./cli.ts tmp.ts', {
+    shellExample('lit-md tmp.ts', {
       inputFiles: [{
         path: 'tmp.ts',
         content: `import { example } from 'node:test'\nimport assert from 'node:assert/strict'\n\nexample('equal', () => {\n  const msg = 'hello'\n  assert.equal(msg.length, 5)\n})`
@@ -179,11 +179,11 @@ describe('example bodies become code blocks', () => {
 // ### Basic usage
 //
 // ```sh
-// node ./cli.ts README.ts
-// # generates README.md next to README.ts
+// node ./cli.ts README.md.test.ts
+// # generates README.md next to README.md.test.ts
 // ```
 
-    shellExample('node ./cli.ts tmp.ts', {
+    shellExample('lit-md tmp.ts', {
       inputFiles: [{
         path: 'tmp.ts',
         content: `// # My Document\nimport { example } from 'node:test'\nexample('test', () => {})`
@@ -198,7 +198,7 @@ describe('example bodies become code blocks', () => {
 //
 // Use --out to write to a different location.
 
-    shellExample('node ./cli.ts tmp.ts --out /tmp/docs.md', {
+    shellExample('lit-md tmp.ts --out /tmp/docs.md', {
       inputFiles: [{
         path: 'tmp.ts',
         content: `// # Documentation\nimport { example } from 'node:test'`
@@ -213,7 +213,7 @@ describe('example bodies become code blocks', () => {
 //
 // `.js` files work exactly the same way — code blocks use `js` instead of `ts`.
 
-    shellExample('node ./cli.ts tmp.js', {
+    shellExample('lit-md tmp.js', {
       inputFiles: [{
         path: 'tmp.js',
         content: `// # My JS Doc\nimport { example } from 'node:test'\nexample('test', () => {})`

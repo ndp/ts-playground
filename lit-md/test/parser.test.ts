@@ -94,8 +94,7 @@ test('example', () => {
     ])
   })
 
-  test('test() body with multiple statements is dedented', () => {
-    const nodes = parse(`
+  test('test() body with multiple statements is dedented', () => {    const nodes = parse(`
 import { test } from 'node:test'
 test('example', () => {
   const a = 1

@@ -5,9 +5,9 @@ lit-md generates the markdown after your tests have verified
 that every example actually works.
 
 ```sh
-node --test README.ts   # run examples as tests
-tsc README.ts           # typecheck
-node ./cli.ts README.ts  # generate README.md
+node --test README.md.test.ts   # run examples as tests
+tsc README.md.test.ts           # typecheck
+node ./cli.ts README.md.test.ts  # generate README.md
 ```
 ## How it works
 
@@ -20,13 +20,15 @@ The CLI processes the file:
 1. Parse and extract comments/examples
 2. Run as node:test tests  
 3. Generate README.md
+
 ## Core concepts
+
 ### Comments become prose
 
 Line and block comments both become markdown.
 
-```typescript tmp.ts
-// input-file: tmp.ts
+```ts tmp.ts
+// Input file "tmp.ts":
 /*
  * # Section
  * 
@@ -35,20 +37,25 @@ Line and block comments both become markdown.
 ```
 
 ```sh
-node ./cli.ts tmp.ts
-# output-file: tmp.md contains:
-#   # Section
-#
-#   A description
+lit-md tmp.ts
+```
+
+Output file `tmp.md` contains:
+
+```markdown
+# Section
+
+A description
 ```
 
 // comments are also supported.
+
 ### example() bodies become code blocks
 
 The body of each example call becomes a fenced code block.
 
-```typescript tmp.ts
-// input-file: tmp.ts
+```ts tmp.ts
+// Input file "tmp.ts":
 import { example } from 'node:test'
 import assert from 'node:assert/strict'
 
@@ -59,17 +66,17 @@ example('greet', () => {
 ```
 
 ```sh
-node ./cli.ts tmp.ts
-# output-file: tmp.md contains "greet"
-# output-file: tmp.md contains "const msg = 'Hello, world!'"
+lit-md tmp.ts
 ```
+
+Output file `tmp.md` contains "const msg = 'Hello, world!'"
 
 ### describe() is transparent
 
-describe() wrappers are stripped - only the body is kept.
+describe() wrappers are stripped — only the body is kept.
 
-```typescript tmp.ts
-// input-file: tmp.ts
+```ts tmp.ts
+// Input file "tmp.ts":
 import { describe, example } from 'node:test'
 import assert from 'node:assert/strict'
 
@@ -82,16 +89,17 @@ describe('Math tests', () => {
 ```
 
 ```sh
-node ./cli.ts tmp.ts
-# output-file: tmp.md contains "add"
+lit-md tmp.ts
 ```
 
-### Import filtering
+Output file `tmp.md` contains "const x = 1 + 1"
 
-All import lines are hidden by default. Add // keep to show an import.
+### Imports are hidden by default
 
-```typescript tmp.ts
-// input-file: tmp.ts
+All import lines are filtered out. Use `// keep` to show one.
+
+```ts tmp.ts
+// Input file "tmp.ts":
 import { example } from 'node:test'
 import { parse } from './parser.ts'
 
@@ -101,12 +109,13 @@ example('test', () => {
 ```
 
 ```sh
-node ./cli.ts tmp.ts
-# output-file: tmp.md contains "const x = 1"
+lit-md tmp.ts
 ```
 
-```typescript tmp.ts
-// input-file: tmp.ts
+Output file `tmp.md` contains "const x = 1"
+
+```ts tmp.ts
+// Input file "tmp.ts":
 import { example } from 'node:test'
 import { greet } from './greet.ts' // keep
 
@@ -116,17 +125,42 @@ example('test', () => {
 ```
 
 ```sh
-node ./cli.ts tmp.ts
-# output-file: tmp.md contains "import { greet }"
+lit-md tmp.ts
 ```
+
+Output file `tmp.md` contains "import { greet }"
+
+### Top-level helpers are invisible
+
+Functions and variables defined outside `example()` don't appear in output.
+They run and can be called inside examples, but stay out of the docs.
+
+```ts tmp.ts
+// Input file "tmp.ts":
+import { example } from 'node:test'
+import assert from 'node:assert/strict'
+
+example('greet', () => {
+  const msg = greet('world')
+  assert.equal(msg, 'Hello, world!')
+})
+
+function greet(name: string) { return `Hello, ${name}!` }
+```
+
+```sh
+lit-md tmp.ts
+```
+
+Output file `tmp.md` contains "const msg = greet('world')"
 
 ## Merging imports into examples
 
 If a comment ends with a code fence and an example follows,
 they merge into one code block.
 
-```typescript tmp.ts
-// input-file: tmp.ts
+```ts tmp.ts
+// Input file "tmp.ts":
 import { example } from 'node:test'
 import assert from 'node:assert/strict'
 
@@ -143,17 +177,19 @@ example('example', () => {
 ```
 
 ```sh
-node ./cli.ts tmp.ts
-# output-file: tmp.md contains "import { parse }"
-# output-file: tmp.md contains "const x = 1"
+lit-md tmp.ts
 ```
+
+Output file `tmp.md` contains "import { parse }"
+
+Output file `tmp.md` contains "const x = 1"
 
 ## Filename labels
 
 Place // file: before an example to add a label.
 
-```typescript tmp.ts
-// input-file: tmp.ts
+```ts tmp.ts
+// Input file "tmp.ts":
 import { example } from 'node:test'
 import assert from 'node:assert/strict'
 
@@ -164,17 +200,18 @@ example('greet example', () => {
 ```
 
 ```sh
-node ./cli.ts tmp.ts
-# output-file: tmp.md contains "greet.ts"
+lit-md tmp.ts
 ```
+
+Output file `tmp.md` contains "greet.ts"
 
 ## Assertion transformation
 
 Assertions inside examples are transformed to annotations:
 - assert.equal(a, b) becomes a // => b
 
-```typescript tmp.ts
-// input-file: tmp.ts
+```ts tmp.ts
+// Input file "tmp.ts":
 import { example } from 'node:test'
 import assert from 'node:assert/strict'
 
@@ -185,47 +222,101 @@ example('equal', () => {
 ```
 
 ```sh
-node ./cli.ts tmp.ts
-# output-file: tmp.md contains "// => 5"
+lit-md tmp.ts
 ```
+
+Output file `tmp.md` contains "// => 5"
 
 ## CLI
 
-The lit-md CLI generates markdown from TypeScript files.
+The lit-md CLI generates markdown from TypeScript or JavaScript files.
+
 ### Basic usage
 
 ```sh
-node ./cli.ts README.ts
-# generates README.md next to README.ts
+node ./cli.ts README.md.test.ts
+# generates README.md next to README.md.test.ts
 ```
 
-```typescript tmp.ts
-// input-file: tmp.ts
+```ts tmp.ts
+// Input file "tmp.ts":
 // # My Document
 import { example } from 'node:test'
 example('test', () => {})
 ```
 
 ```sh
-node ./cli.ts tmp.ts
-# output-file: tmp.md contains "# My Document"
+lit-md tmp.ts
 ```
+
+Output file `tmp.md` contains "# My Document"
 
 ### Custom output path
 
 Use --out to write to a different location.
 
-```typescript tmp.ts
-// input-file: tmp.ts
+```ts tmp.ts
+// Input file "tmp.ts":
 // # Documentation
 import { example } from 'node:test'
 ```
 
 ```sh
-node ./cli.ts tmp.ts --out /tmp/docs.md
-# output-file: /tmp/docs.md contains "# Documentation"
+lit-md tmp.ts --out /tmp/docs.md
 ```
+
+Output file `/tmp/docs.md` contains "# Documentation"
+
+### JavaScript files
+
+`.js` files work exactly the same way — code blocks use `js` instead of `ts`.
+
+```js tmp.js
+// Input file "tmp.js":
+// # My JS Doc
+import { example } from 'node:test'
+example('test', () => {})
+```
+
+```sh
+lit-md tmp.js
+```
+
+Output file `tmp.md` contains "# My JS Doc"
 
 ## Shell examples
 
 Use shell or shellExample to include executable shell commands.
+
+```ts
+shell`echo "hello world"`
+```
+
+```ts
+shell`
+  echo "hello"
+  # => hello
+`
+```
+
+```ts
+shellExample('echo "hello world"')
+```
+
+```ts
+shellExample('echo "ok"', { stdout: 'ok' })
+```
+
+```ts
+shellExample('cp input.txt output.txt', {
+  inputFiles: [{ path: 'input.txt', content: 'hello world' }],
+  outputFiles: [{ path: 'output.txt', contains: 'hello world' }]
+})
+```
+
+```ts
+shellExample('cp input.txt output.txt', {
+  inputFiles: [{ path: 'input.txt', content: 'first line\nsecond line' }],
+  outputFiles: [{ path: 'output.txt', matches: /^first/ }]
+})
+```

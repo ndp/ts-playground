@@ -5,6 +5,7 @@ import { spawnSync } from 'child_process'
 import { parse } from './parser.ts'
 import { render } from './renderer.ts'
 import { typecheck } from './typecheck.ts'
+import { stripTypesFlag } from './shell.ts'
 
 // --- Argument parsing ---
 
@@ -71,11 +72,9 @@ if (runTypecheck) {
 // --- Run tests ---
 
 if (runTests) {
-  const result = spawnSync(
-    process.execPath,
-    ['--test', '--experimental-strip-types', ...inputPaths.map(p => resolve(p))],
-    { stdio: 'inherit', env: process.env }
-  )
+  const stripFlag = stripTypesFlag()
+  const nodeArgs = ['--test', ...(stripFlag ? [stripFlag] : []), ...inputPaths.map(p => resolve(p))]
+  const result = spawnSync(process.execPath, nodeArgs, { stdio: 'inherit', env: process.env })
   if (result.status !== 0) process.exit(result.status ?? 1)
 }
 

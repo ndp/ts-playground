@@ -9,7 +9,7 @@
     "lit-md": "./src/cli.ts"
   },
   "scripts": {
-    "readme": "node --test ./docs/README.ts && npm run typecheck && node ./src/cli.ts --out ./README.md ./docs/README.ts",
+    "readme": "node ./src/cli.ts --test --typecheck --out ./README.md ./docs/README.md.test.ts",
     "test": "node --test './test/**/*.test.ts'",
     "test:watch": "node --test --watch './test/**/*.test.ts'",
     "test:acceptance": "node --test test/acceptance.test.ts",

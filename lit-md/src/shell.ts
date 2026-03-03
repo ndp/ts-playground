@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process'
-import { readFileSync, writeFileSync, unlinkSync } from 'node:fs'
-import { isAbsolute, resolve } from 'node:path'
+import { readFileSync, writeFileSync, unlinkSync, mkdtempSync, rmSync } from 'node:fs'
+import { isAbsolute, resolve, join } from 'node:path'
+import { tmpdir } from 'node:os'
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
 
@@ -61,39 +62,46 @@ export interface ShellExampleOpts {
 /** Internal: executes a shell command and runs any assertions. Throws on failure.
  *  Exported for direct testing. */
 export function _runShellExample(cmd: string, opts: ShellExampleOpts): void {
-  for (const f of opts.inputFiles ?? []) {
-    writeFileSync(f.path, f.content, 'utf8')
-  }
-  let stdout: string
+  const tmpDir = mkdtempSync(join(tmpdir(), 'lit-md-shell-'))
+  const resolvePath = (p: string) => isAbsolute(p) ? p : join(tmpDir, p)
   try {
-    const prefix = buildAliasPrefix()
-    const fullCmd = prefix ? `${prefix}${cmd}` : cmd
-    const result = spawnSync(fullCmd, { shell: true, encoding: 'utf8' })
-    if (result.status !== 0) {
-      const err = result.stderr || result.error?.message || ''
-      throw new Error(`exit ${result.status ?? 'null'}${err ? ': ' + err : ''}`)
+    for (const f of opts.inputFiles ?? []) {
+      writeFileSync(resolvePath(f.path), f.content, 'utf8')
     }
-    stdout = result.stdout
-  } catch (e: any) {
-    throw new Error(`Command failed: ${cmd}\n${e.message}`)
-  }
-  if (opts.stdout !== undefined) {
-    assert.ok(
-      stdout.includes(opts.stdout),
-      `stdout did not contain: ${JSON.stringify(opts.stdout)}\nActual: ${JSON.stringify(stdout)}`
-    )
-  }
-  for (const fa of opts.outputFiles ?? []) {
-    const content = readFileSync(fa.path, 'utf8')
-    if (fa.contains !== undefined) {
-      assert.ok(content.includes(fa.contains), `file ${fa.path} does not contain: ${JSON.stringify(fa.contains)}`)
+    let stdout: string
+    try {
+      const prefix = buildAliasPrefix()
+      const fullCmd = prefix ? `${prefix}${cmd}` : cmd
+      const result = spawnSync(fullCmd, { shell: true, encoding: 'utf8', cwd: tmpDir })
+      if (result.status !== 0) {
+        const err = result.stderr || result.error?.message || ''
+        throw new Error(`exit ${result.status ?? 'null'}${err ? ': ' + err : ''}`)
+      }
+      stdout = result.stdout
+    } catch (e: any) {
+      throw new Error(`Command failed: ${cmd}\n${e.message}`)
     }
-    if (fa.matches !== undefined) {
-      assert.ok(fa.matches.test(content), `file ${fa.path} does not match: ${fa.matches}`)
+    if (opts.stdout !== undefined) {
+      assert.ok(
+        stdout.includes(opts.stdout),
+        `stdout did not contain: ${JSON.stringify(opts.stdout)}\nActual: ${JSON.stringify(stdout)}`
+      )
     }
-  }
-  for (const f of opts.inputFiles ?? []) {
-    try { unlinkSync(f.path) } catch {}
+    for (const fa of opts.outputFiles ?? []) {
+      const content = readFileSync(resolvePath(fa.path), 'utf8')
+      if (fa.contains !== undefined) {
+        assert.ok(content.includes(fa.contains), `file ${fa.path} does not contain: ${JSON.stringify(fa.contains)}`)
+      }
+      if (fa.matches !== undefined) {
+        assert.ok(fa.matches.test(content), `file ${fa.path} does not match: ${fa.matches}`)
+      }
+    }
+    // Clean up absolute-path inputFiles (relative ones are removed with tmpDir below)
+    for (const f of opts.inputFiles ?? []) {
+      if (isAbsolute(f.path)) try { unlinkSync(f.path) } catch {}
+    }
+  } finally {
+    rmSync(tmpDir, { recursive: true, force: true })
   }
 }
 
@@ -150,4 +158,17 @@ export function shell(strings: TemplateStringsArray): void {
 /** Registers a node:test test that executes the shell command and verifies assertions. */
 export function shellExample(cmd: string, opts: ShellExampleOpts = {}): void {
   test(cmd, () => _runShellExample(cmd, opts))
+}
+
+/**
+ * Returns `'--experimental-strip-types'` on Node.js versions where the flag is required
+ * (v22.6–v23.5), or `''` on versions where TypeScript stripping is stable (v23.6+).
+ */
+export function stripTypesFlag(): string {
+  const parts = process.versions.node.split('.')
+  const major = parseInt(parts[0] ?? '0', 10)
+  const minor = parseInt(parts[1] ?? '0', 10)
+  if (major === 22 && minor >= 6) return '--experimental-strip-types'
+  if (major === 23 && minor < 6) return '--experimental-strip-types'
+  return ''
 }
