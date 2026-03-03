@@ -6,8 +6,7 @@
  
 ## Markdown output
 
-- -- [ ] Let's fix output file emission in markdown. It should never be in the same block as the typescript or shell script. If it is short, it should be a text node, like 'Output file `tmp.md` contains
-  "// => 5"'. If it is longer than say 60 characters (or multiline-- we need both tests), then add text node: 'Output file `tmp.md` contains:` and follow it by a code block
+- -- [ ] Let's fix output file emission in markdown. It should never be in the same block as the typescript or shell script. If it is short, it should be a text node, like 'Output file `tmp.md` contains "outputtedstuff"'. If it is longer than say 60 characters (or multiline-- we need both tests), then add text node: 'Output file `tmp.md` contains:` and follow it by a code block
   with the contents.
 - [ ] shell command should look more like shell commands, with > prompts and the command on the same line. This is more visually distinct and easier to read. For example:
 ```   
@@ -15,6 +14,10 @@
 hello world
 ``` 
 - [ ] add support for generating documentation from JavaScript files in addition to TypeScript files. This would allow users who are not using TypeScript to still benefit from the tool. The cli would detect the file type based on the extension (.js or .ts) and would process the files accordingly. For JavaScript files, type checking would be skipped, but tests would still be run if the --test option is specified. The generated markdown files would have the same name as the input files, but with a .md extension.
+
+### Omit some comments from output
+Suggestion of //-  or /*-  to indicate that a comment should be omitted from the generated markdown output. This allows users to include comments in their code for clarity and documentation purposes without cluttering the generated documentation. The cli would simply ignore any comments that start with //- or /*- when generating the markdown output.
+
 
 ## Acceptance tests
 

@@ -31,8 +31,9 @@ example('t', () => {})
 
 ```sh
 lit-md tmp.ts
-# output-file: tmp.md contains "# Hello"
 ```
+
+Output file `tmp.md` contains "# Hello"
 
 ## shellExample — With Regex Match
 
@@ -44,5 +45,6 @@ import { example } from 'node:test'
 
 ```sh
 lit-md tmp.ts
-# output-file: tmp.md matches /^## Section/
 ```
+
+Output file `tmp.md` matches /^## Section/

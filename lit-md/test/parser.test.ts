@@ -454,24 +454,37 @@ describe('parse: shellExample() → sh code block', () => {
     ])
   })
 
-  test('shellExample with single-line outputFiles contains → annotation in code text', () => {
+  test('shellExample with short single-line outputFiles contains → separate prose node', () => {
     const nodes = parse(`shellExample('lit-md README.ts', { outputFiles: [{ path: 'README.md', contains: '# My Lib' }] })`)
     assert.deepEqual(nodes, [
-      { kind: 'code', lang: 'sh', text: 'lit-md README.ts\n# output-file: README.md contains "# My Lib"', title: undefined }
+      { kind: 'code', lang: 'sh', text: 'lit-md README.ts', title: undefined },
+      { kind: 'prose', text: 'Output file `README.md` contains "# My Lib"', terminal: true }
     ])
   })
 
-  test('shellExample with multi-line outputFiles contains → indented # lines', () => {
+  test('shellExample with long single-line outputFiles contains → prose + code block', () => {
+    const nodes = parse(`shellExample('lit-md README.ts', { outputFiles: [{ path: 'README.md', contains: 'This is a rather long expected string that exceeds sixty chars' }] })`)
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'sh', text: 'lit-md README.ts', title: undefined },
+      { kind: 'prose', text: 'Output file `README.md` contains:', terminal: true },
+      { kind: 'code', lang: 'markdown', text: 'This is a rather long expected string that exceeds sixty chars', title: undefined }
+    ])
+  })
+
+  test('shellExample with multi-line outputFiles contains → prose + code block', () => {
     const nodes = parse(`shellExample('lit-md README.ts', { outputFiles: [{ path: 'README.md', contains: '# Title\\n\\nBody.' }] })`)
     assert.deepEqual(nodes, [
-      { kind: 'code', lang: 'sh', text: 'lit-md README.ts\n# output-file: README.md contains:\n#   # Title\n#\n#   Body.', title: undefined }
+      { kind: 'code', lang: 'sh', text: 'lit-md README.ts', title: undefined },
+      { kind: 'prose', text: 'Output file `README.md` contains:', terminal: true },
+      { kind: 'code', lang: 'markdown', text: '# Title\n\nBody.', title: undefined }
     ])
   })
 
-  test('shellExample with outputFiles matches → annotation in code text', () => {
+  test('shellExample with outputFiles matches → separate prose node', () => {
     const nodes = parse(`shellExample('lit-md README.ts', { outputFiles: [{ path: 'README.md', matches: /## How it works/ }] })`)
     assert.deepEqual(nodes, [
-      { kind: 'code', lang: 'sh', text: 'lit-md README.ts\n# output-file: README.md matches /## How it works/', title: undefined }
+      { kind: 'code', lang: 'sh', text: 'lit-md README.ts', title: undefined },
+      { kind: 'prose', text: 'Output file `README.md` matches /## How it works/', terminal: true }
     ])
   })
 
