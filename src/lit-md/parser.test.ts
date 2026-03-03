@@ -478,15 +478,15 @@ describe('parse: shellExample() → sh code block', () => {
   test('shellExample with single-line inputFiles → inline comment in code text', () => {
     const nodes = parse(`shellExample('node cli.ts tmp.ts', { inputFiles: [{ path: 'tmp.ts', content: '// Hello, world!' }] })`)
     assert.deepEqual(nodes, [
-      { kind: 'code', lang: 'typescript', text: '// Input file tmp.ts\n// Hello, world!', title: 'tmp.ts' },
-      { kind: 'code', lang: 'sh', text: 'node cli.ts tmp.ts\n# Input file tmp.ts contains "// Hello, world!"', title: undefined }
+      { kind: 'code', lang: 'typescript', text: '// Input file "tmp.ts":\n// Hello, world!', title: 'tmp.ts' },
+      { kind: 'code', lang: 'sh', text: 'node cli.ts tmp.ts\n# Input file `tmp.ts` contains `// Hello, world!`', title: undefined }
     ])
   })
 
   test('shellExample with multi-line inputFiles → separate code block before sh block', () => {
     const nodes = parse(`shellExample('node cli.ts tmp.ts', { inputFiles: [{ path: 'tmp.ts', content: '// Line 1\\n// Line 2' }] })`)
     assert.deepEqual(nodes, [
-      { kind: 'code', lang: 'typescript', text: '// Input file tmp.ts\n// Line 1\n// Line 2', title: 'tmp.ts' },
+      { kind: 'code', lang: 'typescript', text: '// Input file "tmp.ts":\n// Line 1\n// Line 2', title: 'tmp.ts' },
       { kind: 'code', lang: 'sh', text: 'node cli.ts tmp.ts', title: undefined }
     ])
   })
@@ -496,7 +496,7 @@ describe('parse: shellExample() → sh code block', () => {
     assert.deepEqual(nodes, [
       { kind: 'prose', text: 'With input file config.json:' },
       { kind: 'code', lang: 'json', text: '{ }', title: 'config.json' },
-      { kind: 'code', lang: 'sh', text: 'node cli.ts\n# Input file config.json contains "{ }"', title: undefined }
+      { kind: 'code', lang: 'sh', text: 'node cli.ts\n# Input file `config.json` contains `{ }`', title: undefined }
     ])
   })
 
@@ -505,8 +505,8 @@ describe('parse: shellExample() → sh code block', () => {
     assert.deepEqual(nodes, [
       { kind: 'prose', text: 'With input file config.json:' },
       { kind: 'code', lang: 'json', text: '{  }', title: 'config.json' },
-      { kind: 'code', lang: 'typescript', text: '// Input file "main.ts"\n// Line 1\n// Line 2\n// Line 3', title: 'main.ts' },
-      { kind: 'code', lang: 'sh', text: 'node cli.ts\n# Input file "config.json" contains "{  }"', title: undefined }
+      { kind: 'code', lang: 'typescript', text: '// Input file "main.ts":\n// Line 1\n// Line 2\n// Line 3', title: 'main.ts' },
+      { kind: 'code', lang: 'sh', text: 'node cli.ts\n# Input file `config.json` contains `{  }`', title: undefined }
     ])
   })
 
