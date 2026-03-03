@@ -27,29 +27,30 @@ node --version
 `outputFiles` verifies that specified files exist after the command runs
 and contain expected content.
 
-```ts tmp.ts
-// Input file "tmp.ts":
-// # Hello
-import { example } from 'node:test'
-example('t', () => {})
+With input file input.txt:
+
+```text input.txt
+hello world
 ```
 
 ```sh
-lit-md tmp.ts
+cp input.txt output.txt
+# Input file `input.txt` contains `hello world`
 ```
 
-Output file `tmp.md` contains "# Hello"
+Output file `output.txt` contains "hello world"
 
 File contents can assert that they match a regex pattern:
 
-```ts tmp.ts
-// Input file "tmp.ts":
-// ## Section
-import { example } from 'node:test'
+With input file input.txt:
+
+```text input.txt
+first line
+second line
 ```
 
 ```sh
-lit-md tmp.ts
+cp input.txt output.txt
 ```
 
-Output file `tmp.md` matches /^## Section/
+Output file `output.txt` matches /^first/

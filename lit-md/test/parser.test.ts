@@ -423,16 +423,16 @@ describe('parse: shell`` tagged template → sh code block', () => {
   })
 
   test('shell template with # => annotation → preserved in code text', () => {
-    const nodes = parse('shell`\n  lit-md README.ts\n  # => wrote README.md\n`')
+    const nodes = parse('shell`\n  sort input.txt\n  # => apple\n`')
     assert.deepEqual(nodes, [
-      { kind: 'code', lang: 'sh', text: 'lit-md README.ts\n# => wrote README.md', title: undefined }
+      { kind: 'code', lang: 'sh', text: 'sort input.txt\n# => apple', title: undefined }
     ])
   })
 
   test('shell template with # file: annotation → preserved in code text', () => {
-    const nodes = parse('shell`\n  lit-md README.ts\n  # file: README.md contains "# Title"\n`')
+    const nodes = parse('shell`\n  sort input.txt\n  # file: output.txt contains "line one"\n`')
     assert.deepEqual(nodes, [
-      { kind: 'code', lang: 'sh', text: 'lit-md README.ts\n# file: README.md contains "# Title"', title: undefined }
+      { kind: 'code', lang: 'sh', text: 'sort input.txt\n# file: output.txt contains "line one"', title: undefined }
     ])
   })
 
@@ -448,43 +448,43 @@ describe('parse: shellExample() → sh code block', () => {
   })
 
   test('shellExample with stdout option → # => annotation in code text', () => {
-    const nodes = parse(`shellExample('lit-md README.ts', { stdout: 'wrote README.md' })`)
+    const nodes = parse(`shellExample('sort input.txt', { stdout: 'apple' })`)
     assert.deepEqual(nodes, [
-      { kind: 'code', lang: 'sh', text: 'lit-md README.ts\n# => wrote README.md', title: undefined }
+      { kind: 'code', lang: 'sh', text: 'sort input.txt\n# => apple', title: undefined }
     ])
   })
 
   test('shellExample with short single-line outputFiles contains → separate prose node', () => {
-    const nodes = parse(`shellExample('lit-md README.ts', { outputFiles: [{ path: 'README.md', contains: '# My Lib' }] })`)
+    const nodes = parse(`shellExample('sort input.txt', { outputFiles: [{ path: 'output.txt', contains: '# My Lib' }] })`)
     assert.deepEqual(nodes, [
-      { kind: 'code', lang: 'sh', text: 'lit-md README.ts', title: undefined },
-      { kind: 'prose', text: 'Output file `README.md` contains "# My Lib"', terminal: true }
+      { kind: 'code', lang: 'sh', text: 'sort input.txt', title: undefined },
+      { kind: 'prose', text: 'Output file `output.txt` contains "# My Lib"', terminal: true }
     ])
   })
 
   test('shellExample with long single-line outputFiles contains → prose + code block', () => {
-    const nodes = parse(`shellExample('lit-md README.ts', { outputFiles: [{ path: 'README.md', contains: 'This is a rather long expected string that exceeds sixty chars' }] })`)
+    const nodes = parse(`shellExample('sort input.txt', { outputFiles: [{ path: 'output.txt', contains: 'This is a rather long expected string that exceeds sixty chars' }] })`)
     assert.deepEqual(nodes, [
-      { kind: 'code', lang: 'sh', text: 'lit-md README.ts', title: undefined },
-      { kind: 'prose', text: 'Output file `README.md` contains:', terminal: true },
-      { kind: 'code', lang: 'markdown', text: 'This is a rather long expected string that exceeds sixty chars', title: undefined }
+      { kind: 'code', lang: 'sh', text: 'sort input.txt', title: undefined },
+      { kind: 'prose', text: 'Output file `output.txt` contains:', terminal: true },
+      { kind: 'code', lang: 'text', text: 'This is a rather long expected string that exceeds sixty chars', title: undefined }
     ])
   })
 
   test('shellExample with multi-line outputFiles contains → prose + code block', () => {
-    const nodes = parse(`shellExample('lit-md README.ts', { outputFiles: [{ path: 'README.md', contains: '# Title\\n\\nBody.' }] })`)
+    const nodes = parse(`shellExample('sort input.txt', { outputFiles: [{ path: 'output.txt', contains: '# Title\\n\\nBody.' }] })`)
     assert.deepEqual(nodes, [
-      { kind: 'code', lang: 'sh', text: 'lit-md README.ts', title: undefined },
-      { kind: 'prose', text: 'Output file `README.md` contains:', terminal: true },
-      { kind: 'code', lang: 'markdown', text: '# Title\n\nBody.', title: undefined }
+      { kind: 'code', lang: 'sh', text: 'sort input.txt', title: undefined },
+      { kind: 'prose', text: 'Output file `output.txt` contains:', terminal: true },
+      { kind: 'code', lang: 'text', text: '# Title\n\nBody.', title: undefined }
     ])
   })
 
   test('shellExample with outputFiles matches → separate prose node', () => {
-    const nodes = parse(`shellExample('lit-md README.ts', { outputFiles: [{ path: 'README.md', matches: /## How it works/ }] })`)
+    const nodes = parse(`shellExample('sort input.txt', { outputFiles: [{ path: 'output.txt', matches: /## How it works/ }] })`)
     assert.deepEqual(nodes, [
-      { kind: 'code', lang: 'sh', text: 'lit-md README.ts', title: undefined },
-      { kind: 'prose', text: 'Output file `README.md` matches /## How it works/', terminal: true }
+      { kind: 'code', lang: 'sh', text: 'sort input.txt', title: undefined },
+      { kind: 'prose', text: 'Output file `output.txt` matches /## How it works/', terminal: true }
     ])
   })
 

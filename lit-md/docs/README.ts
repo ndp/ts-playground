@@ -229,44 +229,38 @@ describe('example bodies become code blocks', () => {
 // Use shell or shellExample to include executable shell commands.
 
 describe('shell tagged template', () => {
-  example('shell basic: verify command succeeds', () => {
-    // In documentation: shell`echo "hello"`
-    // This runs and verifies the command succeeds
+  example('basic: verify command succeeds', () => {
+    shell`echo "hello world"`
   })
 
-  example('shell with stdout assertion', () => {
-    // shell`echo "hello"\n# => hello`
-    // Verifies stdout contains the expected output
-  })
-
-  example('shell with file assertion', () => {
-    // shell`node cli.ts README.ts\n# file: README.md contains "# Title"`
-    // Verifies output files contain expected content
+  example('with stdout assertion', () => {
+    shell`
+      echo "hello"
+      # => hello
+    `
   })
 })
 
 describe('shellExample structured', () => {
-  example('shellExample basic', () => {
-    // shellExample('echo "hello"', {})
-    // Runs command and verifies exit code 0
+  example('basic', () => {
+    shellExample('echo "hello world"')
   })
 
-  example('shellExample with stdout', () => {
-    // shellExample('npm test', { stdout: 'passed' })
-    // Verifies stdout contains "passed"
+  example('with stdout assertion', () => {
+    shellExample('echo "ok"', { stdout: 'ok' })
   })
 
-  example('shellExample with output files', () => {
-    // shellExample('npm run build', {
-    //   outputFiles: [{path: 'dist/index.js', contains: 'export'}]
-    // })
-    // Verifies output files exist with expected content
+  example('with output files', () => {
+    shellExample('cp input.txt output.txt', {
+      inputFiles: [{ path: 'input.txt', content: 'hello world' }],
+      outputFiles: [{ path: 'output.txt', contains: 'hello world' }]
+    })
   })
 
-  example('shellExample with input files', () => {
-    // shellExample('node tmp.ts', {
-    //   inputFiles: [{path: 'tmp.ts', content: 'console.log("hi")'}]
-    // })
-    // Creates input files, runs command, cleans up after
+  example('with regex match', () => {
+    shellExample('cp input.txt output.txt', {
+      inputFiles: [{ path: 'input.txt', content: 'first line\nsecond line' }],
+      outputFiles: [{ path: 'output.txt', matches: /^first/ }]
+    })
   })
 })

@@ -4,8 +4,7 @@
 // the `shell` tagged template and the `shellExample` structured function.
 // Both run the command as a test and emit a `sh` code block.
 
-import {shellExample, alias} from '../../../src/index.ts'
-alias('lit-md', 'node --experimental-strip-types ../../cli.ts')
+import {shellExample} from '../../../src/index.ts'
 
 //
 // ## Basic
@@ -23,23 +22,23 @@ shellExample('node --version', {stdout: '24.11.0'})
 // `inputFiles` (optionally) creates a file of a given name with specific content
 // `outputFiles` verifies that specified files exist after the command runs
 // and contain expected content.
-shellExample('lit-md tmp.ts', {
+shellExample('cp input.txt output.txt', {
   inputFiles: [{
-    path: 'tmp.ts',
-    content: '// # Hello\nimport { example } from \'node:test\'\nexample(\'t\', () => {})'
+    path: 'input.txt',
+    content: 'hello world'
   }],
   outputFiles: [
-    {path: 'tmp.md', contains: '# Hello'}
+    {path: 'output.txt', contains: 'hello world'}
   ]
 })
 
 // File contents can assert that they match a regex pattern:
-shellExample('lit-md tmp.ts', {
+shellExample('cp input.txt output.txt', {
   inputFiles: [{
-    path: 'tmp.ts',
-    content: '// ## Section\nimport { example } from \'node:test\''
+    path: 'input.txt',
+    content: 'first line\nsecond line'
   }],
   outputFiles: [
-    {path: 'tmp.md', matches: /^## Section/}
+    {path: 'output.txt', matches: /^first/}
   ]
 })
