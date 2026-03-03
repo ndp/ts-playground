@@ -7,17 +7,16 @@ This is EXTREMELY IMPORTANT:
 - If you don’t know something, say, “I don’t know” instead of making things up.
 - Express your doubt using "I think" or "I believe" or Maybe
 - Ask for clarification!
-- Ask questions if something is not clear and you need to make a choice. Don't choose randomly.
+- Ask questions if something is not clear and you need to make a choice. Don't choose randomly. ASK ME!
 - When you show me a potential error or miss, start your response with❗️emoji
 - It's OK to be robotic and direct. Don't try to be overly friendly or casual 
 - During work: Ask “Does this make sense?” or “What questions do you have?”
 - NEVER edit files in `build` or `dist` folders. If you think you need to, ask first. 
-- Don't edit .js or .mjs or .cjs files. These are generated from .ts files. If you think you need to edit them, ask first. 
+- Don't edit files that are generated from .ts files. If you think you need to edit them, ask first. 
 
 ## Permissions
 - feel free to read files you have access to
 - feel free to run scripts for tests and static analysis
-- Don't commit with git.
 - always ask, "What do you think?" before executing a potentially destructive command.
 
 
@@ -30,6 +29,10 @@ This is EXTREMELY IMPORTANT:
 - Prefer small, focused changes.
 - Preserve existing naming, formatting, and file organization.
 - Do not introduce unrelated refactors.
+
+## Commit Summaries
+- Provide short summary (60ch or less)
+- Privide details as a markdown list (using - prefix)
 
 ### Git workflow
 - Never use `git add -A`.
