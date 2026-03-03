@@ -19,7 +19,7 @@
   "sideEffects": false,
   "scripts": {
 
-    "readme": "tsc -p ./tsconfig.readme.json && node --test -r ../../test/setup-jsdom.js './docs/README.ts' && node ../lit-md/cli.ts ./docs/README.ts --out ./README.md",
+    "readme": "tsc -p ./tsconfig.readme.json && node --test -r ../../test/setup-jsdom.js './docs/README.ts' && node ../../lit-md/src/cli.ts ./docs/README.ts --out ./README.md",
 
     "typecheck": "tsc -p ./tsconfig.check.json",
     "test": "node --test -r ../../test/setup-jsdom.js './**/*test.ts'",

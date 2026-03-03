@@ -1,4 +1,4 @@
-import { example } from '../../lit-md/index.ts'
+import { example } from '../../../lit-md/src/index.ts'
 import assert from 'assert'
 import { ComponentBwilder } from '../componentBwilder.ts'
 import { type ElementDescriptor } from '../render.ts'
