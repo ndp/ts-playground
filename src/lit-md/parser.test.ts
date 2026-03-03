@@ -1,6 +1,7 @@
 import { describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import { parse } from './parser.ts'
+import {readFileSync} from 'fs'
 
 describe('parse: comments → prose', () => {
 
@@ -150,19 +151,19 @@ describe('outer', () => {
 
 describe('parse: import filtering', () => {
 
-  test('import without // keep is hidden', () => {
+  test('import without "// keep" is hidden', () => {
     const nodes = parse(`import { foo } from './foo.ts'`)
     assert.deepEqual(nodes, [])
   })
 
-  test('import with // keep becomes a code node', () => {
+  test('import with "// keep" becomes a code node', () => {
     const nodes = parse(`import { foo } from './foo.ts' // keep`)
     assert.deepEqual(nodes, [
       { kind: 'code', lang: 'typescript', text: `import { foo } from './foo.ts' // keep`, title: undefined }
     ])
   })
 
-  test('multiple kept imports become one code node', () => {
+  test('multiple "kept imports" become one code node', () => {
     const nodes = parse(
       `import { foo } from './foo.ts' // keep\nimport { bar } from './bar.ts' // keep`
     )
@@ -267,7 +268,6 @@ test('basic', () => {
 describe('parse: full document model (fixture)', () => {
 
   test('parses the encoder fixture into correct node sequence', async () => {
-    const { readFileSync } = await import('fs')
     const src = readFileSync(
       new URL('./fixtures/encoder/README.ts', import.meta.url),
       'utf8'
@@ -478,15 +478,15 @@ describe('parse: shellExample() → sh code block', () => {
   test('shellExample with single-line inputFiles → inline comment in code text', () => {
     const nodes = parse(`shellExample('node cli.ts tmp.ts', { inputFiles: [{ path: 'tmp.ts', content: '// Hello, world!' }] })`)
     assert.deepEqual(nodes, [
-      { kind: 'code', lang: 'typescript', text: '// input-file: tmp.ts\n// Hello, world!', title: 'tmp.ts' },
-      { kind: 'code', lang: 'sh', text: 'node cli.ts tmp.ts\n# input-file: tmp.ts contains "// Hello, world!"', title: undefined }
+      { kind: 'code', lang: 'typescript', text: '// Input file tmp.ts\n// Hello, world!', title: 'tmp.ts' },
+      { kind: 'code', lang: 'sh', text: 'node cli.ts tmp.ts\n# Input file tmp.ts contains "// Hello, world!"', title: undefined }
     ])
   })
 
   test('shellExample with multi-line inputFiles → separate code block before sh block', () => {
     const nodes = parse(`shellExample('node cli.ts tmp.ts', { inputFiles: [{ path: 'tmp.ts', content: '// Line 1\\n// Line 2' }] })`)
     assert.deepEqual(nodes, [
-      { kind: 'code', lang: 'typescript', text: '// input-file: tmp.ts\n// Line 1\n// Line 2', title: 'tmp.ts' },
+      { kind: 'code', lang: 'typescript', text: '// Input file tmp.ts\n// Line 1\n// Line 2', title: 'tmp.ts' },
       { kind: 'code', lang: 'sh', text: 'node cli.ts tmp.ts', title: undefined }
     ])
   })
@@ -496,7 +496,7 @@ describe('parse: shellExample() → sh code block', () => {
     assert.deepEqual(nodes, [
       { kind: 'prose', text: 'With input file config.json:' },
       { kind: 'code', lang: 'json', text: '{ }', title: 'config.json' },
-      { kind: 'code', lang: 'sh', text: 'node cli.ts\n# input-file: config.json contains "{ }"', title: undefined }
+      { kind: 'code', lang: 'sh', text: 'node cli.ts\n# Input file config.json contains "{ }"', title: undefined }
     ])
   })
 
@@ -505,8 +505,8 @@ describe('parse: shellExample() → sh code block', () => {
     assert.deepEqual(nodes, [
       { kind: 'prose', text: 'With input file config.json:' },
       { kind: 'code', lang: 'json', text: '{  }', title: 'config.json' },
-      { kind: 'code', lang: 'typescript', text: '// input-file: main.ts\n// Line 1\n// Line 2\n// Line 3', title: 'main.ts' },
-      { kind: 'code', lang: 'sh', text: 'node cli.ts\n# input-file: config.json contains "{  }"', title: undefined }
+      { kind: 'code', lang: 'typescript', text: '// Input file "main.ts"\n// Line 1\n// Line 2\n// Line 3', title: 'main.ts' },
+      { kind: 'code', lang: 'sh', text: 'node cli.ts\n# Input file "config.json" contains "{  }"', title: undefined }
     ])
   })
 

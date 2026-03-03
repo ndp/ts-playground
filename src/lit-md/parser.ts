@@ -428,7 +428,7 @@ function processShellExampleInputFiles(src: string, opts: ts.ObjectLiteralExpres
       // Create code block with label for C-style languages
       let blockText = content
       if (supportsCStyleComments(lang)) {
-        blockText = `// input-file: ${filePath}\n${content}`
+        blockText = `// Input file "${filePath}":\n${content}`
       }
       
       nodes.push({ kind: 'code', lang, text: blockText, title: filePath })
@@ -459,7 +459,7 @@ function appendShellExampleAnnotations(src: string, opts: ts.ObjectLiteralExpres
           const content = contentProp.initializer.text
           // Only add single-line files as annotations; multi-line files are separate code blocks
           if (!content.includes('\n')) {
-            lines.push(`# input-file: ${filePath} contains "${content}"`)
+            lines.push(`# Input file \`${filePath}\` contains \`${content}\``)
           }
         }
       }

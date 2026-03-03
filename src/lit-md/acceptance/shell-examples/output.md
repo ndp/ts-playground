@@ -23,7 +23,7 @@ node --version
 and contain expected content.
 
 ```typescript tmp.ts
-// input-file: tmp.ts
+// Input file "tmp.ts":
 // # Hello
 import { example } from 'node:test'
 example('t', () => {})
@@ -37,7 +37,7 @@ lit-md tmp.ts
 ## shellExample — With Regex Match
 
 ```typescript tmp.ts
-// input-file: tmp.ts
+// Input file "tmp.ts":
 // ## Section
 import { example } from 'node:test'
 ```
