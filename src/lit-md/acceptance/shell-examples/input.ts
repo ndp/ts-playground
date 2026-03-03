@@ -4,8 +4,9 @@
 // the `shell` tagged template and the `shellExample` structured function.
 // Both run the command as a test and emit a `sh` code block.
 
-import { shellExample } from '../../index.ts'
+import { shellExample, alias } from '../../index.ts'
 
+alias('lit-md', 'node --experimental-strip-types ../../cli.ts')
 
 // ## shellExample — Basic
 
@@ -24,7 +25,7 @@ shellExample('node --version', {
 // `outputFiles` verifies that specified files exist after the command runs
 // and contain expected content.
 
-shellExample('node cli.ts tmp.ts', {
+shellExample('lit-md tmp.ts', {
   inputFiles: [{
     path: 'tmp.ts',
     content: '// # Hello\nimport { example } from \'node:test\'\nexample(\'t\', () => {})'
@@ -36,7 +37,7 @@ shellExample('node cli.ts tmp.ts', {
 
 // ## shellExample — With Regex Match
 
-shellExample('node cli.ts tmp.ts', {
+shellExample('lit-md tmp.ts', {
   inputFiles: [{
     path: 'tmp.ts',
     content: '// ## Section\nimport { example } from \'node:test\''

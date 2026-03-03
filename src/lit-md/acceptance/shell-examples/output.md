@@ -30,7 +30,7 @@ example('t', () => {})
 ```
 
 ```sh
-node cli.ts tmp.ts
+lit-md tmp.ts
 # output-file: tmp.md contains "# Hello"
 ```
 
@@ -43,6 +43,6 @@ import { example } from 'node:test'
 ```
 
 ```sh
-node cli.ts tmp.ts
+lit-md tmp.ts
 # output-file: tmp.md matches /^## Section/
 ```

@@ -23,4 +23,6 @@ function acceptanceTest(folder: string): void {
 
 describe('acceptance', () => {
   acceptanceTest('basic-prose')
+  acceptanceTest('alias')
+  acceptanceTest('shell-examples')
 })

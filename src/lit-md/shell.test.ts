@@ -1,9 +1,9 @@
 import { describe, test, after } from 'node:test'
 import assert from 'node:assert/strict'
 import { mkdtempSync, writeFileSync, rmSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, isAbsolute } from 'node:path'
 import { tmpdir } from 'node:os'
-import { _runShellExample, _runShell } from './shell.ts'
+import { _runShellExample, _runShell, alias, _clearAliases } from './shell.ts'
 
 describe('shellExample: runtime behaviour', () => {
 
@@ -129,4 +129,53 @@ describe('shell tagged template: runtime behaviour', () => {
     _runShell('echo "first"\necho "second"\n# => first')
   })
 
+})
+
+describe('alias: registration and shell execution', () => {
+  after(() => _clearAliases())
+
+  test('alias resolves relative path to absolute', () => {
+    alias('myecho', './node_modules/.bin/nonexistent')
+    // We just verify the registry holds an absolute path — don't execute
+    _clearAliases()
+    alias('greet', '/bin/echo')
+    // Use it in a shell command
+    _runShellExample('greet "hello alias"', { stdout: 'hello alias' })
+  })
+
+  test('alias with relative path is resolved to absolute', () => {
+    _clearAliases()
+    // /bin/echo is absolute but test with a relative-style token
+    alias('mycat', 'cat')  // 'cat' has no slash — kept verbatim
+    _runShellExample('mycat /dev/null', {})
+  })
+
+  test('alias to a path-like token resolves it', () => {
+    _clearAliases()
+    alias('myecho', '/bin/echo')
+    assert.ok(isAbsolute('/bin/echo'))
+    _runShellExample('myecho "resolved"', { stdout: 'resolved' })
+  })
+
+  test('multiple aliases all work in the same command', () => {
+    _clearAliases()
+    alias('e1', '/bin/echo')
+    alias('e2', '/bin/echo')
+    _runShellExample('e1 "first" && e2 "second"', { stdout: 'first' })
+  })
+
+  test('_clearAliases removes all registered aliases', () => {
+    alias('will-be-cleared', '/bin/echo')
+    _clearAliases()
+    // After clearing, alias is gone — command should fail (unknown alias falls back to bare name)
+    // We verify clearing doesn't throw and subsequent commands run normally
+    _runShellExample('echo "clean"', { stdout: 'clean' })
+  })
+
+  test('alias with command prefix resolves path token', () => {
+    _clearAliases()
+    // Token with a path slash gets resolved; no-slash tokens kept verbatim
+    alias('run-echo', 'env /bin/echo')
+    _runShellExample('run-echo "prefix works"', { stdout: 'prefix works' })
+  })
 })

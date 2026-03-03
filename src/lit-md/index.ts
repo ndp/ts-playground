@@ -1,5 +1,5 @@
 export { parse } from './parser.ts'
 export { render } from './renderer.ts'
 export type { DocNode, ProseNode, CodeNode } from './parser.ts'
-export { shell, example, shellExample, describe } from './shell.ts'
+export { shell, example, shellExample, describe, alias } from './shell.ts'
 export type { ShellExampleOpts, ShellFileAssertion } from './shell.ts'

@@ -1,9 +1,50 @@
 import { spawnSync } from 'node:child_process'
 import { readFileSync, writeFileSync, unlinkSync } from 'node:fs'
+import { isAbsolute, resolve } from 'node:path'
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
 
 export { test as example, describe } from 'node:test'
+
+// Module-level alias registry: name → resolved shell command string
+const _aliases = new Map<string, string>()
+
+/**
+ * Register a shell alias. `cmdString` may be a plain path or a command with
+ * arguments (e.g. `'node --experimental-strip-types ./cli.ts'`). Any token
+ * that looks like a file path (contains `/` or starts with `.`) is resolved
+ * relative to `process.cwd()` at call time. The resulting alias is prepended
+ * to every shell command executed by `shell` or `shellExample`.
+ *
+ * Alias calls produce **no markdown output**.
+ */
+export function alias(name: string, cmdString: string): void {
+  const resolved = resolveCmdPath(cmdString)
+  _aliases.set(name, resolved)
+}
+
+/** Internal: clear all registered aliases. Used in tests for isolation. */
+export function _clearAliases(): void {
+  _aliases.clear()
+}
+
+/** Resolve path-like tokens in a command string to absolute paths. */
+function resolveCmdPath(cmdString: string): string {
+  return cmdString.replace(/\S+/g, token => {
+    if (token.startsWith('/') || token.startsWith('./') || token.startsWith('../') ||
+        (!isAbsolute(token) && token.includes('/'))) {
+      return resolve(process.cwd(), token)
+    }
+    return token
+  })
+}
+
+/** Build shell alias prefix lines to prepend to commands. */
+function buildAliasPrefix(): string {
+  if (_aliases.size === 0) return ''
+  const lines = [..._aliases.entries()].map(([name, cmd]) => `alias ${name}='${cmd}'`)
+  return lines.join('\n') + '\n'
+}
 
 export interface ShellFileAssertion {
   path: string
@@ -25,7 +66,9 @@ export function _runShellExample(cmd: string, opts: ShellExampleOpts): void {
   }
   let stdout: string
   try {
-    const result = spawnSync(cmd, { shell: true, encoding: 'utf8' })
+    const prefix = buildAliasPrefix()
+    const fullCmd = prefix ? `${prefix}${cmd}` : cmd
+    const result = spawnSync(fullCmd, { shell: true, encoding: 'utf8' })
     if (result.status !== 0) {
       const err = result.stderr || result.error?.message || ''
       throw new Error(`exit ${result.status ?? 'null'}${err ? ': ' + err : ''}`)
