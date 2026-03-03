@@ -25,11 +25,6 @@ This will just require using the test runner's `describe()` function to group th
 
 ## CLI
 
-- [ ] allow for multiple input files for the cli. files would be output in the same folder with a .md extension.
-- [ ] allow for --outputDir option to specify the output directory for the generated markdown files. This allows users to keep their generated documentation organized and separate from their source code. The cli would create the output directory if it does not exist, and would place the generated markdown files in that directory. If not specified, the generated markdown files would be placed in the same directory as the input files.
-- [ ] support `--dryrun` option to the cli that will run the type checking and tests, but will not generate the MD file. This allows users to verify that their code is correct and that their tests pass before generating the documentation. The process would exit with a success or failure code depending on the results of the type checking and tests. Works in consort with --test and --typecheck if they were already implemented.
-- [ ] add `--typecheck` option to cli that will run the type checking using typescript engine. Saves the user the hassle of making a new project file, or passing lots of parameters. It would run before the MD generation. Failure of type checking would prevent the MD generation, and the error messages would be printed to the console.
-- [ ] add `--test` option to cli that will run the input files as tests using node test runner. It would run before the MD generation. Failure prevents the MD generation, and the error is printed to the console.
 - [ ] add a `--wait` to cli that will keep the process alive after generating the MD file. This allows users to inspect the generated file before the process exits, and also allows for easier debugging of the generation process. The process would exit when the user presses a key or sends a signal (e.g., Ctrl+C). WOrks in consort with --test and --typecheck if they were already implemented.
 
 

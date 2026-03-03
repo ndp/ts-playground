@@ -1,24 +1,29 @@
-# Shell Commands
+# Shell Commands: `shellExample`
 
 lit-md provides two ways to embed executable shell commands in documentation:
 the `shell` tagged template and the `shellExample` structured function.
 Both run the command as a test and emit a `sh` code block.
-## shellExample — Basic
+
+## Basic
+
+Using `shellExample('echo "ok"')` produces:
 
 ```sh
 echo "ok"
-# => ok
 ```
 
-## shellExample — With stdout Assertion
+## With stdout Assertion
+
+Using `shellExample('node --version', { stdout: '24.11.0'})` produces:
 
 ```sh
 node --version
-# => v
+# => 24.11.0
 ```
 
-## shellExample — With Output Files
+## With Input and Output Files
 
+`inputFiles` (optionally) creates a file of a given name with specific content
 `outputFiles` verifies that specified files exist after the command runs
 and contain expected content.
 
@@ -35,7 +40,7 @@ lit-md tmp.ts
 
 Output file `tmp.md` contains "# Hello"
 
-## shellExample — With Regex Match
+File contents can assert that they match a regex pattern:
 
 ```ts tmp.ts
 // Input file "tmp.ts":
