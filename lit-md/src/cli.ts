@@ -15,7 +15,7 @@ if (outFlagIdx !== -1) {
 const [inputPath] = args
 
 if (!inputPath) {
-  console.error('Usage: lit-md <file.ts> [--out <output.md>]')
+  console.error('Usage: lit-md <file.ts|js> [--out <output.md>]')
   process.exit(1)
 }
 

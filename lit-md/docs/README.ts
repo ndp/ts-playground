@@ -174,7 +174,7 @@ describe('example bodies become code blocks', () => {
 
 // ## CLI
 //
-// The lit-md CLI generates markdown from TypeScript files.
+// The lit-md CLI generates markdown from TypeScript or JavaScript files.
 
 // ### Basic usage
 //
@@ -208,6 +208,21 @@ describe('example bodies become code blocks', () => {
         contains: '# Documentation'
       }]
 })
+
+// ### JavaScript files
+//
+// `.js` files work exactly the same way — code blocks use `js` instead of `ts`.
+
+    shellExample('node ./cli.ts tmp.js', {
+      inputFiles: [{
+        path: 'tmp.js',
+        content: `// # My JS Doc\nimport { example } from 'node:test'\nexample('test', () => {})`
+      }],
+      outputFiles: [{
+        path: 'tmp.md',
+        contains: '# My JS Doc'
+      }]
+    })
 
 // ## Shell examples
 //

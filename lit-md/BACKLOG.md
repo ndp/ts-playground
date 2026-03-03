@@ -6,8 +6,6 @@
  
 ## Markdown output
 
-- -- [ ] Let's fix output file emission in markdown. It should never be in the same block as the typescript or shell script. If it is short, it should be a text node, like 'Output file `tmp.md` contains "outputtedstuff"'. If it is longer than say 60 characters (or multiline-- we need both tests), then add text node: 'Output file `tmp.md` contains:` and follow it by a code block
-  with the contents.
 - [ ] shell command should look more like shell commands, with > prompts and the command on the same line. This is more visually distinct and easier to read. For example:
 ```   
 > echo "hello world"
