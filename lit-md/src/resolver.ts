@@ -8,7 +8,7 @@ import type { DocNode, OutputFileDisplayNode } from './parser.ts'
  * Resolves `output-file-display` nodes by actually executing the shell command,
  * reading the output file, and replacing the node with a code block.
  * Updates the preceding prose summary to end with `:` (instead of `.`) when content is shown.
- * Nodes with no output (empty file or command failure) are silently dropped.
+ * Handles empty files and command failures appropriately.
  */
 export function resolveOutputFiles(nodes: DocNode[]): DocNode[] {
   const result: DocNode[] = []
@@ -18,13 +18,26 @@ export function resolveOutputFiles(nodes: DocNode[]): DocNode[] {
       continue
     }
     const content = runAndCapture(node)
-    if (content !== null && content.trim()) {
+    if (content !== null) {
       const prev = result[result.length - 1]
-      if (prev?.kind === 'prose' && prev.text.endsWith('.')) {
-        result[result.length - 1] = { ...prev, text: prev.text.slice(0, -1) + ':', noBlankAfter: true }
+      if (content.trim()) {
+        // File has content: add code block, change period to colon in preceding prose
+        if (prev?.kind === 'prose' && prev.text.endsWith('.')) {
+          result[result.length - 1] = { ...prev, text: prev.text.slice(0, -1) + ':', noBlankAfter: true }
+        }
+        result.push({ kind: 'code', lang: node.lang, text: content.trimEnd() })
+      } else {
+        // File is empty: replace period or colon with " is empty."
+        if (prev?.kind === 'prose') {
+          if (prev.text.endsWith(':')) {
+            result[result.length - 1] = { ...prev, text: prev.text.slice(0, -1) + ' is empty.' }
+          } else if (prev.text.endsWith('.')) {
+            result[result.length - 1] = { ...prev, text: prev.text.slice(0, -1) + ' is empty.' }
+          }
+        }
       }
-      result.push({ kind: 'code', lang: node.lang, text: content.trimEnd() })
     }
+    // If content is null (command failed), silently drop the display node
   }
   return result
 }

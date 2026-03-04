@@ -525,8 +525,9 @@ function processShellExampleOutputFiles(
         }
       }
     } else {
-      // Neither contains nor matches: just note the file
-      nodes.push({ kind: 'prose', text: `Output file \`${filePath}\`${proseSuffix}`, terminal: true })
+      // Neither contains nor matches: display the full file contents
+      nodes.push({ kind: 'prose', text: `Output file \`${filePath}\`:`, terminal: true, noBlankAfter: true })
+      emitDisplayNode = true
     }
 
     if (emitDisplayNode) {

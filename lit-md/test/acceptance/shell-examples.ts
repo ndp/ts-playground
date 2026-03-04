@@ -53,3 +53,12 @@ shellExample('sort input.txt >output.txt', {
     {path: 'output.txt', matches: /^first/}
   ]
 })
+
+// ## Output Files Without Assertions
+//
+// You can also display output file contents without any `contains` or `matches` assertion:
+shellExample('echo "Hello, World!" > greeting.txt', {
+  outputFiles: [
+    {path: 'greeting.txt'}
+  ]
+})

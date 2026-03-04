@@ -22,7 +22,8 @@ export function render(nodes: DocNode[]): string {
 function renderNode(node: DocNode): string {
   if (node.kind === 'prose') return node.text
   if (node.kind === 'output-file-display') return ''
-  const lang = langAliases[node.lang] ?? node.lang
-  const info = node.title ? `${lang} ${node.title}` : lang
+  let lang = langAliases[node.lang] ?? node.lang
+  // Omit language if it's 'text'
+  const info = lang === 'text' ? (node.title ?? '') : (node.title ? `${lang} ${node.title}` : lang)
   return `\`\`\`${info}\n${node.text}\n\`\`\``
 }

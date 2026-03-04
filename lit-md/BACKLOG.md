@@ -9,22 +9,6 @@ outputFile: {
   display?: 'full' | 'none' // new field to control output display
 }
 
-## OUTPUT FILES are output with two sections:
-- SUMMARY STRING
-- FILE CONTENTS
-
-## SUMMARY STRING
-
-
-## FILE CONTENTS
-
-- and then display either the full file contents if available statically
-- if "contains" is set to a multi-line value, use this as the FILE CONTENTS instead of the full file contents, even if the full file contents are available statically. To make this clear that is an excerpt, add a line to the top and bottom of the excerpt with three dots (e.g., "..." on its own line) to indicate that it is a truncated excerpt of the file contents.
-- or "[not available]" if the file contents are not available statically (e.g., if the file is generated dynamically at runtime and cannot be read during markdown generation).
-
-
-
-
 
  
 ## Markdown output
