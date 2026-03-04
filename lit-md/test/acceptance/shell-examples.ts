@@ -4,7 +4,7 @@
 // the `shell` tagged template and the `shellExample` structured function.
 // Both run the command as a test and emit a `sh` code block.
 
-import {shellExample} from '../../../src/index.ts'
+import {shellExample} from '../../src/index.ts'
 
 //
 // ## Basic

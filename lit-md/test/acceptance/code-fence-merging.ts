@@ -4,10 +4,10 @@
 // the following `example()` is merged into that fence as one code block.
 // This lets you show an import alongside its live-tested usage.
 
-import { example } from '../../../src/index.ts'
+import { example } from '../../src/index.ts'
 import assert from 'node:assert/strict'
-import { parse } from '../../../src/parser.ts'
-import { render } from '../../../src/renderer.ts'
+import { parse } from '../../src/parser.ts'
+import { render } from '../../src/renderer.ts'
 
 // ## Basic Merge
 //

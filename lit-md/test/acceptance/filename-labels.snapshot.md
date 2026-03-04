@@ -37,7 +37,7 @@ b // => 2
 ## Label on a Kept Import
 
 ```ts my-module.ts
-import { parse } from '../../../src/parser.ts' // keep
+import { parse } from '../../src/parser.ts' // keep
 ```
 
 ```ts

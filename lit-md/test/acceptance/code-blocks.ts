@@ -3,7 +3,7 @@
 // The body of each `example()` call becomes a fenced TypeScript code block.
 // The test name becomes the label in the fence info string.
 
-import { describe, example } from '../../../src/index.ts'
+import { describe, example } from '../../src/index.ts'
 import assert from 'node:assert/strict'
 
 // ## Single Statement

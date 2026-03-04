@@ -3,7 +3,7 @@
 // lit-md works with JavaScript files too.
 // Code blocks render with `js` syntax highlighting instead of `ts`.
 
-import { example } from '../../../src/index.ts'
+import { example } from '../../src/index.ts'
 import assert from 'node:assert/strict'
 
 // ## Basic Example

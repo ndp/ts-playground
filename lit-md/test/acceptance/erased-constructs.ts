@@ -3,7 +3,7 @@
 // Some TypeScript constructs are silently erased from the generated output.
 // They run (and assert correctness), but don't clutter the docs.
 
-import { describe, example } from '../../../src/index.ts'
+import { describe, example } from '../../src/index.ts'
 import assert from 'node:assert/strict'
 
 // ## describe() Wrappers

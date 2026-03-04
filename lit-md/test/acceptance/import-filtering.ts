@@ -3,7 +3,7 @@
 // Import lines are hidden from the generated markdown by default.
 // Add `// keep` at the end of an import to include it in the output.
 
-import { example } from '../../../src/index.ts'
+import { example } from '../../src/index.ts'
 import assert from 'node:assert/strict'
 
 // ## Imports Hidden by Default
@@ -22,7 +22,7 @@ example('hidden imports', () => {
 // This is useful when the import is part of the documentation story.
 
 // file: usage.ts
-import { parse } from '../../../src/parser.ts' // keep
+import { parse } from '../../src/parser.ts' // keep
 
 example('parse usage', () => {
   const nodes = parse('// hello')
@@ -33,8 +33,8 @@ example('parse usage', () => {
 //
 // Any number of imports can be marked `// keep`.
 
-import { render } from '../../../src/renderer.ts' // keep
-import type { DocNode } from '../../../src/parser.ts' // keep
+import { render } from '../../src/renderer.ts' // keep
+import type { DocNode } from '../../src/parser.ts' // keep
 
 example('parse and render', () => {
   const src = '// # Title'

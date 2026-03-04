@@ -3,7 +3,7 @@
 // In lit-md, comments become the prose sections of your markdown.
 // Both `//` line comments and `/* */` block comments are supported.
 
-import { example } from '../../../src/index.ts'
+import { example } from '../../src/index.ts'
 import assert from 'node:assert/strict'
 
 // ## Line Comments

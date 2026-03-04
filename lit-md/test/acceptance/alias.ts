@@ -4,7 +4,7 @@
 // Alias calls do **not** appear in the documentation output —
 // they are invisible to the markdown renderer.
 
-import { shell, alias } from '../../../src/index.ts'
+import { shell, alias } from '../../src/index.ts'
 
 alias('greet', '/bin/echo')
 

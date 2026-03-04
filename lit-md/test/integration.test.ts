@@ -40,8 +40,8 @@ describe('integration: lit-md CLI end-to-end', () => {
   test('multiple input files: generates one .md per input', () => {
     const out1 = join(__dir, 'fixtures/encoder/a_test_out.md')
     const out2 = join(__dir, 'fixtures/encoder/b_test_out.md')
-    const input1 = join(__dir, 'acceptance/basic-prose/input.ts')
-    const input2 = join(__dir, 'acceptance/code-blocks/input.ts')
+    const input1 = join(__dir, 'acceptance/basic-prose.ts')
+    const input2 = join(__dir, 'acceptance/code-blocks.ts')
     try {
       // Copy inputs to temp files with distinct names so outputs don't collide
       const tmp1 = join(__dir, 'fixtures/encoder/a_test.ts')
@@ -64,8 +64,8 @@ describe('integration: lit-md CLI end-to-end', () => {
   test('--out errors when multiple input files given', () => {
     const { stderr, status } = runCli([
       '--out', '/tmp/x.md',
-      join(__dir, 'acceptance/basic-prose/input.ts'),
-      join(__dir, 'acceptance/code-blocks/input.ts'),
+      join(__dir, 'acceptance/basic-prose.ts'),
+      join(__dir, 'acceptance/code-blocks.ts'),
     ], { expectFail: true })
     assert.equal(status, 1)
     assert.ok(stderr.includes('--out can only be used with a single input file'))
@@ -73,11 +73,11 @@ describe('integration: lit-md CLI end-to-end', () => {
 
   test('--outputDir: places all outputs in specified directory', () => {
     const outDir = join(__dir, 'fixtures/_outputdir_test')
-    const input1 = join(__dir, 'acceptance/basic-prose/input.ts')
-    const input2 = join(__dir, 'acceptance/code-blocks/input.ts')
+    const input1 = join(__dir, 'acceptance/basic-prose.ts')
+    const input2 = join(__dir, 'acceptance/code-blocks.ts')
     try {
       runCli(['--outputDir', outDir, input1, input2])
-      assert.ok(existsSync(join(outDir, 'input.md')))
+      assert.ok(existsSync(join(outDir, 'basic-prose.md')))
     } finally {
       try { rmSync(outDir, { recursive: true }) } catch {}
     }
@@ -85,18 +85,18 @@ describe('integration: lit-md CLI end-to-end', () => {
 
   test('--outputDir creates directory if it does not exist', () => {
     const outDir = join(__dir, 'fixtures/_new_dir_test')
-    const input = join(__dir, 'acceptance/basic-prose/input.ts')
+    const input = join(__dir, 'acceptance/basic-prose.ts')
     try {
       assert.ok(!existsSync(outDir), 'dir should not exist before test')
       runCli(['--outputDir', outDir, input])
-      assert.ok(existsSync(join(outDir, 'input.md')))
+      assert.ok(existsSync(join(outDir, 'basic-prose.md')))
     } finally {
       try { rmSync(outDir, { recursive: true }) } catch {}
     }
   })
 
   test('--dryrun: prints "would write" and does not create file', () => {
-    const input = join(__dir, 'acceptance/basic-prose/input.ts')
+    const input = join(__dir, 'acceptance/basic-prose.ts')
     const expectedOut = input.replace('.ts', '.md')
     try {
       unlinkSync(expectedOut)
@@ -107,7 +107,7 @@ describe('integration: lit-md CLI end-to-end', () => {
   })
 
   test('--test: runs tests and proceeds to generate on success', () => {
-    const input = join(__dir, 'acceptance/basic-prose/input.ts')
+    const input = join(__dir, 'acceptance/basic-prose.ts')
     const outputFile = input.replace('.ts', '.generated.md')
     try {
       const { stdout } = runCli(['--test', '--out', outputFile, input])
@@ -119,7 +119,7 @@ describe('integration: lit-md CLI end-to-end', () => {
   })
 
   test('--typecheck: succeeds on valid .ts file', () => {
-    const input = join(__dir, 'acceptance/basic-prose/input.ts')
+    const input = join(__dir, 'acceptance/basic-prose.ts')
     const outputFile = input.replace('.ts', '.generated.md')
     try {
       const { stdout } = runCli(['--typecheck', '--dryrun', input])
@@ -130,7 +130,7 @@ describe('integration: lit-md CLI end-to-end', () => {
   })
 
   test('--typecheck: errors on .js file', () => {
-    const input = join(__dir, 'acceptance/javascript-basics/input.js')
+    const input = join(__dir, 'acceptance/javascript-basics.js')
     const { stderr, status } = runCli(['--typecheck', '--dryrun', input], { expectFail: true })
     assert.equal(status, 1)
     assert.ok(stderr.includes('--typecheck requires .ts files'))

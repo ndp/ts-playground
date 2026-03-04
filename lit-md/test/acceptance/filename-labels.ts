@@ -3,7 +3,7 @@
 // Place `// file: name` before an `example()` or kept import to add a
 // filename label to that code block's fence info string.
 
-import { example } from '../../../src/index.ts'
+import { example } from '../../src/index.ts'
 import assert from 'node:assert/strict'
 
 // ## Label on a Short Snippet
@@ -45,7 +45,7 @@ example('step two', () => {
 // ## Label on a Kept Import
 
 // file: my-module.ts
-import { parse } from '../../../src/parser.ts' // keep
+import { parse } from '../../src/parser.ts' // keep
 
 example('parse call', () => {
   const nodes = parse('// hello')

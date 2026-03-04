@@ -29,6 +29,7 @@ function extractFlagValue(flag: string): string | undefined {
 const dryrun = extractFlag('--dryrun')
 const runTests = extractFlag('--test')
 const runTypecheck = extractFlag('--typecheck')
+const updateSnapshots = extractFlag('--update-snapshots') || extractFlag('-u')
 const outFlag = extractFlagValue('--out')
 const outputDir = extractFlagValue('--outputDir')
 
@@ -37,7 +38,7 @@ const inputPaths = args.filter(a => !a.startsWith('--'))
 // --- Validation ---
 
 if (!inputPaths.length) {
-  console.error('Usage: lit-md [--test] [--typecheck] [--dryrun] [--out <output.md>] [--outputDir <dir>] <file.ts|js> [file2 ...]')
+  console.error('Usage: lit-md [--test] [--typecheck] [--dryrun] [-u|--update-snapshots] [--out <output.md>] [--outputDir <dir>] <file.ts|js> [file2 ...]')
   process.exit(1)
 }
 
@@ -87,7 +88,10 @@ for (const inputPath of inputPaths) {
   const md = render(nodes)
 
   let outPath: string
-  if (outFlag) {
+  if (updateSnapshots) {
+    const base = basename(inputPath, extname(inputPath))
+    outPath = join(dirname(resolve(inputPath)), `${base}.snapshot.md`)
+  } else if (outFlag) {
     outPath = outFlag
   } else if (outputDir) {
     mkdirSync(outputDir, { recursive: true })

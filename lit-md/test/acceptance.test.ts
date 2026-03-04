@@ -1,14 +1,15 @@
 import {describe, test} from 'node:test'
-import {readFileSync, readdirSync, existsSync, writeFileSync, mkdtempSync, rmSync} from 'node:fs'
+import {readFileSync, readdirSync, writeFileSync, mkdtempSync, rmSync} from 'node:fs'
 import {spawnSync} from 'node:child_process'
 import {tmpdir} from 'node:os'
 import {fileURLToPath} from 'url'
-import {dirname, join, extname} from 'path'
+import {dirname, join, extname, basename} from 'path'
 import {parse} from '../src/parser.ts'
 import {render} from '../src/renderer.ts'
 
 const __dir = dirname(fileURLToPath(import.meta.url))
-const files = readdirSync(__dir + "/acceptance/", {withFileTypes: true});
+const files = readdirSync(join(__dir, 'acceptance'), { withFileTypes: true })
+  .filter(d => d.isFile() && (d.name.endsWith('.ts') || d.name.endsWith('.js')))
 
 function colorize(diff: string): string {
   const { TERM, COLORTERM, FORCE_COLOR, NO_COLOR } = process.env
@@ -45,18 +46,19 @@ function computeDiff(name: string, expected: string, actual: string): string | n
 }
 
 describe('acceptance', () => {
-  files.forEach(dirent => test(dirent.name, () => {
-    const jsPath = join(__dir, 'acceptance', dirent.name, 'input.js')
-    const tsPath = join(__dir, 'acceptance', dirent.name, 'input.ts')
-    const inputPath = existsSync(jsPath) ? jsPath : tsPath
-    const outputPath = join(__dir, 'acceptance', dirent.name, 'output.md')
+  files.forEach(dirent => {
+    const name = basename(dirent.name, extname(dirent.name))
+    test(name, () => {
+      const inputPath = join(__dir, 'acceptance', dirent.name)
+      const snapshotPath = join(__dir, 'acceptance', `${name}.snapshot.md`)
 
-    const src = readFileSync(inputPath, 'utf8')
-    const lang = extname(inputPath) === '.js' ? 'javascript' : 'typescript'
-    const generated = render(parse(src, lang)).trimEnd()
-    const expected = readFileSync(outputPath, 'utf8').trimEnd()
+      const src = readFileSync(inputPath, 'utf8')
+      const lang = extname(inputPath) === '.js' ? 'javascript' : 'typescript'
+      const generated = render(parse(src, lang)).trimEnd()
+      const expected = readFileSync(snapshotPath, 'utf8').trimEnd()
 
-    const diff = computeDiff(dirent.name, expected, generated)
-    if (diff !== null) throw new Error(`\n${diff}`)
-  }))
+      const diff = computeDiff(name, expected, generated)
+      if (diff !== null) throw new Error(`\n${diff}`)
+    })
+  })
 })
