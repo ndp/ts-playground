@@ -49,7 +49,7 @@ Line and block comments both become markdown.
 ```
 
 ```sh
-lit-md tmp.ts
+$ lit-md tmp.ts
 ```
 
 Output file `tmp.md` contains # Section...:
@@ -80,7 +80,7 @@ example('greet', () => {
 ```
 
 ```sh
-lit-md tmp.ts
+$ lit-md tmp.ts
 ```
 
 Output file `tmp.md` contains `const msg = 'Hello, world!'`.
@@ -104,7 +104,7 @@ describe('Math tests', () => {
 ```
 
 ```sh
-lit-md tmp.ts
+$ lit-md tmp.ts
 ```
 
 Output file `tmp.md` contains `const x = 1 + 1`.
@@ -122,7 +122,7 @@ example('test', () => {
 ```
 
 ```sh
-lit-md tmp.ts
+$ lit-md tmp.ts
 ```
 
 Output file `tmp.md` contains `import { greet }`.
@@ -144,7 +144,7 @@ function greet(name: string) { return `Hello, ${name}!` }
 ```
 
 ```sh
-lit-md tmp.ts
+$ lit-md tmp.ts
 ```
 
 Output file `tmp.md` contains `const msg = greet('world')`.
@@ -172,7 +172,7 @@ example('example', () => {
 ```
 
 ```sh
-lit-md tmp.ts
+$ lit-md tmp.ts
 ```
 
 Output file `tmp.md` contains `import { parse }`.
@@ -195,7 +195,7 @@ example('greet example', () => {
 ```
 
 ```sh
-lit-md tmp.ts
+$ lit-md tmp.ts
 ```
 
 Output file `tmp.md` contains `greet.ts`.
@@ -217,7 +217,7 @@ example('equal', () => {
 ```
 
 ```sh
-lit-md tmp.ts
+$ lit-md tmp.ts
 ```
 
 Output file `tmp.md` contains `// => 5`.
@@ -241,7 +241,7 @@ example('test', () => {})
 ```
 
 ```sh
-lit-md tmp.ts
+$ lit-md tmp.ts
 ```
 
 Output file `tmp.md` contains `# My Document`.
@@ -257,7 +257,7 @@ import { example } from 'node:test'
 ```
 
 ```sh
-lit-md tmp.ts --out /tmp/docs.md
+$ lit-md tmp.ts --out /tmp/docs.md
 ```
 
 Output file `/tmp/docs.md` contains `# Documentation`.
@@ -274,7 +274,7 @@ example('test', () => {})
 ```
 
 ```sh
-lit-md tmp.js
+$ lit-md tmp.js
 ```
 
 Output file `tmp.md` contains `# My JS Doc`.
