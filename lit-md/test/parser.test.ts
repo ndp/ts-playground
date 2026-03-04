@@ -563,4 +563,36 @@ describe('parse: shellExample() → sh code block', () => {
     ])
   })
 
+  test('shellExample with displayCommand: true → shows command (explicit)', () => {
+    const nodes = parse(`shellExample('echo "hello"', { displayCommand: true })`)
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'sh', text: '$ echo "hello"', title: undefined }
+    ])
+  })
+
+  test('shellExample with displayCommand: false → hides command and omits code block when no annotations', () => {
+    const nodes = parse(`shellExample('echo "hello"', { displayCommand: false })`)
+    assert.deepEqual(nodes, [])
+  })
+
+  test('shellExample with displayCommand: "hidden" → hides command and omits code block when no annotations', () => {
+    const nodes = parse(`shellExample('echo "hello"', { displayCommand: 'hidden' })`)
+    assert.deepEqual(nodes, [])
+  })
+
+  test('shellExample with displayCommand: false and stdout → shows only stdout, no command', () => {
+    const nodes = parse(`shellExample('sort input.txt', { displayCommand: false, stdout: 'apple' })`)
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'sh', text: 'apple', title: undefined }
+    ])
+  })
+
+  test('shellExample with displayCommand: "hidden" and outputFiles → hides command but shows output assertion', () => {
+    const nodes = parse(`shellExample('sort input.txt', { displayCommand: 'hidden', outputFiles: [{ path: 'output.txt', contains: '# My Lib' }] })`)
+    assert.deepEqual(nodes, [
+      { kind: 'prose', text: 'Output file `output.txt` contains `# My Lib`.', terminal: true },
+      { kind: 'output-file-display', path: 'output.txt', lang: 'text', cmd: 'sort input.txt', inputFiles: [] }
+    ])
+  })
+
 })

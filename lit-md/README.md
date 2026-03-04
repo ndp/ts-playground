@@ -230,10 +230,6 @@ example('greet example', () => {
 })
 ```
 
-```sh
-
-```
-
 Output file `tmp.md` contains `greet.ts`:
 ````markdown
 ```ts greet.ts

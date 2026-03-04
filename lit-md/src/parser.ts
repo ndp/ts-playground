@@ -140,12 +140,27 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
               processShellExampleInputFiles(src, optsArg, nodes)
             }
             
-            // Add the shell command block
-            const lines: string[] = [`$ ${cmd}`]
+            // Read displayCommand option (default: true to show command)
+            let displayCommand = true
+            if (optsArg && ts.isObjectLiteralExpression(optsArg)) {
+              const displayProp = optsArg.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'displayCommand')
+              if (displayProp && ts.isPropertyAssignment(displayProp)) {
+                if (displayProp.initializer.kind === ts.SyntaxKind.FalseKeyword || 
+                    (ts.isStringLiteralLike(displayProp.initializer) && displayProp.initializer.text === 'hidden')) {
+                  displayCommand = false
+                }
+              }
+            }
+            
+            // Add the shell command block (only if there's content to display)
+            const lines: string[] = displayCommand ? [`$ ${cmd}`] : []
             if (optsArg && ts.isObjectLiteralExpression(optsArg)) {
               appendShellExampleAnnotations(src, optsArg, lines)
             }
-            nodes.push({ kind: 'code', lang: 'sh', text: lines.join('\n'), title })
+            // Only add code node if there's content (command or annotations)
+            if (lines.length > 0) {
+              nodes.push({ kind: 'code', lang: 'sh', text: lines.join('\n'), title })
+            }
 
             // Add separate output file nodes after the shell block
             if (optsArg && ts.isObjectLiteralExpression(optsArg)) {

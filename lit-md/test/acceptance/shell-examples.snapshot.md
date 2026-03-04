@@ -93,3 +93,27 @@ Output file `greeting.txt`:
 ```
 Hello, World!
 ```
+
+## Stdout will output to the console
+
+```sh
+$ node ./src/lit-md.js --help
+```
+
+Sometimes file names are not important
+
+With input file `input.txt`:
+```
+first line
+second line
+third line
+fourth line
+```
+
+Output file `output.txt` matches `/^first/`:
+```
+first line
+fourth line
+second line
+third line
+```

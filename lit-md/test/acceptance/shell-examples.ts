@@ -62,3 +62,19 @@ shellExample('echo "Hello, World!" > greeting.txt', {
     {path: 'greeting.txt'}
   ]
 })
+
+// ## Stdout will output to the console
+shellExample('node ./src/lit-md.js --help', {
+})
+
+// Sometimes file names are not important
+shellExample('sort input.txt >output.txt', {
+  displayCommand: false,
+  inputFiles: [{
+    path: 'input.txt',
+    content: 'first line\nsecond line\nthird line\nfourth line'
+  }],
+  outputFiles: [
+    {path: 'output.txt', matches: /^first/}
+  ]
+})
