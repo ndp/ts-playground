@@ -86,7 +86,7 @@ shellExample('lit-md tmp.ts', {
     contains: 'const x = 1 + 1'
   }]
 })
-// Use `// keep` to show one.
+// Use `// keep` to keep an "import" relevant to the story:.
 shellExample('lit-md tmp.ts', {
   inputFiles: [{
     path: 'tmp.ts',

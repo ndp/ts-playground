@@ -115,7 +115,7 @@ x // => 2
 ```
 ````
 
-Use `// keep` to show one.
+Use `// keep` to keep an "import" relevant to the story:.
 
 ```ts
 // Input file "tmp.ts":
