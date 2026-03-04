@@ -42,3 +42,14 @@ shellExample('cp input.txt output.txt', {
     {path: 'output.txt', matches: /^first/}
   ]
 })
+
+// Larger files will display nicely in the emitted markdown, and regex assertions can verify just the relevant part:
+shellExample('sort input.txt >output.txt', {
+  inputFiles: [{
+    path: 'input.txt',
+    content: 'first line\nsecond line\nthird line\nfourth line'
+  }],
+  outputFiles: [
+    {path: 'output.txt', matches: /^first/}
+  ]
+})

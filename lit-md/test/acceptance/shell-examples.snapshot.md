@@ -51,3 +51,19 @@ $ cp input.txt output.txt
 ```
 
 Output file `output.txt` matches `/^first/`.
+
+Larger files will display nicely in the emitted markdown, and regex assertions can verify just the relevant part:
+
+With input file `input.txt`:
+```text input.txt
+first line
+second line
+third line
+fourth line
+```
+
+```sh
+$ sort input.txt >output.txt
+```
+
+Output file `output.txt` matches `/^first/`.
