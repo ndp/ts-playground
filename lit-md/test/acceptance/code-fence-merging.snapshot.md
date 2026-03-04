@@ -2,7 +2,7 @@
 
 When a comment block ends with a closing code fence (`
 
-```ts
+````ts
 the following `example()` is merged into that fence as one code block.
 This lets you show an import alongside its live-tested usage.
 ## Basic Merge
@@ -13,7 +13,7 @@ Show an import in the comment fence; the example body continues it.
 import { parse } from '@ndp-software/lit-md'
 const nodes = parse('// hello')
 nodes.length // => 1
-```
+````
 
 ## Import + Assertion in One Block
 

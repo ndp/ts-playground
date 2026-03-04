@@ -25,5 +25,26 @@ function renderNode(node: DocNode): string {
   let lang = langAliases[node.lang] ?? node.lang
   // Omit language if it's 'text'
   const info = lang === 'text' ? (node.title ?? '') : (node.title ? `${lang} ${node.title}` : lang)
-  return `\`\`\`${info}\n${node.text}\n\`\`\``
+  
+  // Use dynamic fence delimiters to handle nested code blocks
+  // Find the longest sequence of backticks in the content
+  const maxBackticks = findMaxBacktickSequence(node.text)
+  const fenceLength = Math.max(3, maxBackticks + 1)
+  const fence = '`'.repeat(fenceLength)
+  
+  return `${fence}${info}\n${node.text}\n${fence}`
+}
+
+function findMaxBacktickSequence(text: string): number {
+  let maxSeq = 0
+  let currentSeq = 0
+  for (const char of text) {
+    if (char === '`') {
+      currentSeq++
+      maxSeq = Math.max(maxSeq, currentSeq)
+    } else {
+      currentSeq = 0
+    }
+  }
+  return maxSeq
 }

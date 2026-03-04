@@ -77,13 +77,13 @@ example('greet', () => {
 $ lit-md tmp.ts
 ```
 
-Output file `tmp.md` contains `const msg = 'Hello, world!'`:
-```markdown
+Output file `tmp.md`:
+````markdown
 ```ts
 const msg = 'Hello, world!'
 msg.length // => 13
 ```
-```
+````
 
 ### describe() and imports are hidden by default
 
@@ -108,12 +108,12 @@ $ lit-md tmp.ts
 ```
 
 Output file `tmp.md` contains `const x = 1 + 1`:
-```markdown
+````markdown
 ```ts
 const x = 1 + 1
 x // => 2
 ```
-```
+````
 
 Use `// keep` to show one.
 
@@ -132,7 +132,7 @@ $ lit-md tmp.ts
 ```
 
 Output file `tmp.md` contains `import { greet }`:
-```markdown
+````markdown
 ```ts
 import { greet } from './greet.ts'
 ```
@@ -140,7 +140,7 @@ import { greet } from './greet.ts'
 ```ts
 const msg = greet('world')
 ```
-```
+````
 
 Functions and variables defined outside `example()` don't appear in output.
 They run and can be called inside examples, but stay out of the docs.
@@ -163,19 +163,19 @@ $ lit-md tmp.ts
 ```
 
 Output file `tmp.md` contains `const msg = greet('world')`:
-```markdown
+````markdown
 ```ts
 const msg = greet('world')
 msg // => 'Hello, world!'
 ```
-```
+````
 
 ## Merging imports into examples
 
 If a comment ends with a code fence and an example follows,
 they merge into one code block.
 
-```ts
+````ts
 // Input file "tmp.ts":
 import { example } from 'node:test'
 import assert from 'node:assert/strict'
@@ -190,14 +190,14 @@ example('example', () => {
   const x = 1
   assert.equal(x, 1)
 })
-```
+````
 
 ```sh
 $ lit-md tmp.ts
 ```
 
 Output file `tmp.md` contains `import { parse }`:
-```markdown
+````markdown
 Use it like this:
 
 ```ts
@@ -205,10 +205,10 @@ import { parse } from '@ndp-software/lit-md'
 const x = 1
 x // => 1
 ```
-```
+````
 
 Output file `tmp.md` contains `const x = 1`:
-```markdown
+````markdown
 Use it like this:
 
 ```ts
@@ -216,7 +216,7 @@ import { parse } from '@ndp-software/lit-md'
 const x = 1
 x // => 1
 ```
-```
+````
 
 ## Filename labels
 
@@ -238,11 +238,11 @@ $ lit-md tmp.ts
 ```
 
 Output file `tmp.md` contains `greet.ts`:
-```markdown
+````markdown
 ```ts greet.ts
 const msg = 'hello'
 ```
-```
+````
 
 ## Assertion transformation
 
@@ -265,12 +265,12 @@ $ lit-md tmp.ts
 ```
 
 Output file `tmp.md` contains `// => 5`:
-```markdown
+````markdown
 ```ts
 const msg = 'hello'
 msg.length // => 5
 ```
-```
+````
 
 ## CLI
 
