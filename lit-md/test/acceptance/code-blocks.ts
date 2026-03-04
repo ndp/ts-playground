@@ -48,3 +48,14 @@ describe('string utilities', () => {
 // An `example()` with an empty body emits nothing.
 
 example('empty body', () => {})
+
+/*
+## Code blocks within comments
+
+Code blocks inside comments are included in the output as-is, without needing an `example()`.
+They are not run as part of the tests.
+```typescript
+const x = 42
+console.log(x, x / 7, 'Hello', "world")
+```
+*/

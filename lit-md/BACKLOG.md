@@ -44,6 +44,17 @@ This summary string is followed by either a period or colon. This depends on whe
 hello world
 ``` 
 
+/*
+## Code blocks within comments
+
+Code blocks inside comments are included in the output as-is, without needing an `example()`.
+They are not run as part of the tests.
+```typescript
+const x = 42
+console.log(x, x / 7, 'Hello', "world")
+```
+*/
+
 ### Omit some comments from output
 Suggestion of //-  or /*-  to indicate that a comment should be omitted from the generated markdown output. This allows users to include comments in their code for clarity and documentation purposes without cluttering the generated documentation. The cli would simply ignore any comments that start with //- or /*- when generating the markdown output.
 
