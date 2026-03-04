@@ -36,7 +36,7 @@ hello world
 cp input.txt output.txt
 ```
 
-Output file `output.txt` contains "hello world"
+Output file `output.txt` contains `hello world`.
 
 File contents can assert that they match a regex pattern:
 
@@ -50,4 +50,4 @@ second line
 cp input.txt output.txt
 ```
 
-Output file `output.txt` matches `/^first/`
+Output file `output.txt` matches `/^first/`.

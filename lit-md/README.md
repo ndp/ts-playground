@@ -52,12 +52,14 @@ Line and block comments both become markdown.
 lit-md tmp.ts
 ```
 
-Output file `tmp.md` contains:
+Output file `tmp.md` contains # Section...:
 
 ```markdown
+...
 # Section
 
 A description
+...
 ```
 
 // comments are also supported.
@@ -81,7 +83,7 @@ example('greet', () => {
 lit-md tmp.ts
 ```
 
-Output file `tmp.md` contains "const msg = 'Hello, world!'"
+Output file `tmp.md` contains `const msg = 'Hello, world!'`.
 
 ### describe() and imports are hidden by default
 
@@ -105,7 +107,7 @@ describe('Math tests', () => {
 lit-md tmp.ts
 ```
 
-Output file `tmp.md` contains "const x = 1 + 1"
+Output file `tmp.md` contains `const x = 1 + 1`.
 
 Use `// keep` to show one.
 
@@ -123,7 +125,7 @@ example('test', () => {
 lit-md tmp.ts
 ```
 
-Output file `tmp.md` contains "import { greet }"
+Output file `tmp.md` contains `import { greet }`.
 
 Functions and variables defined outside `example()` don't appear in output.
 They run and can be called inside examples, but stay out of the docs.
@@ -145,7 +147,7 @@ function greet(name: string) { return `Hello, ${name}!` }
 lit-md tmp.ts
 ```
 
-Output file `tmp.md` contains "const msg = greet('world')"
+Output file `tmp.md` contains `const msg = greet('world')`.
 
 ## Merging imports into examples
 
@@ -173,9 +175,9 @@ example('example', () => {
 lit-md tmp.ts
 ```
 
-Output file `tmp.md` contains "import { parse }"
+Output file `tmp.md` contains `import { parse }`.
 
-Output file `tmp.md` contains "const x = 1"
+Output file `tmp.md` contains `const x = 1`.
 
 ## Filename labels
 
@@ -196,7 +198,7 @@ example('greet example', () => {
 lit-md tmp.ts
 ```
 
-Output file `tmp.md` contains "greet.ts"
+Output file `tmp.md` contains `greet.ts`.
 
 ## Assertion transformation
 
@@ -218,7 +220,7 @@ example('equal', () => {
 lit-md tmp.ts
 ```
 
-Output file `tmp.md` contains "// => 5"
+Output file `tmp.md` contains `// => 5`.
 
 ## CLI
 
@@ -242,7 +244,7 @@ example('test', () => {})
 lit-md tmp.ts
 ```
 
-Output file `tmp.md` contains "# My Document"
+Output file `tmp.md` contains `# My Document`.
 
 ### Custom output path
 
@@ -258,7 +260,7 @@ import { example } from 'node:test'
 lit-md tmp.ts --out /tmp/docs.md
 ```
 
-Output file `/tmp/docs.md` contains "# Documentation"
+Output file `/tmp/docs.md` contains `# Documentation`.
 
 ### JavaScript files
 
@@ -275,7 +277,7 @@ example('test', () => {})
 lit-md tmp.js
 ```
 
-Output file `tmp.md` contains "# My JS Doc"
+Output file `tmp.md` contains `# My JS Doc`.
 
 ## Shell examples
 

@@ -478,20 +478,33 @@ function processShellExampleOutputFiles(src: string, opts: ts.ObjectLiteralExpre
     if (!pathProp || !ts.isPropertyAssignment(pathProp) || !ts.isStringLiteralLike(pathProp.initializer)) continue
     const filePath = pathProp.initializer.text
 
-    if (containsProp && ts.isPropertyAssignment(containsProp) && ts.isStringLiteralLike(containsProp.initializer)) {
-      const text = containsProp.initializer.text
-      if (!text.includes('\n') && text.length <= OUTPUT_FILE_INLINE_LIMIT) {
-        nodes.push({ kind: 'prose', text: `Output file \`${filePath}\` contains "${text}"`, terminal: true })
-      } else {
-        nodes.push({ kind: 'prose', text: `Output file \`${filePath}\` contains:`, terminal: true })
-        const lang = getLanguageFromExtension(filePath)
-        nodes.push({ kind: 'code', lang, text, title: undefined })
-      }
-    }
-
     if (matchesProp && ts.isPropertyAssignment(matchesProp) && ts.isRegularExpressionLiteral(matchesProp.initializer)) {
       const regexText = src.slice(matchesProp.initializer.getStart(), matchesProp.initializer.getEnd())
-      nodes.push({ kind: 'prose', text: `Output file \`${filePath}\` matches \`${regexText}\``, terminal: true })
+      nodes.push({ kind: 'prose', text: `Output file \`${filePath}\` matches \`${regexText}\`.`, terminal: true })
+    } else if (containsProp && ts.isPropertyAssignment(containsProp) && ts.isStringLiteralLike(containsProp.initializer)) {
+      const text = containsProp.initializer.text
+      const isMultiLine = text.includes('\n')
+      if (!isMultiLine && text.length < OUTPUT_FILE_INLINE_LIMIT) {
+        // Short single-line: backtick format, period, no code block
+        nodes.push({ kind: 'prose', text: `Output file \`${filePath}\` contains \`${text}\`.`, terminal: true })
+      } else {
+        // Truncate to 60 chars or first newline for the summary
+        const firstNewline = text.indexOf('\n')
+        const truncateAt = isMultiLine ? Math.min(firstNewline, OUTPUT_FILE_INLINE_LIMIT) : OUTPUT_FILE_INLINE_LIMIT
+        const truncated = text.slice(0, truncateAt)
+        if (isMultiLine) {
+          // Multi-line: colon + excerpt as FILE CONTENTS with ... wrapper
+          const lang = getLanguageFromExtension(filePath)
+          nodes.push({ kind: 'prose', text: `Output file \`${filePath}\` contains ${truncated}...:`, terminal: true })
+          nodes.push({ kind: 'code', lang, text: `...\n${text}\n...`, title: undefined })
+        } else {
+          // Long single-line: truncated summary + period, no code block
+          nodes.push({ kind: 'prose', text: `Output file \`${filePath}\` contains ${truncated}....`, terminal: true })
+        }
+      }
+    } else {
+      // Neither contains nor matches: just note the file
+      nodes.push({ kind: 'prose', text: `Output file \`${filePath}\`.`, terminal: true })
     }
   }
 }
