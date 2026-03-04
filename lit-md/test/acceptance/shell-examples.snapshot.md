@@ -28,7 +28,7 @@ $ node --version
 and contain expected content.
 
 With input file `input.txt`:
-```text input.txt
+```text
 hello world
 ```
 
@@ -37,14 +37,14 @@ $ cp input.txt output.txt
 ```
 
 Output file `output.txt` contains `hello world`:
-```text output.txt
+```text
 hello world
 ```
 
 File contents can assert that they match a regex pattern:
 
 With input file `input.txt`:
-```text input.txt
+```text
 first line
 second line
 ```
@@ -54,7 +54,7 @@ $ cp input.txt output.txt
 ```
 
 Output file `output.txt` matches `/^first/`:
-```text output.txt
+```text
 first line
 second line
 ```
@@ -62,7 +62,7 @@ second line
 Larger files will display nicely in the emitted markdown, and regex assertions can verify just the relevant part:
 
 With input file `input.txt`:
-```text input.txt
+```text
 first line
 second line
 third line
@@ -74,7 +74,7 @@ $ sort input.txt >output.txt
 ```
 
 Output file `output.txt` matches `/^first/`:
-```text output.txt
+```text
 first line
 fourth line
 second line

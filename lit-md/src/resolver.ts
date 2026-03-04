@@ -23,7 +23,7 @@ export function resolveOutputFiles(nodes: DocNode[]): DocNode[] {
       if (prev?.kind === 'prose' && prev.text.endsWith('.')) {
         result[result.length - 1] = { ...prev, text: prev.text.slice(0, -1) + ':', noBlankAfter: true }
       }
-      result.push({ kind: 'code', lang: node.lang, text: content.trimEnd(), title: node.path })
+      result.push({ kind: 'code', lang: node.lang, text: content.trimEnd() })
     }
   }
   return result

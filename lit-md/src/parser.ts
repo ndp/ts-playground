@@ -463,7 +463,7 @@ function processShellExampleInputFiles(src: string, opts: ts.ObjectLiteralExpres
         blockText = `// Input file "${filePath}":\n${content}`
       }
       
-      nodes.push({ kind: 'code', lang, text: blockText, title: filePath })
+      nodes.push({ kind: 'code', lang, text: blockText })
     }
   }
 }
