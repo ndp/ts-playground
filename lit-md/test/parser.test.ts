@@ -595,4 +595,56 @@ describe('parse: shellExample() → sh code block', () => {
     ])
   })
 
+  test('shellExample with inputFiles displayPath: false → hides file name, shows only content', () => {
+    const nodes = parse(`shellExample('node cli.ts', { inputFiles: [{ path: 'tmp.ts', content: '// Hello', displayPath: false }] })`)
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'typescript', text: '// Hello' },
+      { kind: 'code', lang: 'sh', text: '$ node cli.ts', title: undefined }
+    ])
+  })
+
+  test('shellExample with inputFiles displayPath: "hidden" → hides file name', () => {
+    const nodes = parse(`shellExample('node cli.ts', { inputFiles: [{ path: 'tmp.ts', content: '// Line 1\\n// Line 2', displayPath: 'hidden' }] })`)
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'typescript', text: '// Line 1\n// Line 2' },
+      { kind: 'code', lang: 'sh', text: '$ node cli.ts', title: undefined }
+    ])
+  })
+
+  test('shellExample with outputFiles displayPath: false → hides file name in prose', () => {
+    const nodes = parse(`shellExample('sort input.txt', { outputFiles: [{ path: 'output.txt', contains: 'hello', displayPath: false }] })`)
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'sh', text: '$ sort input.txt', title: undefined },
+      { kind: 'prose', text: 'Contains `hello`.', terminal: true },
+      { kind: 'output-file-display', path: 'output.txt', lang: 'text', cmd: 'sort input.txt', inputFiles: [] }
+    ])
+  })
+
+  test('shellExample with outputFiles displayPath: "hidden" and matches → hides file name', () => {
+    const nodes = parse(`shellExample('sort input.txt', { outputFiles: [{ path: 'output.txt', matches: /hello/, displayPath: 'hidden' }] })`)
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'sh', text: '$ sort input.txt', title: undefined },
+      { kind: 'prose', text: 'Matches `/hello/`.', terminal: true },
+      { kind: 'output-file-display', path: 'output.txt', lang: 'text', cmd: 'sort input.txt', inputFiles: [] }
+    ])
+  })
+
+  test('shellExample with outputFiles displayPath: false, long contains → hides file name, shows truncated content', () => {
+    const nodes = parse(`shellExample('sort input.txt', { outputFiles: [{ path: 'output.txt', contains: 'This is a very long string that definitely exceeds the sixty character limit', displayPath: false }] })`)
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'sh', text: '$ sort input.txt', title: undefined },
+      { kind: 'prose', text: 'Contains This is a very long string that definitely exceeds the sixty....', terminal: true },
+      { kind: 'output-file-display', path: 'output.txt', lang: 'text', cmd: 'sort input.txt', inputFiles: [] }
+    ])
+  })
+
+  test('shellExample with mixed inputFiles displayPath values → respects each setting', () => {
+    const nodes = parse(`shellExample('node cli.ts', { inputFiles: [{ path: 'a.ts', content: '// A', displayPath: true }, { path: 'b.ts', content: '// B', displayPath: false }] })`)
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'typescript', text: '// Input file "a.ts":\n// A' },
+      { kind: 'code', lang: 'typescript', text: '// B' },
+      { kind: 'code', lang: 'sh', text: '$ node cli.ts\n# Input file `a.ts` contains `// A`', title: undefined }
+    ])
+  })
+
 })

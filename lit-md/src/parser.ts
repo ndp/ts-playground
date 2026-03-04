@@ -458,23 +458,33 @@ function processShellExampleInputFiles(src: string, opts: ts.ObjectLiteralExpres
     if (!ts.isObjectLiteralExpression(el)) continue
     const pathProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'path')
     const contentProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'content')
+    const displayPathProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'displayPath')
 
     if (!pathProp || !ts.isPropertyAssignment(pathProp) || !ts.isStringLiteralLike(pathProp.initializer)) continue
     const filePath = pathProp.initializer.text
+
+    // Read displayPath option (default: true to show path)
+    let displayPath = true
+    if (displayPathProp && ts.isPropertyAssignment(displayPathProp)) {
+      if (displayPathProp.initializer.kind === ts.SyntaxKind.FalseKeyword || 
+          (ts.isStringLiteralLike(displayPathProp.initializer) && displayPathProp.initializer.text === 'hidden')) {
+        displayPath = false
+      }
+    }
 
     if (contentProp && ts.isPropertyAssignment(contentProp) && ts.isStringLiteralLike(contentProp.initializer)) {
       const content = contentProp.initializer.text
       const lang = getLanguageFromExtension(filePath)
       
-      // Add label/prose based on language type
-      if (!supportsCStyleComments(lang)) {
+      // Add label/prose based on language type (only if displayPath is true)
+      if (!supportsCStyleComments(lang) && displayPath) {
         // Non-C-style: add prose label before code block
         nodes.push({ kind: 'prose', text: `With input file \`${filePath}\`:`, noBlankAfter: true })
       }
       
-      // Create code block with label for C-style languages
+      // Create code block with label for C-style languages (only if displayPath is true)
       let blockText = content
-      if (supportsCStyleComments(lang)) {
+      if (supportsCStyleComments(lang) && displayPath) {
         blockText = `// Input file "${filePath}":\n${content}`
       }
       
@@ -505,6 +515,8 @@ function processShellExampleOutputFiles(
     const containsProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'contains')
     const matchesProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'matches')
     const displayProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'display')
+    const displayPathProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'displayPath')
+    
     const display = displayProp && ts.isPropertyAssignment(displayProp) && ts.isStringLiteralLike(displayProp.initializer)
       ? displayProp.initializer.text : undefined
 
@@ -512,18 +524,33 @@ function processShellExampleOutputFiles(
     const filePath = pathProp.initializer.text
     const lang = getLanguageFromExtension(filePath)
 
+    // Read displayPath option (default: true to show path)
+    let displayPath = true
+    if (displayPathProp && ts.isPropertyAssignment(displayPathProp)) {
+      if (displayPathProp.initializer.kind === ts.SyntaxKind.FalseKeyword || 
+          (ts.isStringLiteralLike(displayPathProp.initializer) && displayPathProp.initializer.text === 'hidden')) {
+        displayPath = false
+      }
+    }
+
     let emitDisplayNode = display !== 'none'
     let proseSuffix = '.'
 
     if (matchesProp && ts.isPropertyAssignment(matchesProp) && ts.isRegularExpressionLiteral(matchesProp.initializer)) {
       const regexText = src.slice(matchesProp.initializer.getStart(), matchesProp.initializer.getEnd())
-      nodes.push({ kind: 'prose', text: `Output file \`${filePath}\` matches \`${regexText}\`${proseSuffix}`, terminal: true })
+      const proseText = displayPath 
+        ? `Output file \`${filePath}\` matches \`${regexText}\`${proseSuffix}`
+        : `Matches \`${regexText}\`${proseSuffix}`
+      nodes.push({ kind: 'prose', text: proseText, terminal: true })
     } else if (containsProp && ts.isPropertyAssignment(containsProp) && ts.isStringLiteralLike(containsProp.initializer)) {
       const text = containsProp.initializer.text
       const isMultiLine = text.includes('\n')
       if (!isMultiLine && text.length < OUTPUT_FILE_INLINE_LIMIT) {
         // Short single-line: backtick format
-        nodes.push({ kind: 'prose', text: `Output file \`${filePath}\` contains \`${text}\`${proseSuffix}`, terminal: true })
+        const proseText = displayPath
+          ? `Output file \`${filePath}\` contains \`${text}\`${proseSuffix}`
+          : `Contains \`${text}\`${proseSuffix}`
+        nodes.push({ kind: 'prose', text: proseText, terminal: true })
       } else {
         // Truncate to 60 chars or first newline for the summary
         const firstNewline = text.indexOf('\n')
@@ -531,17 +558,26 @@ function processShellExampleOutputFiles(
         const truncated = text.slice(0, truncateAt)
         if (isMultiLine) {
           // Multi-line: colon + excerpt code block; no display node (excerpt IS the content spec)
-          nodes.push({ kind: 'prose', text: `Output file \`${filePath}\` contains ${truncated}...:`, terminal: true, noBlankAfter: true })
+          const proseText = displayPath
+            ? `Output file \`${filePath}\` contains ${truncated}...:`
+            : `Contains ${truncated}...:`
+          nodes.push({ kind: 'prose', text: proseText, terminal: true, noBlankAfter: true })
           nodes.push({ kind: 'code', lang, text: `...\n${text}\n...`, title: undefined })
           emitDisplayNode = false
         } else {
           // Long single-line: truncated summary, period
-          nodes.push({ kind: 'prose', text: `Output file \`${filePath}\` contains ${truncated}....`, terminal: true })
+          const proseText = displayPath
+            ? `Output file \`${filePath}\` contains ${truncated}....`
+            : `Contains ${truncated}....`
+          nodes.push({ kind: 'prose', text: proseText, terminal: true })
         }
       }
     } else {
       // Neither contains nor matches: display the full file contents
-      nodes.push({ kind: 'prose', text: `Output file \`${filePath}\`:`, terminal: true, noBlankAfter: true })
+      const proseText = displayPath
+        ? `Output file \`${filePath}\`:`
+        : `Output:`
+      nodes.push({ kind: 'prose', text: proseText, terminal: true, noBlankAfter: true })
       emitDisplayNode = true
     }
 
@@ -582,15 +618,26 @@ function appendShellExampleAnnotations(src: string, opts: ts.ObjectLiteralExpres
         if (!ts.isObjectLiteralExpression(el)) continue
         const pathProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'path')
         const contentProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'content')
+        const displayPathProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'displayPath')
 
         if (!pathProp || !ts.isPropertyAssignment(pathProp) || !ts.isStringLiteralLike(pathProp.initializer)) continue
         const filePath = pathProp.initializer.text
+
+        // Read displayPath option (default: true to show path)
+        let displayPath = true
+        if (displayPathProp && ts.isPropertyAssignment(displayPathProp)) {
+          if (displayPathProp.initializer.kind === ts.SyntaxKind.FalseKeyword || 
+              (ts.isStringLiteralLike(displayPathProp.initializer) && displayPathProp.initializer.text === 'hidden')) {
+            displayPath = false
+          }
+        }
 
         if (contentProp && ts.isPropertyAssignment(contentProp) && ts.isStringLiteralLike(contentProp.initializer)) {
           const content = contentProp.initializer.text
           const lang = getLanguageFromExtension(filePath)
           // Only add single-line annotation for C-style languages; others emit a separate code block
-          if (!content.includes('\n') && supportsCStyleComments(lang)) {
+          // Skip if displayPath is false
+          if (!content.includes('\n') && supportsCStyleComments(lang) && displayPath) {
             lines.push(`# Input file \`${filePath}\` contains \`${content}\``)
           }
         }
