@@ -1,9 +1,17 @@
 ## Support for demonstrating command line usage
 
 ## Engine
+shellCommand returnCode assertions
 
+merge contains and matches into a single assertion. It can be passed a string or regex and handles as it does now.
+
+Make contains not required, so you can just specify matches if you want, or just contains if you want. If neither is specified, it just shows the whole output without any assertions.
  
 ## Markdown output
+
+`describe` are by default omitted from md output. Alternatively, they can be converted to headers in the markdown output. User must specify the format: "##" means top leavel describe is marked by "##", and therefore nested describes would be marked by "###", and so on. This allows users to structure their documentation in a way that reflects the hierarchy of their tests and examples, making it easier to navigate and understand the generated markdown.  You could also specify "=" for "=====" underlines (and deeper ones would be be '-------'). If you specify '----', no nesting is supported... all describes will be '------', and therefore h2s.  This is passed in on the command line as --describe-format "#" or --describe-format "##"  or --describe-format "###" or --describe-format "=====" or --describe-format "----" (or whatever the user wants to use for headers). If the user doesn't specify a format, the default behavior is to omit describes from the markdown output.
+
+Different ways to output code blocks: ``` or indentations```
 
 
 ### Omit some comments from output
@@ -12,7 +20,7 @@ Suggestion of //-  or /*-  to indicate that a comment should be omitted from the
 
 ## Acceptance tests
 
-### Generate one test per example directory
+
 
 ## CLI
 

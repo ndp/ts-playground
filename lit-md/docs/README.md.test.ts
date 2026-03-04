@@ -86,7 +86,7 @@ shellExample('lit-md tmp.ts', {
     contains: 'const x = 1 + 1'
   }]
 })
-// Use `// keep` to keep an "import" relevant to the story:.
+// Use `// keep` to keep an "import" relevant to the story:
 shellExample('lit-md tmp.ts', {
   inputFiles: [{
     path: 'tmp.ts',
@@ -215,13 +215,15 @@ shellExample('lit-md tmp.js', {
 
 // ## Shell examples
 //
-// Use shell or shellExample to include executable shell commands.
+// Use `shell` to include executable shell commands in the README.
+// It's concise and verifies a 0 return code:
 
 describe('shell tagged template', () => {
   example('basic: verify command succeeds', () => {
     shell`echo "hello world"`
   })
 
+  // Multi-line command work, and can include comment lines:
   example('with stdout assertion', () => {
     shell`
       echo "hello"
@@ -230,15 +232,25 @@ describe('shell tagged template', () => {
   })
 })
 
+// ## shellExample
+// `shellExample` provides a more structured way to include shell commands,
+// with support for
+// -- input file generation and
+// -- output file assertions, and
+// -- more detailed stdout assertions.
+
 describe('shellExample structured', () => {
   example('basic', () => {
     shellExample('echo "hello world"')
   })
 
+  // Can contain assertions on stdout, which appear as comments in the emitted markdown.
   example('with stdout assertion', () => {
     shellExample('echo "ok"', {stdout: {contains: 'ok'}})
   })
 
+  // Can provide input files that are created before the command runs,
+  // and output file assertions that check for files created by the command and their contents.
   example('with output files', () => {
     shellExample('cp input.txt output.txt', {
       inputFiles: [{path: 'input.txt', content: 'hello world'}],
@@ -246,10 +258,31 @@ describe('shellExample structured', () => {
     })
   })
 
+  // Output file assertions can also check that contents match a regex pattern, which is useful for larger files where you just want to verify a relevant part.
   example('with regex match', () => {
     shellExample('cp input.txt output.txt', {
       inputFiles: [{path: 'input.txt', content: 'first line\nsecond line'}],
       outputFiles: [{path: 'output.txt', matches: /^first/}]
     })
+  })
+
+  // You can even output the output file contents, or the stdout:
+  example('output file contents', () => {
+    shellExample('echo "Hello, World!" | tee greeting.txt', {
+      stdout: {
+        contains:"Hello",
+        display: true /* outputs standard out after the command */
+      },
+      outputFiles: [{
+        contains: 'Hello',
+        path: 'greeting.txt',
+        // display: true, /* by default display, but suppress with `display: false` */
+        summary: true
+      }]
+    })
+  })
+  shellExample('echo "Hello, World!" | tee greeting.txt', {
+    stdout: {contains:"Hello", display: true},
+    outputFiles: [{contains: 'Hello', path: 'greeting.txt', summary: true}]
   })
 })

@@ -1,20 +1,54 @@
-import type { DocNode } from './parser.ts'
+import type { DocNode, CodeNode } from './parser.ts'
 
 const langAliases: Record<string, string> = {
   typescript: 'ts',
   javascript: 'js',
 }
 
+/** Merges consecutive code blocks of the same language */
+function mergeConsecutiveCodeBlocks(nodes: DocNode[]): DocNode[] {
+  if (nodes.length === 0) return nodes
+  
+  const result: DocNode[] = []
+  let currentCodeBlock: CodeNode | null = null
+  
+  for (const node of nodes) {
+    if (node.kind === 'code') {
+      const codeNode = node as CodeNode
+      if (currentCodeBlock && currentCodeBlock.lang === codeNode.lang && !currentCodeBlock.title && !codeNode.title) {
+        // Merge with current block
+        currentCodeBlock.text += '\n\n' + codeNode.text
+      } else {
+        // Save previous block and start new one
+        if (currentCodeBlock) result.push(currentCodeBlock)
+        currentCodeBlock = { ...codeNode }
+      }
+    } else {
+      // Non-code node: flush current block and add this node
+      if (currentCodeBlock) {
+        result.push(currentCodeBlock)
+        currentCodeBlock = null
+      }
+      result.push(node)
+    }
+  }
+  
+  // Don't forget the last code block
+  if (currentCodeBlock) result.push(currentCodeBlock)
+  
+  return result
+}
+
 export function render(nodes: DocNode[]): string {
-  const visible = nodes.filter(n => n.kind !== 'output-file-display')
-  if (!visible.length) return ''
+  const merged = mergeConsecutiveCodeBlocks(nodes.filter(n => n.kind !== 'output-file-display'))
+  if (!merged.length) return ''
   let out = ''
-  for (let i = 0; i < visible.length; i++) {
+  for (let i = 0; i < merged.length; i++) {
     if (i > 0) {
-      const prev = visible[i - 1]!
+      const prev = merged[i - 1]!
       out += prev.kind === 'prose' && prev.noBlankAfter ? '\n' : '\n\n'
     }
-    out += renderNode(visible[i]!)
+    out += renderNode(merged[i]!)
   }
   return out
 }

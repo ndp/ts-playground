@@ -30,9 +30,7 @@ See also: `describe-transparency`.
 ```ts
 const raw = '  hello  '
 raw.trim() // => 'hello'
-```
 
-```ts
 const parts = 'a,b,c'.split(',')
 parts.length // => 3
 ```

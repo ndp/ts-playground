@@ -33,9 +33,7 @@ Any number of imports can be marked `// keep`.
 ```ts
 import { render } from '../../src/renderer.ts'
 import type { DocNode } from '../../src/parser.ts'
-```
 
-```ts
 const src = '// # Title'
 const nodes = parse(src)
 const md = render(nodes)

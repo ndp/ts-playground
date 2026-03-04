@@ -115,7 +115,7 @@ x // => 2
 ```
 ````
 
-Use `// keep` to keep an "import" relevant to the story:.
+Use `// keep` to keep an "import" relevant to the story:
 
 ```ts
 // Input file "tmp.ts":
@@ -135,9 +135,7 @@ Output file `tmp.md` contains `import { greet }`:
 ````markdown
 ```ts
 import { greet } from './greet.ts'
-```
 
-```ts
 const msg = greet('world')
 ```
 ````
@@ -330,11 +328,14 @@ Output file `tmp.md` contains `# My JS Doc`:
 
 ## Shell examples
 
-Use shell or shellExample to include executable shell commands.
+Use `shell` to include executable shell commands in the README.
+It's concise and verifies a 0 return code:
 
 ```ts
 shell`echo "hello world"`
 ```
+
+Multi-line command work, and can include comment lines:
 
 ```ts
 shell`
@@ -343,13 +344,25 @@ shell`
 `
 ```
 
+## shellExample
+`shellExample` provides a more structured way to include shell commands,
+with support for
+-- input file generation and
+-- output file assertions, and
+-- more detailed stdout assertions.
+
 ```ts
 shellExample('echo "hello world"')
 ```
 
+Can contain assertions on stdout, which appear as comments in the emitted markdown.
+
 ```ts
-shellExample('echo "ok"', {stdout: 'ok'})
+shellExample('echo "ok"', {stdout: {contains: 'ok'}})
 ```
+
+Can provide input files that are created before the command runs,
+and output file assertions that check for files created by the command and their contents.
 
 ```ts
 shellExample('cp input.txt output.txt', {
@@ -358,9 +371,38 @@ shellExample('cp input.txt output.txt', {
 })
 ```
 
+Output file assertions can also check that contents match a regex pattern, which is useful for larger files where you just want to verify a relevant part.
+
 ```ts
 shellExample('cp input.txt output.txt', {
   inputFiles: [{path: 'input.txt', content: 'first line\nsecond line'}],
   outputFiles: [{path: 'output.txt', matches: /^first/}]
 })
+```
+
+You can even output the output file contents, or the stdout:
+
+```ts
+shellExample('echo "Hello, World!" | tee greeting.txt', {
+  stdout: {
+    contains:"Hello",
+    display: true /* outputs standard out after the command */
+  },
+  outputFiles: [{
+    contains: 'Hello',
+    path: 'greeting.txt',
+    // display: true, /* by default display, but suppress with `display: false` */
+    summary: true
+  }]
+})
+```
+
+```sh
+$ echo "Hello, World!" | tee greeting.txt
+Hello, World!
+```
+
+Output file `greeting.txt` contains `Hello`:
+```
+Hello, World!
 ```
