@@ -470,7 +470,7 @@ describe('parse: shellExample() → sh code block', () => {
   })
 
   test('shellExample with stdout option → raw output in code text', () => {
-    const nodes = parse(`shellExample('sort input.txt', { stdout: 'apple' })`)
+    const nodes = parse(`shellExample('sort input.txt', { stdout: { contains: 'apple' } })`)
     assert.deepEqual(nodes, [
       { kind: 'code', lang: 'sh', text: '$ sort input.txt\napple', title: undefined }
     ])
@@ -581,7 +581,7 @@ describe('parse: shellExample() → sh code block', () => {
   })
 
   test('shellExample with displayCommand: false and stdout → shows only stdout, no command', () => {
-    const nodes = parse(`shellExample('sort input.txt', { displayCommand: false, stdout: 'apple' })`)
+    const nodes = parse(`shellExample('sort input.txt', { displayCommand: false, stdout: { contains: 'apple' } })`)
     assert.deepEqual(nodes, [
       { kind: 'code', lang: 'sh', text: 'apple', title: undefined }
     ])

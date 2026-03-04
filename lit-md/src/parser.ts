@@ -637,8 +637,11 @@ function appendShellExampleAnnotations(src: string, opts: ts.ObjectLiteralExpres
     if (!ts.isPropertyAssignment(prop) || !ts.isIdentifier(prop.name)) continue
     const key = prop.name.text
 
-    if (key === 'stdout' && ts.isStringLiteralLike(prop.initializer)) {
-      lines.push(prop.initializer.text)
+    if (key === 'stdout' && ts.isObjectLiteralExpression(prop.initializer)) {
+      const containsProp = prop.initializer.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'contains')
+      if (containsProp && ts.isPropertyAssignment(containsProp) && ts.isStringLiteralLike(containsProp.initializer)) {
+        lines.push(containsProp.initializer.text)
+      }
     }
 
     if (key === 'inputFiles' && ts.isArrayLiteralExpression(prop.initializer)) {

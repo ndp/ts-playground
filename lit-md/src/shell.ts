@@ -56,7 +56,7 @@ export interface ShellFileAssertion {
 }
 
 export interface ShellExampleOpts {
-  stdout?: string
+  stdout?: { contains: string }
   outputFiles?: ShellFileAssertion[]
   inputFiles?: Array<{ path: string; content: string; displayPath?: boolean | 'hidden'; summary?: boolean }>
   displayCommand?: boolean | 'hidden'
@@ -86,8 +86,8 @@ export function _runShellExample(cmd: string, opts: ShellExampleOpts): void {
     }
     if (opts.stdout !== undefined) {
       assert.ok(
-        stdout.includes(opts.stdout),
-        `stdout did not contain: ${JSON.stringify(opts.stdout)}\nActual: ${JSON.stringify(stdout)}`
+        stdout.includes(opts.stdout.contains),
+        `stdout did not contain: ${JSON.stringify(opts.stdout.contains)}\nActual: ${JSON.stringify(stdout)}`
       )
     }
     for (const fa of opts.outputFiles ?? []) {
@@ -129,7 +129,7 @@ export function _runShell(templateText: string): void {
 
   if (!commands.length) return
   _runShellExample(commands.join('\n'), {
-    stdout: stdoutAssertions.length ? stdoutAssertions.join('\n') : undefined,
+    stdout: stdoutAssertions.length ? { contains: stdoutAssertions.join('\n') } : undefined,
     outputFiles: outputFiles.length ? outputFiles : undefined
   })
 }

@@ -16,12 +16,12 @@ describe('shellExample: runtime behaviour', () => {
   })
 
   test('succeeds when stdout contains expected string', () => {
-    _runShellExample('echo "hello world"', { stdout: 'hello world' })
+    _runShellExample('echo "hello world"', { stdout: { contains: 'hello world' } })
   })
 
   test('throws when stdout does not contain expected string', () => {
     assert.throws(
-      () => _runShellExample('echo "hello"', { stdout: 'goodbye' }),
+      () => _runShellExample('echo "hello"', { stdout: { contains: 'goodbye' } }),
       /stdout did not contain/
     )
   })
@@ -140,7 +140,7 @@ describe('alias: registration and shell execution', () => {
     _clearAliases()
     alias('greet', '/bin/echo')
     // Use it in a shell command
-    _runShellExample('greet "hello alias"', { stdout: 'hello alias' })
+    _runShellExample('greet "hello alias"', { stdout: { contains: 'hello alias' } })
   })
 
   test('alias with relative path is resolved to absolute', () => {
@@ -154,14 +154,14 @@ describe('alias: registration and shell execution', () => {
     _clearAliases()
     alias('myecho', '/bin/echo')
     assert.ok(isAbsolute('/bin/echo'))
-    _runShellExample('myecho "resolved"', { stdout: 'resolved' })
+    _runShellExample('myecho "resolved"', { stdout: { contains: 'resolved' } })
   })
 
   test('multiple aliases all work in the same command', () => {
     _clearAliases()
     alias('e1', '/bin/echo')
     alias('e2', '/bin/echo')
-    _runShellExample('e1 "first" && e2 "second"', { stdout: 'first' })
+    _runShellExample('e1 "first" && e2 "second"', { stdout: { contains: 'first' } })
   })
 
   test('_clearAliases removes all registered aliases', () => {
@@ -169,13 +169,13 @@ describe('alias: registration and shell execution', () => {
     _clearAliases()
     // After clearing, alias is gone — command should fail (unknown alias falls back to bare name)
     // We verify clearing doesn't throw and subsequent commands run normally
-    _runShellExample('echo "clean"', { stdout: 'clean' })
+    _runShellExample('echo "clean"', { stdout: { contains: 'clean' } })
   })
 
   test('alias with command prefix resolves path token', () => {
     _clearAliases()
     // Token with a path slash gets resolved; no-slash tokens kept verbatim
     alias('run-echo', 'env /bin/echo')
-    _runShellExample('run-echo "prefix works"', { stdout: 'prefix works' })
+    _runShellExample('run-echo "prefix works"', { stdout: { contains: 'prefix works' } })
   })
 })

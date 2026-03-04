@@ -236,7 +236,7 @@ describe('shellExample structured', () => {
   })
 
   example('with stdout assertion', () => {
-    shellExample('echo "ok"', {stdout: 'ok'})
+    shellExample('echo "ok"', {stdout: {contains: 'ok'}})
   })
 
   example('with output files', () => {

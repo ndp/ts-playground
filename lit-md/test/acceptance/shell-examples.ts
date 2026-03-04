@@ -14,8 +14,8 @@ shellExample('echo "ok"')
 
 // ## With stdout Assertion
 //
-// Using `shellExample('node --version', { stdout: '24.11.0'})` produces:
-shellExample('node --version', {stdout: '24.11.0'})
+// Using `shellExample('node --version', { stdout: { contains: '24.11.0' }})` produces:
+shellExample('node --version', {stdout: { contains: '24.11.0' }})
 
 // ## With Input and Output Files
 //

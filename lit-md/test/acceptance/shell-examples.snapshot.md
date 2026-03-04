@@ -14,7 +14,7 @@ $ echo "ok"
 
 ## With stdout Assertion
 
-Using `shellExample('node --version', { stdout: '24.11.0'})` produces:
+Using `shellExample('node --version', { stdout: { contains: '24.11.0' }})` produces:
 
 ```sh
 $ node --version
