@@ -5,8 +5,8 @@ import { tmpdir } from 'node:os'
 import type { DocNode, OutputFileDisplayNode } from './parser.ts'
 
 /**
- * Resolves `output-file-display` nodes by actually executing the shell command,
- * reading the output file, and replacing the node with a code block.
+ * Resolves `output-file-display` nodes by using cached execution results (if available) or
+ * executing the shell command, reading the output file, and replacing the node with a code block.
  * Updates the preceding prose summary to end with `:` (instead of `.`) when content is shown.
  * Handles empty files and command failures appropriately.
  */
@@ -43,6 +43,14 @@ export function resolveOutputFiles(nodes: DocNode[]): DocNode[] {
 }
 
 function runAndCapture(node: OutputFileDisplayNode): string | null {
+  // Use cached execution if available
+  if (node.execution) {
+    if (node.execution.exitCode !== 0) return null
+    const content = node.execution.outputFiles.get(node.path)
+    return content ?? null
+  }
+
+  // Fall back to direct execution if no cache
   const tmpDir = mkdtempSync(join(tmpdir(), 'lit-md-cap-'))
   try {
     for (const f of node.inputFiles) {

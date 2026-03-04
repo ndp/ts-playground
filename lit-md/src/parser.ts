@@ -6,12 +6,20 @@ import { tmpdir } from 'node:os'
 
 export type ProseNode = { kind: 'prose'; text: string; terminal?: true; noBlankAfter?: true }
 export type CodeNode = { kind: 'code'; lang: string; text: string; title?: string }
+
+export type ShellCommandExecution = {
+  stdout: string
+  outputFiles: Map<string, string>
+  exitCode: number
+}
+
 export type OutputFileDisplayNode = {
   kind: 'output-file-display'
   path: string
   lang: string
   cmd: string
   inputFiles: Array<{ path: string; content: string }>
+  execution?: ShellCommandExecution
 }
 export type DocNode = ProseNode | CodeNode | OutputFileDisplayNode
 
@@ -144,6 +152,16 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
               processShellExampleInputFiles(src, optsArg, nodes)
             }
             
+            // Determine if we need to execute the command upfront
+            let execution: ShellCommandExecution | null = null
+            if (optsArg && ts.isObjectLiteralExpression(optsArg)) {
+              if (isExecutionNeeded(optsArg)) {
+                const inputFiles = extractStaticInputFiles(optsArg)
+                const outputPaths = extractOutputFilePaths(optsArg)
+                execution = executeShellCommand(cmd, inputFiles, outputPaths)
+              }
+            }
+            
             // Read displayCommand option (default: true to show command)
             let displayCommand = true
             if (optsArg && ts.isObjectLiteralExpression(optsArg)) {
@@ -160,7 +178,7 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
             const lines: string[] = displayCommand ? [`$ ${cmd}`] : []
             if (optsArg && ts.isObjectLiteralExpression(optsArg)) {
               const inputFiles = extractStaticInputFiles(optsArg)
-              appendShellExampleAnnotations(src, optsArg, lines, cmd, inputFiles)
+              appendShellExampleAnnotations(src, optsArg, lines, cmd, inputFiles, execution)
             }
             // Only add code node if there's content (command or annotations)
             if (lines.length > 0) {
@@ -170,7 +188,7 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
             // Add separate output file nodes after the shell block
             if (optsArg && ts.isObjectLiteralExpression(optsArg)) {
               const inputFiles = extractStaticInputFiles(optsArg)
-              processShellExampleOutputFiles(src, optsArg, nodes, cmd, inputFiles)
+              processShellExampleOutputFiles(src, optsArg, nodes, cmd, inputFiles, execution)
             }
           }
           return
@@ -515,7 +533,8 @@ function processShellExampleOutputFiles(
   opts: ts.ObjectLiteralExpression,
   nodes: DocNode[],
   cmd: string,
-  inputFiles: Array<{ path: string; content: string }>
+  inputFiles: Array<{ path: string; content: string }>,
+  execution: ShellCommandExecution | null
 ): void {
   const outputFilesProp = opts.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'outputFiles')
 
@@ -615,7 +634,11 @@ function processShellExampleOutputFiles(
     }
 
     if (emitDisplayNode) {
-      nodes.push({ kind: 'output-file-display', path: filePath, lang, cmd, inputFiles })
+      const node: OutputFileDisplayNode = { kind: 'output-file-display', path: filePath, lang, cmd, inputFiles }
+      if (execution) {
+        node.execution = execution
+      }
+      nodes.push(node)
     }
   }
 }
@@ -636,9 +659,76 @@ function extractStaticInputFiles(opts: ts.ObjectLiteralExpression): Array<{ path
   return result
 }
 
-/** Executes a shell command with optional input files and captures stdout */
-function captureCommandOutput(cmd: string, inputFiles: Array<{ path: string; content: string }>): string {
-  const tmpDir = mkdtempSync(join(tmpdir(), 'lit-md-doc-'))
+/** Determines if command execution is needed based on shellExample options */
+function isExecutionNeeded(opts: ts.ObjectLiteralExpression): boolean {
+  // Check if stdout.display is true
+  const stdoutProp = opts.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'stdout')
+  if (stdoutProp && ts.isPropertyAssignment(stdoutProp) && ts.isObjectLiteralExpression(stdoutProp.initializer)) {
+    const displayProp = stdoutProp.initializer.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'display')
+    if (displayProp && ts.isPropertyAssignment(displayProp) && displayProp.initializer.kind === ts.SyntaxKind.TrueKeyword) {
+      return true
+    }
+  }
+
+  // Check if any outputFiles need display
+  const outputFilesProp = opts.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'outputFiles')
+  if (!outputFilesProp || !ts.isPropertyAssignment(outputFilesProp) || !ts.isArrayLiteralExpression(outputFilesProp.initializer)) {
+    return false
+  }
+
+  for (const el of outputFilesProp.initializer.elements) {
+    if (!ts.isObjectLiteralExpression(el)) continue
+    const displayProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'display')
+    const containsProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'contains')
+    const matchesProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'matches')
+    
+    // display !== 'none' means we need to execute
+    const display = displayProp && ts.isPropertyAssignment(displayProp) && ts.isStringLiteralLike(displayProp.initializer)
+      ? displayProp.initializer.text : undefined
+    
+    // Need execution if display is not 'none' AND (no contains/matches OR they're multi-line)
+    if (display !== 'none') {
+      const hasContains = containsProp && ts.isPropertyAssignment(containsProp) && ts.isStringLiteralLike(containsProp.initializer)
+      const hasMatches = matchesProp && ts.isPropertyAssignment(matchesProp) && ts.isRegularExpressionLiteral(matchesProp.initializer)
+      
+      if (!hasContains && !hasMatches) {
+        // No inline assertion - need to execute to get full file content
+        return true
+      }
+      if (hasContains) {
+        const text = (containsProp as ts.PropertyAssignment).initializer as ts.StringLiteralLike
+        if (text.text.includes('\n') || text.text.length >= OUTPUT_FILE_INLINE_LIMIT) {
+          // Multi-line or long content - need to execute
+          return true
+        }
+      }
+    }
+  }
+
+  return false
+}
+
+/** Extracts output file paths from shellExample options that need execution */
+function extractOutputFilePaths(opts: ts.ObjectLiteralExpression): string[] {
+  const outputFilesProp = opts.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'outputFiles')
+  if (!outputFilesProp || !ts.isPropertyAssignment(outputFilesProp) || !ts.isArrayLiteralExpression(outputFilesProp.initializer)) {
+    return []
+  }
+
+  const paths: string[] = []
+  for (const el of outputFilesProp.initializer.elements) {
+    if (!ts.isObjectLiteralExpression(el)) continue
+    const pathProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'path')
+    if (pathProp && ts.isPropertyAssignment(pathProp) && ts.isStringLiteralLike(pathProp.initializer)) {
+      paths.push(pathProp.initializer.text)
+    }
+  }
+  return paths
+}
+
+/** Executes a shell command with optional input files and captures stdout + output files */
+function executeShellCommand(cmd: string, inputFiles: Array<{ path: string; content: string }>, outputFilePaths: string[]): ShellCommandExecution | null {
+  const tmpDir = mkdtempSync(join(tmpdir(), 'lit-md-exec-'))
   const resolvePath = (p: string) => isAbsolute(p) ? p : join(tmpDir, p)
   try {
     // Write input files
@@ -648,15 +738,39 @@ function captureCommandOutput(cmd: string, inputFiles: Array<{ path: string; con
 
     // Execute command
     const result = spawnSync(cmd, { shell: true, encoding: 'utf8', cwd: tmpDir })
-    if (result.status !== 0) {
-      throw new Error(`Command failed with exit code ${result.status}`)
+    
+    // Capture output files
+    const outputFiles = new Map<string, string>()
+    if (result.status === 0) {
+      for (const filePath of outputFilePaths) {
+        try {
+          const content = readFileSync(resolvePath(filePath), 'utf8')
+          outputFiles.set(filePath, content)
+        } catch {
+          // File doesn't exist or can't be read - skip it
+        }
+      }
     }
 
-    // Trim trailing newline to match shell comment format
-    return result.stdout.trimEnd()
+    return {
+      stdout: result.stdout.trimEnd(),
+      outputFiles,
+      exitCode: result.status ?? 1
+    }
+  } catch (e) {
+    return null
   } finally {
     rmSync(tmpDir, { recursive: true, force: true })
   }
+}
+
+/** Executes a shell command with optional input files and captures stdout (legacy - use executeShellCommand) */
+function captureCommandOutput(cmd: string, inputFiles: Array<{ path: string; content: string }>): string {
+  const result = executeShellCommand(cmd, inputFiles, [])
+  if (!result || result.exitCode !== 0) {
+    throw new Error(`Command failed with exit code ${result?.exitCode ?? 'unknown'}`)
+  }
+  return result.stdout
 }
 
 /** Reads shellExample options and appends annotation lines (# => ..., single-line # input-file: ...) */
@@ -665,7 +779,8 @@ function appendShellExampleAnnotations(
   opts: ts.ObjectLiteralExpression,
   lines: string[],
   cmd: string,
-  inputFiles: Array<{ path: string; content: string }>
+  inputFiles: Array<{ path: string; content: string }>,
+  execution: ShellCommandExecution | null
 ): void {
   for (const prop of opts.properties) {
     if (!ts.isPropertyAssignment(prop) || !ts.isIdentifier(prop.name)) continue
@@ -675,16 +790,10 @@ function appendShellExampleAnnotations(
       const containsProp = prop.initializer.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'contains')
       const displayProp = prop.initializer.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'display')
       
-      // If display is true, execute and capture output; otherwise just show the contains assertion
+      // If display is true, use cached execution or show the contains assertion
       if (displayProp && ts.isPropertyAssignment(displayProp) && displayProp.initializer.kind === ts.SyntaxKind.TrueKeyword) {
-        try {
-          const output = captureCommandOutput(cmd, inputFiles)
-          if (output) {
-            lines.push(output)
-          }
-        } catch (e) {
-          // Silently fail if command execution fails during documentation generation
-          // This allows incomplete examples or commands that aren't meant to run in docs
+        if (execution && execution.exitCode === 0) {
+          lines.push(execution.stdout)
         }
       } else if (containsProp && ts.isPropertyAssignment(containsProp) && ts.isStringLiteralLike(containsProp.initializer)) {
         // Show contains assertion only if display is not true
