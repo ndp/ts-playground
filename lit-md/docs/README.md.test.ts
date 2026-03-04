@@ -51,7 +51,7 @@ shellExample('lit-md tmp.ts', {
     content: `/*\n * # Section\n * \n * A description.\n */`
   }],
   outputFiles: [{
-    path: 'tmp.md',
+    path: 'tmp.md'
   }]
 })
 // Comments with the `//` prefix are also supported.
@@ -67,6 +67,7 @@ shellExample('lit-md tmp.ts', {
   }],
   outputFiles: [{
     path: 'tmp.md',
+    contains: `const msg = 'Hello, world!'`
   }]
 })
 

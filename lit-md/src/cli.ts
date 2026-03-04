@@ -112,7 +112,7 @@ for (const inputPath of inputPaths) {
   const src = readFileSync(inputPath, 'utf8')
   const lang = extname(inputPath) === '.js' ? 'javascript' : 'typescript'
   let nodes = parse(src, lang)
-  if (!dryrun && !runTests && !runTypecheck) {
+  if (!dryrun) {
     nodes = resolveOutputFiles(nodes)
   }
   const md = render(nodes)
