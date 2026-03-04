@@ -459,6 +459,7 @@ function processShellExampleInputFiles(src: string, opts: ts.ObjectLiteralExpres
     const pathProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'path')
     const contentProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'content')
     const displayPathProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'displayPath')
+    const summaryProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'summary')
 
     if (!pathProp || !ts.isPropertyAssignment(pathProp) || !ts.isStringLiteralLike(pathProp.initializer)) continue
     const filePath = pathProp.initializer.text
@@ -472,19 +473,27 @@ function processShellExampleInputFiles(src: string, opts: ts.ObjectLiteralExpres
       }
     }
 
+    // Read summary option (default: true to show summary)
+    let summary = true
+    if (summaryProp && ts.isPropertyAssignment(summaryProp)) {
+      if (summaryProp.initializer.kind === ts.SyntaxKind.FalseKeyword) {
+        summary = false
+      }
+    }
+
     if (contentProp && ts.isPropertyAssignment(contentProp) && ts.isStringLiteralLike(contentProp.initializer)) {
       const content = contentProp.initializer.text
       const lang = getLanguageFromExtension(filePath)
       
-      // Add label/prose based on language type (only if displayPath is true)
-      if (!supportsCStyleComments(lang) && displayPath) {
+      // Add label/prose based on language type (only if summary and displayPath are true)
+      if (!supportsCStyleComments(lang) && displayPath && summary) {
         // Non-C-style: add prose label before code block
         nodes.push({ kind: 'prose', text: `With input file \`${filePath}\`:`, noBlankAfter: true })
       }
       
-      // Create code block with label for C-style languages (only if displayPath is true)
+      // Create code block with label for C-style languages (only if summary and displayPath are true)
       let blockText = content
-      if (supportsCStyleComments(lang) && displayPath) {
+      if (supportsCStyleComments(lang) && displayPath && summary) {
         blockText = `// Input file "${filePath}":\n${content}`
       }
       
@@ -516,6 +525,7 @@ function processShellExampleOutputFiles(
     const matchesProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'matches')
     const displayProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'display')
     const displayPathProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'displayPath')
+    const summaryProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'summary')
     
     const display = displayProp && ts.isPropertyAssignment(displayProp) && ts.isStringLiteralLike(displayProp.initializer)
       ? displayProp.initializer.text : undefined
@@ -533,24 +543,36 @@ function processShellExampleOutputFiles(
       }
     }
 
+    // Read summary option (default: true to show summary)
+    let summary = true
+    if (summaryProp && ts.isPropertyAssignment(summaryProp)) {
+      if (summaryProp.initializer.kind === ts.SyntaxKind.FalseKeyword) {
+        summary = false
+      }
+    }
+
     let emitDisplayNode = display !== 'none'
     let proseSuffix = '.'
 
     if (matchesProp && ts.isPropertyAssignment(matchesProp) && ts.isRegularExpressionLiteral(matchesProp.initializer)) {
-      const regexText = src.slice(matchesProp.initializer.getStart(), matchesProp.initializer.getEnd())
-      const proseText = displayPath 
-        ? `Output file \`${filePath}\` matches \`${regexText}\`${proseSuffix}`
-        : `Matches \`${regexText}\`${proseSuffix}`
-      nodes.push({ kind: 'prose', text: proseText, terminal: true })
+      if (summary) {
+        const regexText = src.slice(matchesProp.initializer.getStart(), matchesProp.initializer.getEnd())
+        const proseText = displayPath 
+          ? `Output file \`${filePath}\` matches \`${regexText}\`${proseSuffix}`
+          : `Matches \`${regexText}\`${proseSuffix}`
+        nodes.push({ kind: 'prose', text: proseText, terminal: true })
+      }
     } else if (containsProp && ts.isPropertyAssignment(containsProp) && ts.isStringLiteralLike(containsProp.initializer)) {
       const text = containsProp.initializer.text
       const isMultiLine = text.includes('\n')
       if (!isMultiLine && text.length < OUTPUT_FILE_INLINE_LIMIT) {
         // Short single-line: backtick format
-        const proseText = displayPath
-          ? `Output file \`${filePath}\` contains \`${text}\`${proseSuffix}`
-          : `Contains \`${text}\`${proseSuffix}`
-        nodes.push({ kind: 'prose', text: proseText, terminal: true })
+        if (summary) {
+          const proseText = displayPath
+            ? `Output file \`${filePath}\` contains \`${text}\`${proseSuffix}`
+            : `Contains \`${text}\`${proseSuffix}`
+          nodes.push({ kind: 'prose', text: proseText, terminal: true })
+        }
       } else {
         // Truncate to 60 chars or first newline for the summary
         const firstNewline = text.indexOf('\n')
@@ -558,26 +580,32 @@ function processShellExampleOutputFiles(
         const truncated = text.slice(0, truncateAt)
         if (isMultiLine) {
           // Multi-line: colon + excerpt code block; no display node (excerpt IS the content spec)
-          const proseText = displayPath
-            ? `Output file \`${filePath}\` contains ${truncated}...:`
-            : `Contains ${truncated}...:`
-          nodes.push({ kind: 'prose', text: proseText, terminal: true, noBlankAfter: true })
+          if (summary) {
+            const proseText = displayPath
+              ? `Output file \`${filePath}\` contains ${truncated}...:`
+              : `Contains ${truncated}...:`
+            nodes.push({ kind: 'prose', text: proseText, terminal: true, noBlankAfter: true })
+          }
           nodes.push({ kind: 'code', lang, text: `...\n${text}\n...`, title: undefined })
           emitDisplayNode = false
         } else {
           // Long single-line: truncated summary, period
-          const proseText = displayPath
-            ? `Output file \`${filePath}\` contains ${truncated}....`
-            : `Contains ${truncated}....`
-          nodes.push({ kind: 'prose', text: proseText, terminal: true })
+          if (summary) {
+            const proseText = displayPath
+              ? `Output file \`${filePath}\` contains ${truncated}....`
+              : `Contains ${truncated}....`
+            nodes.push({ kind: 'prose', text: proseText, terminal: true })
+          }
         }
       }
     } else {
       // Neither contains nor matches: display the full file contents
-      const proseText = displayPath
-        ? `Output file \`${filePath}\`:`
-        : `Output:`
-      nodes.push({ kind: 'prose', text: proseText, terminal: true, noBlankAfter: true })
+      if (summary) {
+        const proseText = displayPath
+          ? `Output file \`${filePath}\`:`
+          : `Output:`
+        nodes.push({ kind: 'prose', text: proseText, terminal: true, noBlankAfter: true })
+      }
       emitDisplayNode = true
     }
 
@@ -619,6 +647,7 @@ function appendShellExampleAnnotations(src: string, opts: ts.ObjectLiteralExpres
         const pathProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'path')
         const contentProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'content')
         const displayPathProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'displayPath')
+        const summaryProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'summary')
 
         if (!pathProp || !ts.isPropertyAssignment(pathProp) || !ts.isStringLiteralLike(pathProp.initializer)) continue
         const filePath = pathProp.initializer.text
@@ -632,12 +661,20 @@ function appendShellExampleAnnotations(src: string, opts: ts.ObjectLiteralExpres
           }
         }
 
+        // Read summary option (default: true to show summary)
+        let summary = true
+        if (summaryProp && ts.isPropertyAssignment(summaryProp)) {
+          if (summaryProp.initializer.kind === ts.SyntaxKind.FalseKeyword) {
+            summary = false
+          }
+        }
+
         if (contentProp && ts.isPropertyAssignment(contentProp) && ts.isStringLiteralLike(contentProp.initializer)) {
           const content = contentProp.initializer.text
           const lang = getLanguageFromExtension(filePath)
           // Only add single-line annotation for C-style languages; others emit a separate code block
-          // Skip if displayPath is false
-          if (!content.includes('\n') && supportsCStyleComments(lang) && displayPath) {
+          // Skip if displayPath or summary is false
+          if (!content.includes('\n') && supportsCStyleComments(lang) && displayPath && summary) {
             lines.push(`# Input file \`${filePath}\` contains \`${content}\``)
           }
         }

@@ -647,4 +647,63 @@ describe('parse: shellExample() → sh code block', () => {
     ])
   })
 
+  test('shellExample with inputFiles summary: false → hides summary label', () => {
+    const nodes = parse(`shellExample('node cli.ts', { inputFiles: [{ path: 'a.ts', content: '// A', summary: false }] })`)
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'typescript', text: '// A' },
+      { kind: 'code', lang: 'sh', text: '$ node cli.ts', title: undefined }
+    ])
+  })
+
+  test('shellExample with mixed inputFiles summary values → respects each setting', () => {
+    const nodes = parse(`shellExample('node cli.ts', { inputFiles: [{ path: 'a.ts', content: '// A', summary: true }, { path: 'b.ts', content: '// B', summary: false }] })`)
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'typescript', text: '// Input file "a.ts":\n// A' },
+      { kind: 'code', lang: 'typescript', text: '// B' },
+      { kind: 'code', lang: 'sh', text: '$ node cli.ts\n# Input file `a.ts` contains `// A`', title: undefined }
+    ])
+  })
+
+  test('shellExample with outputFiles summary: false (contains) → hides summary, shows display', () => {
+    const nodes = parse(`shellExample('sort input.txt', { outputFiles: [{ path: 'output.txt', contains: 'hello', summary: false }] })`)
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'sh', text: '$ sort input.txt', title: undefined },
+      { kind: 'output-file-display', path: 'output.txt', lang: 'text', cmd: 'sort input.txt', inputFiles: [] }
+    ])
+  })
+
+  test('shellExample with outputFiles summary: false (matches) → hides summary, shows display', () => {
+    const nodes = parse(`shellExample('sort input.txt', { outputFiles: [{ path: 'output.txt', matches: /hello/, summary: false }] })`)
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'sh', text: '$ sort input.txt', title: undefined },
+      { kind: 'output-file-display', path: 'output.txt', lang: 'text', cmd: 'sort input.txt', inputFiles: [] }
+    ])
+  })
+
+  test('shellExample with outputFiles summary: false (no contains/matches) → hides summary, shows display', () => {
+    const nodes = parse(`shellExample('sort input.txt', { outputFiles: [{ path: 'output.txt', summary: false }] })`)
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'sh', text: '$ sort input.txt', title: undefined },
+      { kind: 'output-file-display', path: 'output.txt', lang: 'text', cmd: 'sort input.txt', inputFiles: [] }
+    ])
+  })
+
+  test('shellExample with outputFiles summary: false (multi-line contains) → hides summary, shows code excerpt', () => {
+    const nodes = parse(`shellExample('sort input.txt', { outputFiles: [{ path: 'output.txt', contains: 'Line 1\\nLine 2', summary: false }] })`)
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'sh', text: '$ sort input.txt', title: undefined },
+      { kind: 'code', lang: 'text', text: '...\nLine 1\nLine 2\n...', title: undefined }
+    ])
+  })
+
+  test('shellExample with mixed outputFiles summary values → respects each setting', () => {
+    const nodes = parse(`shellExample('cmd', { outputFiles: [{ path: 'a.txt', contains: 'hello', summary: true }, { path: 'b.txt', contains: 'world', summary: false }] })`)
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'sh', text: '$ cmd', title: undefined },
+      { kind: 'prose', text: 'Output file `a.txt` contains `hello`.', terminal: true },
+      { kind: 'output-file-display', path: 'a.txt', lang: 'text', cmd: 'cmd', inputFiles: [] },
+      { kind: 'output-file-display', path: 'b.txt', lang: 'text', cmd: 'cmd', inputFiles: [] }
+    ])
+  })
+
 })

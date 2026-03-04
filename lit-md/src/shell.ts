@@ -52,12 +52,13 @@ export interface ShellFileAssertion {
   contains?: string
   matches?: RegExp
   displayPath?: boolean | 'hidden'
+  summary?: boolean
 }
 
 export interface ShellExampleOpts {
   stdout?: string
   outputFiles?: ShellFileAssertion[]
-  inputFiles?: Array<{ path: string; content: string; displayPath?: boolean | 'hidden' }>
+  inputFiles?: Array<{ path: string; content: string; displayPath?: boolean | 'hidden'; summary?: boolean }>
   displayCommand?: boolean | 'hidden'
 }
 
