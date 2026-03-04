@@ -27,6 +27,7 @@ function extractFlagValue(flag: string): string | undefined {
   return value
 }
 
+const showHelp = extractFlag('--help') || extractFlag('-h')
 const dryrun = extractFlag('--dryrun')
 const runTests = extractFlag('--test')
 const runTypecheck = extractFlag('--typecheck')
@@ -35,6 +36,31 @@ const outFlag = extractFlagValue('--out')
 const outputDir = extractFlagValue('--outputDir')
 
 const inputPaths = args.filter(a => !a.startsWith('--'))
+
+// --- Help ---
+
+if (showHelp) {
+  console.log(`lit-md - Generate markdown documentation from test files
+
+Usage: lit-md [options] <file.ts|js> [file2 ...]
+
+Options:
+  --help, -h                Show this help message
+  --test                    Run tests before generating markdown
+  --typecheck               Run type checking before generating markdown
+  --dryrun                  Show what would be written without writing files
+  -u, --update-snapshots    Update snapshot files instead of generating markdown
+  --out <output.md>         Write to a specific output file (requires single input)
+  --outputDir <dir>         Write generated markdown files to this directory
+
+Examples:
+  lit-md README.md.test.ts
+  lit-md --test --typecheck README.md.test.ts
+  lit-md --out /tmp/docs.md README.md.test.ts
+  lit-md --outputDir ./docs src/**/*.md.test.ts
+`)
+  process.exit(0)
+}
 
 // --- Validation ---
 

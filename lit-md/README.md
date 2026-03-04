@@ -23,15 +23,12 @@ lit-md --test --typecheck README.md.test.ts  # all-in-one!
 ```
 ## How it works
 
-A lit-md file contains:
-1. Comments (prose) - become markdown text
-2. example() tests - become code blocks
-3. Assertions - become annotations
+A lit-md file contain prose in comments and examples in test bodies.
+At a basic level, a file is processed and comments are directly transferred
+into markdown, with examples bodies becoming fenced code blocks.
+To make this work well, there are quite a few nuances and features to control
+what appears in the output and how it looks.
 
-The CLI processes the file:
-1. Parse and extract comments/examples
-2. Run as node:test tests
-3. Generate README.md
 
 ## Core concepts
 
@@ -39,7 +36,7 @@ The CLI processes the file:
 
 Line and block comments both become markdown.
 
-```ts tmp.ts
+```ts
 // Input file "tmp.ts":
 /*
  * # Section
@@ -52,23 +49,15 @@ Line and block comments both become markdown.
 $ lit-md tmp.ts
 ```
 
-Output file `tmp.md` contains # Section...:
+Output file `tmp.md`.
 
-```markdown
-...
-# Section
-
-A description
-...
-```
-
-// comments are also supported.
+Comments with the `//` prefix are also supported.
 
 ### example() bodies become code blocks
 
 The body of each example call becomes a fenced code block.
 
-```ts tmp.ts
+```ts
 // Input file "tmp.ts":
 import { example } from 'node:test'
 import assert from 'node:assert/strict'
@@ -83,14 +72,14 @@ example('greet', () => {
 $ lit-md tmp.ts
 ```
 
-Output file `tmp.md` contains `const msg = 'Hello, world!'`.
+Output file `tmp.md`.
 
 ### describe() and imports are hidden by default
 
 Imports, describe() and non-example code are stripped from the output by default,
 but they still run and can be used inside examples.
 
-```ts tmp.ts
+```ts
 // Input file "tmp.ts":
 import { describe, example } from 'node:test'
 import assert from 'node:assert/strict'
@@ -111,7 +100,7 @@ Output file `tmp.md` contains `const x = 1 + 1`.
 
 Use `// keep` to show one.
 
-```ts tmp.ts
+```ts
 // Input file "tmp.ts":
 import { example } from 'node:test'
 import { greet } from './greet.ts' // keep
@@ -130,7 +119,7 @@ Output file `tmp.md` contains `import { greet }`.
 Functions and variables defined outside `example()` don't appear in output.
 They run and can be called inside examples, but stay out of the docs.
 
-```ts tmp.ts
+```ts
 // Input file "tmp.ts":
 import { example } from 'node:test'
 import assert from 'node:assert/strict'
@@ -154,7 +143,7 @@ Output file `tmp.md` contains `const msg = greet('world')`.
 If a comment ends with a code fence and an example follows,
 they merge into one code block.
 
-```ts tmp.ts
+```ts
 // Input file "tmp.ts":
 import { example } from 'node:test'
 import assert from 'node:assert/strict'
@@ -183,7 +172,7 @@ Output file `tmp.md` contains `const x = 1`.
 
 Place // file: before an example to add a label.
 
-```ts tmp.ts
+```ts
 // Input file "tmp.ts":
 import { example } from 'node:test'
 import assert from 'node:assert/strict'
@@ -205,7 +194,7 @@ Output file `tmp.md` contains `greet.ts`.
 Assertions inside examples are transformed to annotations:
 - assert.equal(a, b) becomes a // => b
 
-```ts tmp.ts
+```ts
 // Input file "tmp.ts":
 import { example } from 'node:test'
 import assert from 'node:assert/strict'
@@ -233,7 +222,7 @@ node ./cli.ts README.md.test.ts
 # generates README.md next to README.md.test.ts
 ```
 
-```ts tmp.ts
+```ts
 // Input file "tmp.ts":
 // # My Document
 import { example } from 'node:test'
@@ -250,7 +239,7 @@ Output file `tmp.md` contains `# My Document`.
 
 Use --out to write to a different location.
 
-```ts tmp.ts
+```ts
 // Input file "tmp.ts":
 // # Documentation
 import { example } from 'node:test'
@@ -266,7 +255,7 @@ Output file `/tmp/docs.md` contains `# Documentation`.
 
 `.js` files work exactly the same way — code blocks use `js` instead of `ts`.
 
-```js tmp.js
+```js
 // Input file "tmp.js":
 // # My JS Doc
 import { example } from 'node:test'

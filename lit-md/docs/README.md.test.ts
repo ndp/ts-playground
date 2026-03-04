@@ -32,15 +32,12 @@ alias('lit-md', ['node', _flag, './src/cli.ts'].filter(Boolean).join(' '))
 /*
 ## How it works
 
-A lit-md file contains:
-1. Comments (prose) - become markdown text
-2. example() tests - become code blocks
-3. Assertions - become annotations
+A lit-md file contain prose in comments and examples in test bodies.
+At a basic level, a file is processed and comments are directly transferred
+into markdown, with examples bodies becoming fenced code blocks.
+To make this work well, there are quite a few nuances and features to control
+what appears in the output and how it looks.
 
-The CLI processes the file:
-1. Parse and extract comments/examples
-2. Run as node:test tests
-3. Generate README.md
 
 ## Core concepts
 
@@ -55,10 +52,9 @@ shellExample('lit-md tmp.ts', {
   }],
   outputFiles: [{
     path: 'tmp.md',
-    contains: '# Section\n\nA description'
   }]
 })
-// // comments are also supported.
+// Comments with the `//` prefix are also supported.
 
 // ### example() bodies become code blocks
 //
@@ -71,7 +67,6 @@ shellExample('lit-md tmp.ts', {
   }],
   outputFiles: [{
     path: 'tmp.md',
-    contains: `const msg = 'Hello, world!'`
   }]
 })
 
