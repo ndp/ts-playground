@@ -67,7 +67,8 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
       if (isKeptImport(lineText)) {
         const title = pendingFileLabel
         pendingFileLabel = undefined
-        mergeOrPushCode(nodes, lineText, lang, title)
+        const cleanedLine = lineText.replace(/\s*\/\/\s*keep\b.*$/, '')
+        mergeOrPushCode(nodes, cleanedLine, lang, title)
       }
       return
     }

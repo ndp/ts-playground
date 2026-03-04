@@ -16,6 +16,6 @@ example('greet', () => {
 // ## Functions Work Too
 
 example('add', () => {
-  const sum = 1 + 2
-  assert.equal(sum, 3)
+  const sum = () => 1 + 2
+  assert.equal(sum(), 3)
 })

@@ -12,6 +12,6 @@ msg.length // => 5
 ## Functions Work Too
 
 ```js
-const sum = 1 + 2
-sum // => 3
+const sum = () => 1 + 2
+sum() // => 3
 ```

@@ -15,15 +15,6 @@ outputFile: {
 
 ## SUMMARY STRING
 
-Generate a summary string:
-- if "matches" set, it is "File <filename> matches <matches>"
-- if "contains" set and is less than 60 characters and has no carriage returns, it is "File `<filename>` contains `<contains>`"
-- if contains set and is 60 characters or more or has carraige returns, use "File `<filename>` contains <contains>..." (truncated to 60 chars or the first carriage return)
-- else it is "File <filename>"
-
-This summary string is followed by either a period or colon. This depends on whether there are FILE CONTENTS following the summary in the markdown output, which is determined by the "display" field and availability of the file contents. The rules are as follows:
-- If there is no FILE CONTENTS to display in the markdown, end the summary with a period.
-- If there is FILE CONTENTS to display in the markdown, end the summary with a colon.
 
 ## FILE CONTENTS
 
@@ -38,11 +29,6 @@ This summary string is followed by either a period or colon. This depends on whe
  
 ## Markdown output
 
-- [ ] shell commands, when put into code blocks, should look more like shell commands, with > prompts and the command on the same line. This is more visually distinct and easier to read. For example:
-```   
-> echo "hello world"
-hello world
-``` 
 
 ### Omit some comments from output
 Suggestion of //-  or /*-  to indicate that a comment should be omitted from the generated markdown output. This allows users to include comments in their code for clarity and documentation purposes without cluttering the generated documentation. The cli would simply ignore any comments that start with //- or /*- when generating the markdown output.
@@ -55,6 +41,8 @@ Suggestion of //-  or /*-  to indicate that a comment should be omitted from the
 ## CLI
 
 - [ ] add a `--wait` to cli that will keep the process alive after generating the MD file. This allows users to inspect the generated file before the process exits, and also allows for easier debugging of the generation process. The process would exit when the user presses a key or sends a signal (e.g., Ctrl+C). WOrks in consort with --test and --typecheck if they were already implemented.
+
+the cli needs a --help option to explain the purpose of all the options. They can be concise, but not cryptic.
 
 
 ## PUBLISHING

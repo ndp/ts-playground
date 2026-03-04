@@ -3,7 +3,7 @@
 A TypeScript utility for base64 encoding strings.
 
 ```ts
-import { encode, decode } from './encoder.ts' // keep
+import { encode, decode } from './encoder.ts'
 ```
 
 ## Basic Usage

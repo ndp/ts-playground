@@ -18,7 +18,7 @@ Mark a specific import with `// keep` to include it.
 This is useful when the import is part of the documentation story.
 
 ```ts usage.ts
-import { parse } from '../../src/parser.ts' // keep
+import { parse } from '../../src/parser.ts'
 ```
 
 ```ts
@@ -31,8 +31,8 @@ nodes.length // => 1
 Any number of imports can be marked `// keep`.
 
 ```ts
-import { render } from '../../src/renderer.ts' // keep
-import type { DocNode } from '../../src/parser.ts' // keep
+import { render } from '../../src/renderer.ts'
+import type { DocNode } from '../../src/parser.ts'
 ```
 
 ```ts

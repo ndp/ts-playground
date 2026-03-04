@@ -181,7 +181,7 @@ describe('parse: import filtering', () => {
   test('import with "// keep" becomes a code node', () => {
     const nodes = parse(`import { foo } from './foo.ts' // keep`)
     assert.deepEqual(nodes, [
-      { kind: 'code', lang: 'typescript', text: `import { foo } from './foo.ts' // keep`, title: undefined }
+      { kind: 'code', lang: 'typescript', text: `import { foo } from './foo.ts'`, title: undefined }
     ])
   })
 
@@ -193,7 +193,7 @@ describe('parse: import filtering', () => {
       {
         kind: 'code',
         lang: 'typescript',
-        text: `import { foo } from './foo.ts' // keep\nimport { bar } from './bar.ts' // keep`,
+        text: `import { foo } from './foo.ts'\nimport { bar } from './bar.ts'`,
         title: undefined
       }
     ])
@@ -204,7 +204,7 @@ describe('parse: import filtering', () => {
       `import { test } from 'node:test'\nimport { foo } from './foo.ts' // keep`
     )
     assert.deepEqual(nodes, [
-      { kind: 'code', lang: 'typescript', text: `import { foo } from './foo.ts' // keep`, title: undefined }
+      { kind: 'code', lang: 'typescript', text: `import { foo } from './foo.ts'`, title: undefined }
     ])
   })
 
