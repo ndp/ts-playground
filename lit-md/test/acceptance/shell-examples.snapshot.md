@@ -9,7 +9,7 @@ Both run the command as a test and emit a `sh` code block.
 Using `shellExample('echo "ok"')` produces:
 
 ```sh
-echo "ok"
+$ echo "ok"
 ```
 
 ## With stdout Assertion
@@ -17,8 +17,8 @@ echo "ok"
 Using `shellExample('node --version', { stdout: '24.11.0'})` produces:
 
 ```sh
-node --version
-# => 24.11.0
+$ node --version
+24.11.0
 ```
 
 ## With Input and Output Files
@@ -33,7 +33,7 @@ hello world
 ```
 
 ```sh
-cp input.txt output.txt
+$ cp input.txt output.txt
 ```
 
 Output file `output.txt` contains `hello world`.
@@ -47,7 +47,7 @@ second line
 ```
 
 ```sh
-cp input.txt output.txt
+$ cp input.txt output.txt
 ```
 
 Output file `output.txt` matches `/^first/`.

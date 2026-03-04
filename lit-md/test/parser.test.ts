@@ -465,21 +465,21 @@ describe('parse: shellExample() → sh code block', () => {
   test('shellExample call with empty options → sh CodeNode', () => {
     const nodes = parse(`shellExample('echo "hello"', {})`)
     assert.deepEqual(nodes, [
-      { kind: 'code', lang: 'sh', text: 'echo "hello"', title: undefined }
+      { kind: 'code', lang: 'sh', text: '$ echo "hello"', title: undefined }
     ])
   })
 
-  test('shellExample with stdout option → # => annotation in code text', () => {
+  test('shellExample with stdout option → raw output in code text', () => {
     const nodes = parse(`shellExample('sort input.txt', { stdout: 'apple' })`)
     assert.deepEqual(nodes, [
-      { kind: 'code', lang: 'sh', text: 'sort input.txt\n# => apple', title: undefined }
+      { kind: 'code', lang: 'sh', text: '$ sort input.txt\napple', title: undefined }
     ])
   })
 
   test('shellExample with short single-line outputFiles contains → separate prose node', () => {
     const nodes = parse(`shellExample('sort input.txt', { outputFiles: [{ path: 'output.txt', contains: '# My Lib' }] })`)
     assert.deepEqual(nodes, [
-      { kind: 'code', lang: 'sh', text: 'sort input.txt', title: undefined },
+      { kind: 'code', lang: 'sh', text: '$ sort input.txt', title: undefined },
       { kind: 'prose', text: 'Output file `output.txt` contains `# My Lib`.', terminal: true }
     ])
   })
@@ -487,7 +487,7 @@ describe('parse: shellExample() → sh code block', () => {
   test('shellExample with long single-line outputFiles contains → truncated prose, no code block', () => {
     const nodes = parse(`shellExample('sort input.txt', { outputFiles: [{ path: 'output.txt', contains: 'This is a rather long expected string that exceeds sixty chars' }] })`)
     assert.deepEqual(nodes, [
-      { kind: 'code', lang: 'sh', text: 'sort input.txt', title: undefined },
+      { kind: 'code', lang: 'sh', text: '$ sort input.txt', title: undefined },
       { kind: 'prose', text: 'Output file `output.txt` contains This is a rather long expected string that exceeds sixty cha....', terminal: true }
     ])
   })
@@ -495,7 +495,7 @@ describe('parse: shellExample() → sh code block', () => {
   test('shellExample with multi-line outputFiles contains → prose + excerpt code block', () => {
     const nodes = parse(`shellExample('sort input.txt', { outputFiles: [{ path: 'output.txt', contains: '# Title\\n\\nBody.' }] })`)
     assert.deepEqual(nodes, [
-      { kind: 'code', lang: 'sh', text: 'sort input.txt', title: undefined },
+      { kind: 'code', lang: 'sh', text: '$ sort input.txt', title: undefined },
       { kind: 'prose', text: 'Output file `output.txt` contains # Title...:', terminal: true },
       { kind: 'code', lang: 'text', text: '...\n# Title\n\nBody.\n...', title: undefined }
     ])
@@ -504,7 +504,7 @@ describe('parse: shellExample() → sh code block', () => {
   test('shellExample with outputFiles matches → separate prose node with period', () => {
     const nodes = parse(`shellExample('sort input.txt', { outputFiles: [{ path: 'output.txt', matches: /## How it works/ }] })`)
     assert.deepEqual(nodes, [
-      { kind: 'code', lang: 'sh', text: 'sort input.txt', title: undefined },
+      { kind: 'code', lang: 'sh', text: '$ sort input.txt', title: undefined },
       { kind: 'prose', text: 'Output file `output.txt` matches `/## How it works/`.', terminal: true }
     ])
   })
@@ -513,7 +513,7 @@ describe('parse: shellExample() → sh code block', () => {
     const nodes = parse(`shellExample('node cli.ts tmp.ts', { inputFiles: [{ path: 'tmp.ts', content: '// Hello, world!' }] })`)
     assert.deepEqual(nodes, [
       { kind: 'code', lang: 'typescript', text: '// Input file "tmp.ts":\n// Hello, world!', title: 'tmp.ts' },
-      { kind: 'code', lang: 'sh', text: 'node cli.ts tmp.ts\n# Input file `tmp.ts` contains `// Hello, world!`', title: undefined }
+      { kind: 'code', lang: 'sh', text: '$ node cli.ts tmp.ts\n# Input file `tmp.ts` contains `// Hello, world!`', title: undefined }
     ])
   })
 
@@ -521,7 +521,7 @@ describe('parse: shellExample() → sh code block', () => {
     const nodes = parse(`shellExample('node cli.ts tmp.ts', { inputFiles: [{ path: 'tmp.ts', content: '// Line 1\\n// Line 2' }] })`)
     assert.deepEqual(nodes, [
       { kind: 'code', lang: 'typescript', text: '// Input file "tmp.ts":\n// Line 1\n// Line 2', title: 'tmp.ts' },
-      { kind: 'code', lang: 'sh', text: 'node cli.ts tmp.ts', title: undefined }
+      { kind: 'code', lang: 'sh', text: '$ node cli.ts tmp.ts', title: undefined }
     ])
   })
 
@@ -530,7 +530,7 @@ describe('parse: shellExample() → sh code block', () => {
     assert.deepEqual(nodes, [
       { kind: 'prose', text: 'With input file `config.json`:', noBlankAfter: true },
       { kind: 'code', lang: 'json', text: '{ }', title: 'config.json' },
-      { kind: 'code', lang: 'sh', text: 'node cli.ts', title: undefined }
+      { kind: 'code', lang: 'sh', text: '$ node cli.ts', title: undefined }
     ])
   })
 
@@ -540,7 +540,7 @@ describe('parse: shellExample() → sh code block', () => {
       { kind: 'prose', text: 'With input file `config.json`:', noBlankAfter: true },
       { kind: 'code', lang: 'json', text: '{  }', title: 'config.json' },
       { kind: 'code', lang: 'typescript', text: '// Input file "main.ts":\n// Line 1\n// Line 2\n// Line 3', title: 'main.ts' },
-      { kind: 'code', lang: 'sh', text: 'node cli.ts', title: undefined }
+      { kind: 'code', lang: 'sh', text: '$ node cli.ts', title: undefined }
     ])
   })
 

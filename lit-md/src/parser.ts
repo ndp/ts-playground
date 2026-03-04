@@ -133,7 +133,7 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
             }
             
             // Add the shell command block
-            const lines: string[] = [cmd]
+            const lines: string[] = [`$ ${cmd}`]
             if (optsArg && ts.isObjectLiteralExpression(optsArg)) {
               appendShellExampleAnnotations(src, optsArg, lines)
             }
@@ -516,7 +516,7 @@ function appendShellExampleAnnotations(src: string, opts: ts.ObjectLiteralExpres
     const key = prop.name.text
 
     if (key === 'stdout' && ts.isStringLiteralLike(prop.initializer)) {
-      lines.push(`# => ${prop.initializer.text}`)
+      lines.push(prop.initializer.text)
     }
 
     if (key === 'inputFiles' && ts.isArrayLiteralExpression(prop.initializer)) {
