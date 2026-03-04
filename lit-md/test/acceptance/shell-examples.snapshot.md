@@ -36,7 +36,11 @@ hello world
 $ cp input.txt output.txt
 ```
 
-Output file `output.txt` contains `hello world`.
+Output file `output.txt` contains `hello world`:
+
+```text output.txt
+hello world
+```
 
 File contents can assert that they match a regex pattern:
 
@@ -50,7 +54,12 @@ second line
 $ cp input.txt output.txt
 ```
 
-Output file `output.txt` matches `/^first/`.
+Output file `output.txt` matches `/^first/`:
+
+```text output.txt
+first line
+second line
+```
 
 Larger files will display nicely in the emitted markdown, and regex assertions can verify just the relevant part:
 
@@ -66,4 +75,11 @@ fourth line
 $ sort input.txt >output.txt
 ```
 
-Output file `output.txt` matches `/^first/`.
+Output file `output.txt` matches `/^first/`:
+
+```text output.txt
+first line
+fourth line
+second line
+third line
+```

@@ -476,23 +476,25 @@ describe('parse: shellExample() → sh code block', () => {
     ])
   })
 
-  test('shellExample with short single-line outputFiles contains → separate prose node', () => {
+  test('shellExample with short single-line outputFiles contains → prose node + display node', () => {
     const nodes = parse(`shellExample('sort input.txt', { outputFiles: [{ path: 'output.txt', contains: '# My Lib' }] })`)
     assert.deepEqual(nodes, [
       { kind: 'code', lang: 'sh', text: '$ sort input.txt', title: undefined },
-      { kind: 'prose', text: 'Output file `output.txt` contains `# My Lib`.', terminal: true }
+      { kind: 'prose', text: 'Output file `output.txt` contains `# My Lib`.', terminal: true },
+      { kind: 'output-file-display', path: 'output.txt', lang: 'text', cmd: 'sort input.txt', inputFiles: [] }
     ])
   })
 
-  test('shellExample with long single-line outputFiles contains → truncated prose, no code block', () => {
+  test('shellExample with long single-line outputFiles contains → truncated prose + display node', () => {
     const nodes = parse(`shellExample('sort input.txt', { outputFiles: [{ path: 'output.txt', contains: 'This is a rather long expected string that exceeds sixty chars' }] })`)
     assert.deepEqual(nodes, [
       { kind: 'code', lang: 'sh', text: '$ sort input.txt', title: undefined },
-      { kind: 'prose', text: 'Output file `output.txt` contains This is a rather long expected string that exceeds sixty cha....', terminal: true }
+      { kind: 'prose', text: 'Output file `output.txt` contains This is a rather long expected string that exceeds sixty cha....', terminal: true },
+      { kind: 'output-file-display', path: 'output.txt', lang: 'text', cmd: 'sort input.txt', inputFiles: [] }
     ])
   })
 
-  test('shellExample with multi-line outputFiles contains → prose + excerpt code block', () => {
+  test('shellExample with multi-line outputFiles contains → prose + excerpt code block, no display node', () => {
     const nodes = parse(`shellExample('sort input.txt', { outputFiles: [{ path: 'output.txt', contains: '# Title\\n\\nBody.' }] })`)
     assert.deepEqual(nodes, [
       { kind: 'code', lang: 'sh', text: '$ sort input.txt', title: undefined },
@@ -501,12 +503,29 @@ describe('parse: shellExample() → sh code block', () => {
     ])
   })
 
-  test('shellExample with outputFiles matches → separate prose node with period', () => {
+  test('shellExample with outputFiles matches → prose node + display node', () => {
     const nodes = parse(`shellExample('sort input.txt', { outputFiles: [{ path: 'output.txt', matches: /## How it works/ }] })`)
     assert.deepEqual(nodes, [
       { kind: 'code', lang: 'sh', text: '$ sort input.txt', title: undefined },
-      { kind: 'prose', text: 'Output file `output.txt` matches `/## How it works/`.', terminal: true }
+      { kind: 'prose', text: 'Output file `output.txt` matches `/## How it works/`.', terminal: true },
+      { kind: 'output-file-display', path: 'output.txt', lang: 'text', cmd: 'sort input.txt', inputFiles: [] }
     ])
+  })
+
+  test('shellExample with outputFiles display:none → prose node only, no display node', () => {
+    const nodes = parse(`shellExample('sort input.txt', { outputFiles: [{ path: 'output.txt', contains: '# My Lib', display: 'none' }] })`)
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'sh', text: '$ sort input.txt', title: undefined },
+      { kind: 'prose', text: 'Output file `output.txt` contains `# My Lib`.', terminal: true }
+    ])
+  })
+
+  test('shellExample with inputFiles captures them in display node', () => {
+    const nodes = parse(`shellExample('cp a.txt b.txt', { inputFiles: [{ path: 'a.txt', content: 'hello' }], outputFiles: [{ path: 'b.txt', contains: 'hello' }] })`)
+    const displayNode = nodes.find(n => n.kind === 'output-file-display') as any
+    assert.ok(displayNode, 'should have output-file-display node')
+    assert.deepEqual(displayNode.inputFiles, [{ path: 'a.txt', content: 'hello' }])
+    assert.equal(displayNode.cmd, 'cp a.txt b.txt')
   })
 
   test('shellExample with single-line inputFiles → inline comment in code text', () => {

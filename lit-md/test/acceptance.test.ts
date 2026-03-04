@@ -6,6 +6,7 @@ import {fileURLToPath} from 'url'
 import {dirname, join, extname, basename} from 'path'
 import {parse} from '../src/parser.ts'
 import {render} from '../src/renderer.ts'
+import {resolveOutputFiles} from '../src/resolver.ts'
 
 const __dir = dirname(fileURLToPath(import.meta.url))
 const files = readdirSync(join(__dir, 'acceptance'), { withFileTypes: true })
@@ -54,7 +55,7 @@ describe('acceptance', () => {
 
       const src = readFileSync(inputPath, 'utf8')
       const lang = extname(inputPath) === '.js' ? 'javascript' : 'typescript'
-      const generated = render(parse(src, lang)).trimEnd()
+      const generated = render(resolveOutputFiles(parse(src, lang))).trimEnd()
       const expected = readFileSync(snapshotPath, 'utf8').trimEnd()
 
       const diff = computeDiff(name, expected, generated)

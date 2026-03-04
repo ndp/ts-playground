@@ -6,6 +6,7 @@ import { parse } from './parser.ts'
 import { render } from './renderer.ts'
 import { typecheck } from './typecheck.ts'
 import { stripTypesFlag } from './shell.ts'
+import { resolveOutputFiles } from './resolver.ts'
 
 // --- Argument parsing ---
 
@@ -84,7 +85,10 @@ if (runTests) {
 for (const inputPath of inputPaths) {
   const src = readFileSync(inputPath, 'utf8')
   const lang = extname(inputPath) === '.js' ? 'javascript' : 'typescript'
-  const nodes = parse(src, lang)
+  let nodes = parse(src, lang)
+  if (!dryrun && !runTests && !runTypecheck) {
+    nodes = resolveOutputFiles(nodes)
+  }
   const md = render(nodes)
 
   let outPath: string

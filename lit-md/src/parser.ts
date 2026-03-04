@@ -2,7 +2,14 @@ import ts from 'typescript'
 
 export type ProseNode = { kind: 'prose'; text: string; terminal?: true; noBlankAfter?: true }
 export type CodeNode = { kind: 'code'; lang: string; text: string; title?: string }
-export type DocNode = ProseNode | CodeNode
+export type OutputFileDisplayNode = {
+  kind: 'output-file-display'
+  path: string
+  lang: string
+  cmd: string
+  inputFiles: Array<{ path: string; content: string }>
+}
+export type DocNode = ProseNode | CodeNode | OutputFileDisplayNode
 
 export function parse(src: string, lang = 'typescript'): DocNode[] {
   if (!src.trim()) return []
@@ -142,7 +149,8 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
 
             // Add separate output file nodes after the shell block
             if (optsArg && ts.isObjectLiteralExpression(optsArg)) {
-              processShellExampleOutputFiles(src, optsArg, nodes)
+              const inputFiles = extractStaticInputFiles(optsArg)
+              processShellExampleOutputFiles(src, optsArg, nodes, cmd, inputFiles)
             }
           }
           return
@@ -463,7 +471,13 @@ function processShellExampleInputFiles(src: string, opts: ts.ObjectLiteralExpres
 const OUTPUT_FILE_INLINE_LIMIT = 60
 
 /** Emits separate prose/code nodes for output file assertions, after the sh block */
-function processShellExampleOutputFiles(src: string, opts: ts.ObjectLiteralExpression, nodes: DocNode[]): void {
+function processShellExampleOutputFiles(
+  src: string,
+  opts: ts.ObjectLiteralExpression,
+  nodes: DocNode[],
+  cmd: string,
+  inputFiles: Array<{ path: string; content: string }>
+): void {
   const outputFilesProp = opts.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'outputFiles')
 
   if (!outputFilesProp || !ts.isPropertyAssignment(outputFilesProp) || !ts.isArrayLiteralExpression(outputFilesProp.initializer)) {
@@ -475,39 +489,66 @@ function processShellExampleOutputFiles(src: string, opts: ts.ObjectLiteralExpre
     const pathProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'path')
     const containsProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'contains')
     const matchesProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'matches')
+    const displayProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'display')
+    const display = displayProp && ts.isPropertyAssignment(displayProp) && ts.isStringLiteralLike(displayProp.initializer)
+      ? displayProp.initializer.text : undefined
 
     if (!pathProp || !ts.isPropertyAssignment(pathProp) || !ts.isStringLiteralLike(pathProp.initializer)) continue
     const filePath = pathProp.initializer.text
+    const lang = getLanguageFromExtension(filePath)
+
+    let emitDisplayNode = display !== 'none'
+    let proseSuffix = '.'
 
     if (matchesProp && ts.isPropertyAssignment(matchesProp) && ts.isRegularExpressionLiteral(matchesProp.initializer)) {
       const regexText = src.slice(matchesProp.initializer.getStart(), matchesProp.initializer.getEnd())
-      nodes.push({ kind: 'prose', text: `Output file \`${filePath}\` matches \`${regexText}\`.`, terminal: true })
+      nodes.push({ kind: 'prose', text: `Output file \`${filePath}\` matches \`${regexText}\`${proseSuffix}`, terminal: true })
     } else if (containsProp && ts.isPropertyAssignment(containsProp) && ts.isStringLiteralLike(containsProp.initializer)) {
       const text = containsProp.initializer.text
       const isMultiLine = text.includes('\n')
       if (!isMultiLine && text.length < OUTPUT_FILE_INLINE_LIMIT) {
-        // Short single-line: backtick format, period, no code block
-        nodes.push({ kind: 'prose', text: `Output file \`${filePath}\` contains \`${text}\`.`, terminal: true })
+        // Short single-line: backtick format
+        nodes.push({ kind: 'prose', text: `Output file \`${filePath}\` contains \`${text}\`${proseSuffix}`, terminal: true })
       } else {
         // Truncate to 60 chars or first newline for the summary
         const firstNewline = text.indexOf('\n')
         const truncateAt = isMultiLine ? Math.min(firstNewline, OUTPUT_FILE_INLINE_LIMIT) : OUTPUT_FILE_INLINE_LIMIT
         const truncated = text.slice(0, truncateAt)
         if (isMultiLine) {
-          // Multi-line: colon + excerpt as FILE CONTENTS with ... wrapper
-          const lang = getLanguageFromExtension(filePath)
+          // Multi-line: colon + excerpt code block; no display node (excerpt IS the content spec)
           nodes.push({ kind: 'prose', text: `Output file \`${filePath}\` contains ${truncated}...:`, terminal: true })
           nodes.push({ kind: 'code', lang, text: `...\n${text}\n...`, title: undefined })
+          emitDisplayNode = false
         } else {
-          // Long single-line: truncated summary + period, no code block
+          // Long single-line: truncated summary, period
           nodes.push({ kind: 'prose', text: `Output file \`${filePath}\` contains ${truncated}....`, terminal: true })
         }
       }
     } else {
       // Neither contains nor matches: just note the file
-      nodes.push({ kind: 'prose', text: `Output file \`${filePath}\`.`, terminal: true })
+      nodes.push({ kind: 'prose', text: `Output file \`${filePath}\`${proseSuffix}`, terminal: true })
+    }
+
+    if (emitDisplayNode) {
+      nodes.push({ kind: 'output-file-display', path: filePath, lang, cmd, inputFiles })
     }
   }
+}
+
+/** Extracts inputFiles entries statically from a shellExample opts AST node */
+function extractStaticInputFiles(opts: ts.ObjectLiteralExpression): Array<{ path: string; content: string }> {
+  const inputFilesProp = opts.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'inputFiles')
+  if (!inputFilesProp || !ts.isPropertyAssignment(inputFilesProp) || !ts.isArrayLiteralExpression(inputFilesProp.initializer)) return []
+  const result: Array<{ path: string; content: string }> = []
+  for (const el of inputFilesProp.initializer.elements) {
+    if (!ts.isObjectLiteralExpression(el)) continue
+    const pathProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'path')
+    const contentProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'content')
+    if (!pathProp || !ts.isPropertyAssignment(pathProp) || !ts.isStringLiteralLike(pathProp.initializer)) continue
+    if (!contentProp || !ts.isPropertyAssignment(contentProp) || !ts.isStringLiteralLike(contentProp.initializer)) continue
+    result.push({ path: pathProp.initializer.text, content: contentProp.initializer.text })
+  }
+  return result
 }
 
 /** Reads shellExample options and appends annotation lines (# => ..., single-line # input-file: ...) */
