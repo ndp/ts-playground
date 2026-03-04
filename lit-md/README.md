@@ -220,13 +220,10 @@ x // => 1
 
 ## Filename labels
 
-Place // file: before an example to add a label.
+Place // file: before an `example` to add a file label in the output.
 
 ```ts
 // Input file "tmp.ts":
-import { example } from 'node:test'
-import assert from 'node:assert/strict'
-
 // file: greet.ts
 example('greet example', () => {
   const msg = 'hello'
@@ -234,7 +231,7 @@ example('greet example', () => {
 ```
 
 ```sh
-$ lit-md tmp.ts
+
 ```
 
 Output file `tmp.md` contains `greet.ts`:

@@ -131,12 +131,13 @@ shellExample('lit-md tmp.ts', {
 
 // ## Filename labels
 //
-// Place // file: before an example to add a label.
+// Place // file: before an `example` to add a file label in the output.
 
 shellExample('lit-md tmp.ts', {
+  displayCommand: false,
   inputFiles: [{
     path: 'tmp.ts',
-    content: `import { example } from 'node:test'\nimport assert from 'node:assert/strict'\n\n// file: greet.ts\nexample('greet example', () => {\n  const msg = 'hello'\n})`
+    content: `// file: greet.ts\nexample('greet example', () => {\n  const msg = 'hello'\n})`
   }],
   outputFiles: [{
     path: 'tmp.md',
