@@ -5,6 +5,7 @@
     "declaration": true,
     "emitDeclarationOnly": true,
     "outDir": "./dist",
+    "tsBuildInfoFile": "/tmp/lit-md.tsbuildinfo",
     "rootDir": "./src",
     "composite": true,
     "target": "esnext",
