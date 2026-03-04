@@ -1,12 +1,37 @@
 {
   "name": "@ndp-software/lit-md",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.2.0",
+  "private": false,
   "description": "Literate test files that generate README.md",
-  "license": "ISC",
+  "license": "UNLICENSED -- All rights reserved. See LICENSE file.",
+  "author": "Andy Peterson <andy@ndpsoftware.com>",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": ""},
+  "keywords": [
+    "literate programming",
+    "markdown",
+    "testing",
+    "readme",
+    "documentation",
+    "typescript"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "sideEffects": false,
   "bin": {
     "lit-md": "./src/cli.ts"
+  },
+  "files": [
+    "README.md",
+    "dist/**/*",
+    "src/**/*"
+  ],
+  "exports": {
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts"
   },
   "scripts": {
     "readme": "node ./src/cli.ts --test --typecheck --out ./README.md ./docs/README.md.test.ts",
@@ -15,6 +40,14 @@
     "test:acceptance": "node --test test/acceptance.test.ts",
     "test:update": "node src/cli.ts -u test/acceptance/*.ts test/acceptance/*.js",
     "typecheck": "tsc -p ./tsconfig.check.json",
-    "verify": "npm run typecheck && npm run test"
+    "verify": "npm run typecheck && npm run test",
+
+    "build": "npm run build:types && npm run build:js",
+    "build:types": "tsc -p tsconfig.build.json",
+    "build:js": "esbuild ./index.ts --bundle --format=esm --platform=node --target=es2022 --sourcemap --outfile=./dist/index.js"
+  },
+  "devDependencies": {
+    "@types/node": "^25",
+    "typescript": "^5"
   }
 }
