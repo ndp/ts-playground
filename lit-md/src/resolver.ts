@@ -21,7 +21,7 @@ export function resolveOutputFiles(nodes: DocNode[]): DocNode[] {
     if (content !== null && content.trim()) {
       const prev = result[result.length - 1]
       if (prev?.kind === 'prose' && prev.text.endsWith('.')) {
-        result[result.length - 1] = { ...prev, text: prev.text.slice(0, -1) + ':' }
+        result[result.length - 1] = { ...prev, text: prev.text.slice(0, -1) + ':', noBlankAfter: true }
       }
       result.push({ kind: 'code', lang: node.lang, text: content.trimEnd(), title: node.path })
     }

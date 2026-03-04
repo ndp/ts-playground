@@ -37,7 +37,6 @@ $ cp input.txt output.txt
 ```
 
 Output file `output.txt` contains `hello world`:
-
 ```text output.txt
 hello world
 ```
@@ -55,7 +54,6 @@ $ cp input.txt output.txt
 ```
 
 Output file `output.txt` matches `/^first/`:
-
 ```text output.txt
 first line
 second line
@@ -76,7 +74,6 @@ $ sort input.txt >output.txt
 ```
 
 Output file `output.txt` matches `/^first/`:
-
 ```text output.txt
 first line
 fourth line

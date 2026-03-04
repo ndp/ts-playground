@@ -516,7 +516,7 @@ function processShellExampleOutputFiles(
         const truncated = text.slice(0, truncateAt)
         if (isMultiLine) {
           // Multi-line: colon + excerpt code block; no display node (excerpt IS the content spec)
-          nodes.push({ kind: 'prose', text: `Output file \`${filePath}\` contains ${truncated}...:`, terminal: true })
+          nodes.push({ kind: 'prose', text: `Output file \`${filePath}\` contains ${truncated}...:`, terminal: true, noBlankAfter: true })
           nodes.push({ kind: 'code', lang, text: `...\n${text}\n...`, title: undefined })
           emitDisplayNode = false
         } else {

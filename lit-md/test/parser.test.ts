@@ -498,7 +498,7 @@ describe('parse: shellExample() → sh code block', () => {
     const nodes = parse(`shellExample('sort input.txt', { outputFiles: [{ path: 'output.txt', contains: '# Title\\n\\nBody.' }] })`)
     assert.deepEqual(nodes, [
       { kind: 'code', lang: 'sh', text: '$ sort input.txt', title: undefined },
-      { kind: 'prose', text: 'Output file `output.txt` contains # Title...:', terminal: true },
+      { kind: 'prose', text: 'Output file `output.txt` contains # Title...:', terminal: true, noBlankAfter: true },
       { kind: 'code', lang: 'text', text: '...\n# Title\n\nBody.\n...', title: undefined }
     ])
   })
