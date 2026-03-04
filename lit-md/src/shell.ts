@@ -56,7 +56,7 @@ export interface ShellFileAssertion {
 }
 
 export interface ShellExampleOpts {
-  stdout?: { contains: string }
+  stdout?: { contains: string; display?: boolean }
   outputFiles?: ShellFileAssertion[]
   inputFiles?: Array<{ path: string; content: string; displayPath?: boolean | 'hidden'; summary?: boolean }>
   displayCommand?: boolean | 'hidden'

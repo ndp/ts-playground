@@ -476,6 +476,38 @@ describe('parse: shellExample() → sh code block', () => {
     ])
   })
 
+  test('shellExample with stdout display: true → executes command and displays output', () => {
+    const nodes = parse(`shellExample('echo "hello world"', { stdout: { contains: 'hello', display: true } })`)
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'sh', text: '$ echo "hello world"\nhello world', title: undefined }
+    ])
+  })
+
+  test('shellExample with stdout display: true and inputFiles → uses input files in execution', () => {
+    const nodes = parse(`
+      shellExample('sort data.txt', {
+        inputFiles: [{ path: 'data.txt', content: 'cherry\\napple\\nbanana' }],
+        stdout: { contains: 'apple', display: true }
+      })
+    `)
+    // Multi-line inputFiles generate a prose label and code block first
+    assert.equal(nodes.length, 3)
+    assert.deepEqual(nodes[0], { kind: 'prose', text: 'With input file `data.txt`:', noBlankAfter: true })
+    assert.equal(nodes[1]?.kind, 'code')
+    assert.equal(nodes[2]?.kind, 'code')
+    assert.equal(nodes[2]?.lang, 'sh')
+    const shellText = nodes[2]?.text ?? ''
+    assert.ok(shellText.includes('$ sort data.txt'))
+    assert.ok(shellText.includes('apple'))
+  })
+
+  test('shellExample with stdout display: false → does not execute', () => {
+    const nodes = parse(`shellExample('echo "hello"', { stdout: { contains: 'hello', display: false } })`)
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'sh', text: '$ echo "hello"\nhello', title: undefined }
+    ])
+  })
+
   test('shellExample with short single-line outputFiles contains → prose node + display node', () => {
     const nodes = parse(`shellExample('sort input.txt', { outputFiles: [{ path: 'output.txt', contains: '# My Lib' }] })`)
     assert.deepEqual(nodes, [
