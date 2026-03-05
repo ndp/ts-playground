@@ -78,6 +78,30 @@ shellExample('echo "Hello, World!"', {
   stdout: {}
 })
 
+// Stdout can also use regex patterns with `matches`:
+shellExample('echo "version 2.5.1"', {
+  stdout: { matches: /version \d+\.\d+\.\d+/ }
+})
+
+// Stdout can use `contains` with regex patterns:
+shellExample('echo "Error: file not found"', {
+  stdout: { contains: /Error:/ }
+})
+
+// File assertions can use `contains` with regex patterns:
+shellExample('echo "config.json" > filename.txt', {
+  outputFiles: [
+    {path: 'filename.txt', contains: /\.json$/}
+  ]
+})
+
+// File assertions can use `matches` with strings:
+shellExample('echo "success code 0" > result.txt', {
+  outputFiles: [
+    {path: 'result.txt', matches: 'success'}
+  ]
+})
+
 // Sometimes file names are not important
 shellExample('sort input.txt >output.txt', {
   displayCommand: false,

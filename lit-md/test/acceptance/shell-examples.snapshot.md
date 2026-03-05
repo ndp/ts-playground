@@ -117,6 +117,40 @@ You can also display stdout without any assertions:
 $ echo "Hello, World!"
 ```
 
+Stdout can also use regex patterns with `matches`:
+
+```sh
+$ echo "version 2.5.1"
+```
+
+Stdout can use `contains` with regex patterns:
+
+```sh
+$ echo "Error: file not found"
+```
+
+File assertions can use `contains` with regex patterns:
+
+```sh
+$ echo "config.json" > filename.txt
+```
+
+Output file `filename.txt`:
+```
+config.json
+```
+
+File assertions can use `matches` with strings:
+
+```sh
+$ echo "success code 0" > result.txt
+```
+
+Output file `result.txt`:
+```
+success code 0
+```
+
 Sometimes file names are not important
 
 With input file `input.txt`:

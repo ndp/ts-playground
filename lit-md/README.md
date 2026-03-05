@@ -356,9 +356,16 @@ shellExample('echo "hello world"')
 ```
 
 Can contain assertions on stdout, which appear as comments in the emitted markdown.
+Assertions can use `contains` or `matches`, with either strings or regex patterns.
 
 ```ts
 shellExample('echo "ok"', {stdout: {contains: 'ok'}})
+```
+
+stdout.matches provides an alternative assertion method:
+
+```ts
+shellExample('echo "version 1.0.0"', {stdout: {matches: /version \d+\.\d+\.\d+/}})
 ```
 
 Can provide input files that are created before the command runs,
@@ -371,12 +378,22 @@ shellExample('cp input.txt output.txt', {
 })
 ```
 
-Output file assertions can also check that contents match a regex pattern, which is useful for larger files where you just want to verify a relevant part.
+Output file assertions can check contents with `contains` (substring or regex) or `matches` (regex or string).
+Both properties are optional — you can specify just one, or display file contents without assertions.
 
 ```ts
 shellExample('cp input.txt output.txt', {
   inputFiles: [{path: 'input.txt', content: 'first line\nsecond line'}],
   outputFiles: [{path: 'output.txt', matches: /^first/}]
+})
+```
+
+File assertions can also use regex in contains or strings in matches:
+
+```ts
+shellExample('cp input.txt output.txt', {
+  inputFiles: [{path: 'input.txt', content: 'data.json'}],
+  outputFiles: [{path: 'output.txt', contains: /\.json$/}]
 })
 ```
 
@@ -453,16 +470,19 @@ shellExample('cat input.txt > output.txt', {
 
 #### stdout
 
-- Type: { contains: string; display?: boolean }
-- `contains`: Assert output contains this string (required)
+- Type: { contains?: string | RegExp; matches?: string | RegExp; display?: boolean }
+- `contains`: Assert output contains this string or matches regex pattern (optional)
+- `matches`: Assert output matches this string (substring) or regex pattern (optional)
 - `display`: When true, dynamically execute and show actual stdout (default: false)
+- At least one of contains/matches is typically specified, but both are optional
 
 #### outputFiles
 
 Array of output file assertions:
 
 - `path`: File path (relative to temp directory)
-- `contains` or `matches`: String or regex to match file contents
+- `contains`: String or regex to check if file contains this value (optional)
+- `matches`: String or regex to check if file matches this value (optional)
 - `displayPath`: Show the filename (default: true)
 - `summary`: Show summary line before contents (default: true)
 
@@ -486,7 +506,8 @@ shellExample(
       ],
       stdout: {
         contains: 'Done',
-        display: true  // Show actual output
+        display: true,  // Show actual output
+        matches: /Done/ // Both contains and matches are optional
       },
       outputFiles: [
         {path: 'result.log', matches: /Done/, displayPath: true, summary: true}

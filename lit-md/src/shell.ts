@@ -47,16 +47,25 @@ function buildAliasPrefix(): string {
   return lines.join('\n') + '\n'
 }
 
+/** Check if content matches a pattern (string or regex). */
+function matchesPattern(content: string, pattern: string | RegExp): boolean {
+  if (pattern instanceof RegExp) {
+    return pattern.test(content)
+  } else {
+    return content.includes(pattern)
+  }
+}
+
 export interface ShellFileAssertion {
   path: string
-  contains?: string
-  matches?: RegExp
+  contains?: string | RegExp
+  matches?: string | RegExp
   displayPath?: boolean | 'hidden'
   summary?: boolean
 }
 
 export interface ShellExampleOpts {
-  stdout?: { contains?: string; display?: boolean }
+  stdout?: { contains?: string | RegExp; matches?: string | RegExp; display?: boolean }
   outputFiles?: ShellFileAssertion[]
   inputFiles?: Array<{ path: string; content: string; displayPath?: boolean | 'hidden'; summary?: boolean }>
   displayCommand?: boolean | 'hidden'
@@ -87,8 +96,14 @@ export function _runShellExample(cmd: string, opts: ShellExampleOpts): void {
     if (opts.stdout !== undefined) {
       if (opts.stdout.contains !== undefined) {
         assert.ok(
-          stdout.includes(opts.stdout.contains),
+          matchesPattern(stdout, opts.stdout.contains),
           `stdout did not contain: ${JSON.stringify(opts.stdout.contains)}\nActual: ${JSON.stringify(stdout)}`
+        )
+      }
+      if (opts.stdout.matches !== undefined) {
+        assert.ok(
+          matchesPattern(stdout, opts.stdout.matches),
+          `stdout did not match: ${opts.stdout.matches}\nActual: ${JSON.stringify(stdout)}`
         )
       }
     }
@@ -104,10 +119,10 @@ export function _runShellExample(cmd: string, opts: ShellExampleOpts): void {
         throw e
       }
       if (fa.contains !== undefined) {
-        assert.ok(content.includes(fa.contains), `file ${fa.path} does not contain: ${JSON.stringify(fa.contains)}`)
+        assert.ok(matchesPattern(content, fa.contains), `file ${fa.path} does not contain: ${JSON.stringify(fa.contains)}`)
       }
       if (fa.matches !== undefined) {
-        assert.ok(fa.matches.test(content), `file ${fa.path} does not match: ${fa.matches}`)
+        assert.ok(matchesPattern(content, fa.matches), `file ${fa.path} does not match: ${fa.matches}`)
       }
     }
     // Clean up absolute-path inputFiles (relative ones are removed with tmpDir below)

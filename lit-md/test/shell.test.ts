@@ -30,6 +30,39 @@ describe('shellExample: runtime behaviour', () => {
     _runShellExample('echo "hello"', { stdout: {} })
   })
 
+  test('succeeds when stdout contains regex pattern', () => {
+    _runShellExample('echo "hello world"', { stdout: { contains: /hel+o/ } })
+  })
+
+  test('throws when stdout does not contain regex pattern', () => {
+    assert.throws(
+      () => _runShellExample('echo "hello"', { stdout: { contains: /goodbye/ } }),
+      /stdout did not contain/
+    )
+  })
+
+  test('succeeds with stdout matches string', () => {
+    _runShellExample('echo "test output"', { stdout: { matches: 'test' } })
+  })
+
+  test('succeeds with stdout matches regex', () => {
+    _runShellExample('echo "version 1.2.3"', { stdout: { matches: /version \d+\.\d+\.\d+/ } })
+  })
+
+  test('throws when stdout does not match string', () => {
+    assert.throws(
+      () => _runShellExample('echo "hello"', { stdout: { matches: 'goodbye' } }),
+      /stdout did not match/
+    )
+  })
+
+  test('throws when stdout does not match regex', () => {
+    assert.throws(
+      () => _runShellExample('echo "hello"', { stdout: { matches: /\d+/ } }),
+      /stdout did not match/
+    )
+  })
+
 })
 
 describe('shellExample: outputFiles assertions', () => {
@@ -88,6 +121,38 @@ describe('shellExample: outputFiles assertions', () => {
     _runShellExample(`echo "version 2.0.0" > "${outFile}"`, {
       outputFiles: [{ path: outFile, matches: /version \d+\.\d+\.\d+/ }]
     })
+  })
+
+  test('succeeds with output file contains as regex', () => {
+    const outFile = join(tmp, 'out8.txt')
+    _runShellExample(`echo "test output" > "${outFile}"`, {
+      outputFiles: [{ path: outFile, contains: /test.*output/ }]
+    })
+  })
+
+  test('throws when output file does not contain regex', () => {
+    const outFile = join(tmp, 'out9.txt')
+    writeFileSync(outFile, 'no match here')
+    assert.throws(
+      () => _runShellExample(`cat "${outFile}"`, { outputFiles: [{ path: outFile, contains: /pattern/ }] }),
+      /does not contain/
+    )
+  })
+
+  test('succeeds with output file matches as string', () => {
+    const outFile = join(tmp, 'out10.txt')
+    _runShellExample(`echo "some text" > "${outFile}"`, {
+      outputFiles: [{ path: outFile, matches: 'text' }]
+    })
+  })
+
+  test('throws when output file does not match string', () => {
+    const outFile = join(tmp, 'out11.txt')
+    writeFileSync(outFile, 'different content')
+    assert.throws(
+      () => _runShellExample(`cat "${outFile}"`, { outputFiles: [{ path: outFile, matches: 'missing' }] }),
+      /does not match/
+    )
   })
 
 })
