@@ -561,14 +561,13 @@ function processShellExampleOutputFiles(
     const summary = readFlag(summaryProp)
 
     let emitDisplayNode = display !== 'none'
-    let proseSuffix = '.'
 
     if (matchesProp && ts.isRegularExpressionLiteral(matchesProp.initializer)) {
       if (summary) {
         const regexText = src.slice(matchesProp.initializer.getStart(), matchesProp.initializer.getEnd())
         const proseText = displayPath 
-          ? `Output file \`${filePath}\` matches \`${regexText}\`${proseSuffix}`
-          : `Matches \`${regexText}\`${proseSuffix}`
+          ? `Output file \`${filePath}\` matches \`${regexText}\`.`
+          : `Matches \`${regexText}\`.`
         nodes.push({ kind: 'prose', text: proseText, terminal: true })
       }
     } else if (containsProp && ts.isStringLiteralLike(containsProp.initializer)) {
@@ -578,8 +577,8 @@ function processShellExampleOutputFiles(
         // Short single-line: backtick format
         if (summary) {
           const proseText = displayPath
-            ? `Output file \`${filePath}\` contains \`${text}\`${proseSuffix}`
-            : `Contains \`${text}\`${proseSuffix}`
+            ? `Output file \`${filePath}\` contains \`${text}\`.`
+            : `Contains \`${text}\`.`
           nodes.push({ kind: 'prose', text: proseText, terminal: true })
         }
       } else {
@@ -673,16 +672,15 @@ function isExecutionNeeded(opts: ts.ObjectLiteralExpression): boolean {
     
     // Need execution if display is not 'none' AND (no contains/matches OR they're multi-line)
     if (display !== 'none') {
-      const hasContains = containsProp && ts.isStringLiteralLike(containsProp.initializer)
       const hasMatches = matchesProp && ts.isRegularExpressionLiteral(matchesProp.initializer)
-      
-      if (!hasContains && !hasMatches) {
+
+      if (!containsProp && !hasMatches) {
         // No inline assertion - need to execute to get full file content
         return true
       }
-      if (hasContains) {
-        const text = (containsProp as ts.PropertyAssignment).initializer as ts.StringLiteralLike
-        if (text.text.includes('\n') || text.text.length >= OUTPUT_FILE_INLINE_LIMIT) {
+      if (containsProp && ts.isStringLiteralLike(containsProp.initializer)) {
+        const text = containsProp.initializer.text
+        if (text.includes('\n') || text.length >= OUTPUT_FILE_INLINE_LIMIT) {
           // Multi-line or long content - need to execute
           return true
         }
