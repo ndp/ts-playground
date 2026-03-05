@@ -14,11 +14,11 @@ $ echo "ok"
 
 ## With stdout Assertion
 
-Using `shellExample('node --version', { stdout: { contains: '24.11.0' }})` produces:
+Using `shellExample('node --version', { stdout: { contains: '24.11.1' }})` produces:
 
 ```sh
 $ node --version
-24.11.0
+24.11.1
 ```
 
 ## With Input and Output Files
@@ -103,12 +103,6 @@ $ echo "version 1.2.3" > version.txt
 Output file `version.txt` matches `/version \d+\.\d+\.\d+/`:
 ```
 version 1.2.3
-```
-
-Stdout will output to the console
-
-```sh
-$ node ./src/lit-md.js --help
 ```
 
 You can also display stdout without any assertions:

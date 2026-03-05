@@ -14,8 +14,8 @@ shellExample('echo "ok"')
 
 // ## With stdout Assertion
 //
-// Using `shellExample('node --version', { stdout: { contains: '24.11.0' }})` produces:
-shellExample('node --version', {stdout: { contains: '24.11.0' }})
+// Using `shellExample('node --version', { stdout: { contains: '24.11.1' }})` produces:
+shellExample('node --version', {stdout: { contains: '24.11.1' }})
 
 // ## With Input and Output Files
 //
@@ -69,11 +69,6 @@ shellExample('echo "version 1.2.3" > version.txt', {
     {path: 'version.txt', matches: /version \d+\.\d+\.\d+/}
   ]
 })
-
-console.log('REMOVEMESTART')
-// Stdout will output to the console
-shellExample('node ./src/lit-md.js --help', {})
-console.log('REMOVEMEEND')
 
 // You can also display stdout without any assertions:
 shellExample('echo "Hello, World!"', {
