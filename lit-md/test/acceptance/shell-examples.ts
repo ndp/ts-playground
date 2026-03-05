@@ -70,8 +70,10 @@ shellExample('echo "version 1.2.3" > version.txt', {
   ]
 })
 
+console.log('REMOVEMESTART')
 // Stdout will output to the console
 shellExample('node ./src/lit-md.js --help', {})
+console.log('REMOVEMEEND')
 
 // You can also display stdout without any assertions:
 shellExample('echo "Hello, World!"', {
