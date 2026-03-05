@@ -28,12 +28,8 @@ export function resolveOutputFiles(nodes: DocNode[]): DocNode[] {
         result.push({ kind: 'code', lang: node.lang, text: content.trimEnd() })
       } else {
         // File is empty: replace period or colon with " is empty."
-        if (prev?.kind === 'prose') {
-          if (prev.text.endsWith(':')) {
-            result[result.length - 1] = { ...prev, text: prev.text.slice(0, -1) + ' is empty.' }
-          } else if (prev.text.endsWith('.')) {
-            result[result.length - 1] = { ...prev, text: prev.text.slice(0, -1) + ' is empty.' }
-          }
+        if (prev?.kind === 'prose' && (prev.text.endsWith(':') || prev.text.endsWith('.'))) {
+          result[result.length - 1] = { ...prev, text: prev.text.slice(0, -1) + ' is empty.' }
         }
       }
     }
