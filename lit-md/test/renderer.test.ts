@@ -12,7 +12,7 @@ describe('render: markdown output', () => {
 
   test('code node is wrapped in a fenced block', () => {
     const nodes: DocNode[] = [
-      { kind: 'code', lang: 'typescript', text: 'const x = 1', title: undefined }
+      { kind: 'code', lang: 'typescript', text: 'const x = 1'}
     ]
     assert.equal(render(nodes), '```ts\nconst x = 1\n```')
   })
@@ -27,14 +27,14 @@ describe('render: markdown output', () => {
   test('prose followed by code has blank line between them', () => {
     const nodes: DocNode[] = [
       { kind: 'prose', text: 'Some prose.' },
-      { kind: 'code', lang: 'typescript', text: 'const x = 1', title: undefined }
+      { kind: 'code', lang: 'typescript', text: 'const x = 1'}
     ]
     assert.equal(render(nodes), 'Some prose.\n\n```ts\nconst x = 1\n```')
   })
 
   test('code followed by prose has blank line between them', () => {
     const nodes: DocNode[] = [
-      { kind: 'code', lang: 'typescript', text: 'const x = 1', title: undefined },
+      { kind: 'code', lang: 'typescript', text: 'const x = 1'},
       { kind: 'prose', text: 'After code.' }
     ]
     assert.equal(render(nodes), '```ts\nconst x = 1\n```\n\nAfter code.')

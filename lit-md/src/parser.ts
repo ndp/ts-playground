@@ -98,7 +98,7 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
         const title = pendingFileLabel
         pendingFileLabel = undefined
         const text = extractShellTemplateText(src, expr.template)
-        nodes.push({ kind: 'code', lang: 'sh', text, title })
+        nodes.push(codeNode('sh', text, title))
         return
       }
 
@@ -119,12 +119,12 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
                 if (fenceMatch) {
                   prev.text = fenceMatch.prose
                   const mergedCode = fenceMatch.fenceCode + '\n' + code
-                  nodes.push({ kind: 'code', lang, text: mergedCode, title })
+                  nodes.push(codeNode(lang, mergedCode, title))
                 } else {
-                  nodes.push({ kind: 'code', lang, text: code, title })
+                  nodes.push(codeNode(lang, code, title))
                 }
               } else {
-                nodes.push({ kind: 'code', lang, text: code, title })
+                nodes.push(codeNode(lang, code, title))
               }
             } else if (body && !ts.isBlock(body)) {
               // Expression body that extracted to empty/whitespace - warn about this
@@ -166,7 +166,7 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
             const lines: string[] = displayCommand ? [`$ ${cmd}`] : []
             if (opts) appendShellExampleAnnotations(opts, lines, execution)
             if (lines.length > 0) {
-              nodes.push({ kind: 'code', lang: 'sh', text: lines.join('\n'), title })
+              nodes.push(codeNode('sh', lines.join('\n'), title))
             }
 
             if (opts) processShellExampleOutputFiles(src, opts, nodes, cmd, inputFiles, execution)
@@ -205,6 +205,11 @@ function readBoolOption(prop: ts.PropertyAssignment | undefined): boolean {
 function readFlag(prop: ts.PropertyAssignment | undefined): boolean {
   if (!prop) return true
   return prop.initializer.kind !== ts.SyntaxKind.FalseKeyword
+}
+
+/** Create a CodeNode, omitting the `title` key entirely when undefined. */
+function codeNode(lang: string, text: string, title?: string): CodeNode {
+  return title !== undefined ? { kind: 'code', lang, text, title } : { kind: 'code', lang, text }
 }
 
 function getStringArg(call: ts.CallExpression, index: number): string | null {
@@ -397,7 +402,7 @@ function mergeOrPushCode(nodes: DocNode[], text: string, lang: string, title: st
   if (last?.kind === 'code' && last.title === undefined && title === undefined) {
     last.text = last.text + '\n' + text
   } else {
-    nodes.push({ kind: 'code', lang, text, title })
+    nodes.push(codeNode(lang, text, title))
   }
 }
 
@@ -582,7 +587,7 @@ function processShellExampleOutputFiles(
               : `Contains ${truncated}...:`
             nodes.push({ kind: 'prose', text: proseText, terminal: true, noBlankAfter: true })
           }
-          nodes.push({ kind: 'code', lang, text: `...\n${text}\n...`, title: undefined })
+          nodes.push({ kind: 'code', lang, text: `...\n${text}\n...` })
           emitDisplayNode = false
         } else {
           // Long single-line: truncated summary, period
