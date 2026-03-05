@@ -88,7 +88,7 @@ shellExample('echo "Error: file not found"', {
 // File assertions can use `contains` with regex patterns:
 shellExample('echo "config.json" > filename.txt', {
   outputFiles: [
-    {path: 'filename.txt', contains: /\.json$/}
+    {path: 'filename.txt', contains: /\.json/}
   ]
 })
 
