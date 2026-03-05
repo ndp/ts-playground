@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
 
-export { test as example, describe } from 'node:test'
+export { test as example, test as metaExample, describe } from 'node:test'
 
 // Module-level alias registry: name → resolved shell command string
 const _aliases = new Map<string, string>()

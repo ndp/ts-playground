@@ -3,6 +3,67 @@
 ## Engine
 shellCommand returnCode assertions
 
+### metaExample
+
+It looks like `example` but has a different output format. It is for producing documentation 
+for this tool itself. It will be used in its own acceptance tests and readme. 
+
+It works just like `example`, but before writing its normal output, it includes an
+`example` statement with exactly the same information as the `metaExample` statement. 
+
+This is followed by a text markdown node reading "becomes".
+
+Then, the normal output of the `example` statement is included as a markdown code block.
+Note that this is double quoting of the code block, so be careful.
+
+EXAMPLE
+-------
+metaExample('example name', () => {
+    const len = 'hello'.length
+    assert.equal(len, 5)
+})
+
+Output
+------
+````ts
+example('example name', () => {
+  const len = 'hello'.length
+  assert.equal(len, 5)
+})
+````
+becomes
+````md
+```ts
+const len = 'hello'.length
+len // => 5
+```
+````
+
+EXAMPLE
+-------
+metaExample(('example name') => {
+    const len = 'hello'.length
+    assert.equal(len, 5)
+})
+
+Output
+------
+```ts
+example('example name', () => {
+  const len = 'hello'.length
+  assert.equal(len, 5)
+})
+```
+becomes
+````md
+```ts
+const len = 'hello'.length
+len // => 5
+```
+````
+
+
+
  
 ## Markdown output
 

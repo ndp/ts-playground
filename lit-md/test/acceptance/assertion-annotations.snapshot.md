@@ -5,9 +5,20 @@ turning passing tests into self-documenting code examples.
 ## assert.equal → `// => value`
 
 ```ts
+example('example name', () => {
+  const len = 'hello'.length
+  assert.equal(len, 5)
+})
+```
+
+becomes
+
+````md
+```ts
 const len = 'hello'.length
 len // => 5
 ```
+````
 
 ## assert.deepEqual — Single Line
 

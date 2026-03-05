@@ -3,12 +3,12 @@
 // Assertions inside `example()` bodies are rewritten as inline annotations,
 // turning passing tests into self-documenting code examples.
 
-import { example } from '../../src/index.ts'
+import { example, metaExample } from '../../src/index.ts'
 import assert from 'node:assert/strict'
 
 // ## assert.equal → `// => value`
 
-example('equal', () => {
+metaExample('example name', () => {
   const len = 'hello'.length
   assert.equal(len, 5)
 })

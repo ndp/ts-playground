@@ -143,6 +143,27 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
             return
           }
         }
+        if (name === 'metaExample') {
+          const body = getFnBody(expr, 1)
+          if (body) {
+            const code = extractBodyCode(src, body)
+            if (code.trim()) {
+              const title = pendingFileLabel
+              pendingFileLabel = undefined
+              // 1. Raw example call (original source, assertions not rewritten)
+              const rawCall = dedentCallSource(src.slice(expr.getStart(), expr.getEnd()))
+                .replace(/^metaExample\b/, 'example')
+              nodes.push(codeNode(lang, rawCall, title))
+              // 2. "becomes" prose
+              nodes.push({ kind: 'prose', text: 'becomes' })
+              // 3. Rendered output as an md code block
+              const langAlias = lang === 'typescript' ? 'ts' : lang === 'javascript' ? 'js' : lang
+              const innerFence = `\`\`\`${langAlias}\n${code}\n\`\`\``
+              nodes.push(codeNode('md', innerFence))
+            }
+          }
+          return
+        }
         if (name === 'shellExample') {
           const cmd = getStringArg(expr, 0)
           if (cmd !== null) {
@@ -281,6 +302,21 @@ function extractBodyCode(src: string, bodyOrBlock: ts.Block | ts.Expression): st
   result = transformNestedAssertOk(result)
 
   return result
+}
+
+/** Strip the shared indentation (determined from the closing line) from a raw call source. */
+function dedentCallSource(callText: string): string {
+  const lines = callText.split('\n')
+  if (lines.length <= 1) return callText
+  const lastLine = lines[lines.length - 1]!
+  const closingIndent = lastLine.length - lastLine.trimStart().length
+  if (closingIndent === 0) return callText
+  return lines.map((line, i) => {
+    if (i === 0) return line
+    return line.length >= closingIndent && line.slice(0, closingIndent).trim() === ''
+      ? line.slice(closingIndent)
+      : line
+  }).join('\n')
 }
 
 function commentToProse(raw: string, kind: ts.CommentKind): string | null {
