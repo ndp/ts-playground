@@ -128,6 +128,7 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
                 const fenceMatch = extractTrailingFence(prev.text)
                 if (fenceMatch) {
                   prev.text = fenceMatch.prose
+                  prev.noBlankAfter = true
                   const mergedCode = fenceMatch.fenceCode + '\n' + code
                   nodes.push(codeNode(lang, mergedCode, title))
                 } else {

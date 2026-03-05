@@ -9,7 +9,6 @@ import { encode, decode } from './encoder.ts'
 ## Basic Usage
 
 Pass any string to `encode` and get a base64 result:
-
 ```ts encode-example.ts
 import { encode } from './encoder.ts'
 const result = encode('hello')

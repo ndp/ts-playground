@@ -1,7 +1,6 @@
 # Code Fence Merging
 
 When a comment block ends with a closing code fence (`
-
 ````ts
 the following `example()` is merged into that fence as one code block.
 This lets you show an import alongside its live-tested usage.
@@ -18,7 +17,6 @@ nodes.length // => 1
 ## Import + Assertion in One Block
 
 The merge produces a single cohesive block: import, usage, and annotation.
-
 ```ts
 import { render } from '@ndp-software/lit-md'
 const md = render([{ kind: 'prose', text: '# Hello' }])

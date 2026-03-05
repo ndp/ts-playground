@@ -5,7 +5,6 @@ For multi-line statements like functions and classes, use `// keep:full` to incl
 ## Single-Line Keep
 
 Single-line statements use `// keep`:
-
 ```ts
 const CONFIG = { timeout: 5000 } // keep
 const delay = CONFIG.timeout
@@ -15,7 +14,6 @@ delay // => 5000
 ## Multi-Line Keep with // keep:full
 
 For functions and classes, use `// keep:full` to preserve the entire definition:
-
 ```ts
 function createCounter() { // keep:full
   let count = 0
