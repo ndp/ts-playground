@@ -49,11 +49,7 @@ function buildAliasPrefix(): string {
 
 /** Check if content matches a pattern (string or regex). */
 function matchesPattern(content: string, pattern: string | RegExp): boolean {
-  if (pattern instanceof RegExp) {
-    return pattern.test(content)
-  } else {
-    return content.includes(pattern)
-  }
+  return pattern instanceof RegExp ? pattern.test(content) : content.includes(pattern)
 }
 
 export interface ShellFileAssertion {
