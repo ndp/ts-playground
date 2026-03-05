@@ -223,17 +223,11 @@ function getFnBody(call: ts.CallExpression, index: number): ts.Block | ts.Expres
 }
 
 function extractBodyCode(src: string, bodyOrBlock: ts.Block | ts.Expression): string {
-  let stmts: ts.NodeArray<ts.Statement>
-  
-  if (ts.isBlock(bodyOrBlock)) {
-    stmts = bodyOrBlock.statements
-  } else {
+  if (!ts.isBlock(bodyOrBlock)) {
     // Expression body - extract the expression as a single "statement"
-    const expr = bodyOrBlock as ts.Expression
-    const text = src.slice(expr.getFullStart(), expr.getEnd()).trim()
-    return text
+    return src.slice(bodyOrBlock.getFullStart(), bodyOrBlock.getEnd()).trim()
   }
-  
+  const stmts = bodyOrBlock.statements
   if (!stmts.length) return ''
 
   // Compute block indentation from the column of the first statement token
