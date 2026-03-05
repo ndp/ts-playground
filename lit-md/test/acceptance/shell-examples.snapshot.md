@@ -94,10 +94,27 @@ Output file `greeting.txt`:
 Hello, World!
 ```
 
-## Stdout will output to the console
+Output files can display with only a `matches` assertion:
+
+```sh
+$ echo "version 1.2.3" > version.txt
+```
+
+Output file `version.txt` matches `/version \d+\.\d+\.\d+/`:
+```
+version 1.2.3
+```
+
+Stdout will output to the console
 
 ```sh
 $ node ./src/lit-md.js --help
+```
+
+You can also display stdout without any assertions:
+
+```sh
+$ echo "Hello, World!"
 ```
 
 Sometimes file names are not important

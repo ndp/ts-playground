@@ -26,6 +26,10 @@ describe('shellExample: runtime behaviour', () => {
     )
   })
 
+  test('succeeds with empty stdout object (no assertions)', () => {
+    _runShellExample('echo "hello"', { stdout: {} })
+  })
+
 })
 
 describe('shellExample: outputFiles assertions', () => {
@@ -63,6 +67,27 @@ describe('shellExample: outputFiles assertions', () => {
       () => _runShellExample(`cat "${outFile}"`, { outputFiles: [{ path: outFile, matches: /version \d+/ }] }),
       /does not match/
     )
+  })
+
+  test('succeeds with output file and no assertions', () => {
+    const outFile = join(tmp, 'out5.txt')
+    _runShellExample(`echo "just some content" > "${outFile}"`, {
+      outputFiles: [{ path: outFile }]
+    })
+  })
+
+  test('succeeds with output file assertion using only contains', () => {
+    const outFile = join(tmp, 'out6.txt')
+    _runShellExample(`echo "hello world" > "${outFile}"`, {
+      outputFiles: [{ path: outFile, contains: 'hello' }]
+    })
+  })
+
+  test('succeeds with output file assertion using only matches', () => {
+    const outFile = join(tmp, 'out7.txt')
+    _runShellExample(`echo "version 2.0.0" > "${outFile}"`, {
+      outputFiles: [{ path: outFile, matches: /version \d+\.\d+\.\d+/ }]
+    })
   })
 
 })

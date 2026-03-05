@@ -63,8 +63,20 @@ shellExample('echo "Hello, World!" > greeting.txt', {
   ]
 })
 
-// ## Stdout will output to the console
+// Output files can display with only a `matches` assertion:
+shellExample('echo "version 1.2.3" > version.txt', {
+  outputFiles: [
+    {path: 'version.txt', matches: /version \d+\.\d+\.\d+/}
+  ]
+})
+
+// Stdout will output to the console
 shellExample('node ./src/lit-md.js --help', {})
+
+// You can also display stdout without any assertions:
+shellExample('echo "Hello, World!"', {
+  stdout: {}
+})
 
 // Sometimes file names are not important
 shellExample('sort input.txt >output.txt', {

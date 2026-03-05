@@ -3,9 +3,8 @@
 ## Engine
 shellCommand returnCode assertions
 
-merge contains and matches into a single assertion. It can be passed a string or regex and handles as it does now.
+shellExample: extend contains and matches to have similar behavior. Allow regexp in contains and strings in matches. It still controls the nomenclature in the summary string (if there is one). It can be passed a string or regex and handles as it does now. Any questions or concerns?
 
-Make contains not required, so you can just specify matches if you want, or just contains if you want. If neither is specified, it just shows the whole output without any assertions.
  
 ## Markdown output
 
