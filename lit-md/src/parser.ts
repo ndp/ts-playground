@@ -129,13 +129,19 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
               } else {
                 nodes.push({ kind: 'code', lang, text: code, title })
               }
+            } else if (body && !ts.isBlock(body)) {
+              // Expression body that extracted to empty/whitespace - warn about this
+              const lines = src.slice(body.getFullStart(), body.getEnd()).split('\n').length
+              if (lines > 2) {
+                console.warn(`⚠ Warning: ${name}('${testName}') expression body (${lines} lines) did not produce output`)
+              }
             }
             return
           }
         }
         if (name === 'describe') {
           const body = getFnBody(expr, 1)
-          if (body) {
+          if (body && ts.isBlock(body)) {
             visitStatements(body.statements)
             return
           }
@@ -211,17 +217,27 @@ function getStringArg(call: ts.CallExpression, index: number): string | null {
   return null
 }
 
-function getFnBody(call: ts.CallExpression, index: number): ts.Block | null {
+function getFnBody(call: ts.CallExpression, index: number): ts.Block | ts.Expression | null {
   const arg = call.arguments[index]
   if (!arg) return null
   if (ts.isArrowFunction(arg) || ts.isFunctionExpression(arg)) {
-    if (ts.isBlock(arg.body)) return arg.body
+    return arg.body
   }
   return null
 }
 
-function extractBodyCode(src: string, block: ts.Block): string {
-  const stmts = block.statements
+function extractBodyCode(src: string, bodyOrBlock: ts.Block | ts.Expression): string {
+  let stmts: ts.NodeArray<ts.Statement>
+  
+  if (ts.isBlock(bodyOrBlock)) {
+    stmts = bodyOrBlock.statements
+  } else {
+    // Expression body - extract the expression as a single "statement"
+    const expr = bodyOrBlock as ts.Expression
+    const text = src.slice(expr.getFullStart(), expr.getEnd()).trim()
+    return text
+  }
+  
   if (!stmts.length) return ''
 
   // Compute block indentation from the column of the first statement token

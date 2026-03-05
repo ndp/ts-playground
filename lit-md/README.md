@@ -417,8 +417,32 @@ shellExample provides more control and structured options for shell command exam
 - Hide/customize what's displayed
 
 ### Basic Usage
+
+```ts
+shellExample('echo "hello world"')
+```
+
 ### With Assertions
+
+```ts
+shellExample('echo "ok"', {
+  stdout: {contains: 'ok'}
+})
+```
+
 ### Input and Output Files
+
+```ts
+shellExample('cat input.txt > output.txt', {
+  inputFiles: [
+    {path: 'input.txt', content: 'Hello'}
+  ],
+  outputFiles: [
+    {path: 'output.txt', matches: /Hello/}
+  ]
+})
+```
+
 ### Options Reference
 
 #### displayCommand
@@ -452,3 +476,20 @@ Array of input files to create:
 - summary: Show summary line (default: true)
 
 #### Example with All Options
+
+```ts
+shellExample(
+    'cat input.txt && echo "Done" | tee result.log', {
+      displayCommand: true,
+      inputFiles: [
+        {path: 'input.txt', content: 'Config data', displayPath: true, summary: true}
+      ],
+      stdout: {
+        contains: 'Done',
+        display: true  // Show actual output
+      },
+      outputFiles: [
+        {path: 'result.log', matches: /Done/, displayPath: true, summary: true}
+      ]
+    })
+```
