@@ -154,7 +154,7 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
             const optsArg = expr.arguments[1]
             const opts = optsArg && ts.isObjectLiteralExpression(optsArg) ? optsArg : undefined
 
-            if (opts) processShellExampleInputFiles(src, opts, nodes)
+            if (opts) processShellExampleInputFiles(opts, nodes)
 
             const inputFiles = opts ? extractStaticInputFiles(opts) : []
 
@@ -485,7 +485,7 @@ function supportsCStyleComments(lang: string): boolean {
 }
 
 /** Extracts input files from shellExample options and creates separate code blocks */
-function processShellExampleInputFiles(src: string, opts: ts.ObjectLiteralExpression, nodes: DocNode[]): void {
+function processShellExampleInputFiles(opts: ts.ObjectLiteralExpression, nodes: DocNode[]): void {
   const inputFilesProp = getProp(opts, 'inputFiles')
   
   if (!inputFilesProp || !ts.isArrayLiteralExpression(inputFilesProp.initializer)) {
