@@ -171,8 +171,8 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
             // Read displayCommand option (default: true to show command)
             let displayCommand = true
             if (optsArg && ts.isObjectLiteralExpression(optsArg)) {
-              const displayProp = optsArg.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'displayCommand')
-              if (displayProp && ts.isPropertyAssignment(displayProp)) {
+              const displayProp = getProp(optsArg, 'displayCommand')
+              if (displayProp) {
                 if (displayProp.initializer.kind === ts.SyntaxKind.FalseKeyword || 
                     (ts.isStringLiteralLike(displayProp.initializer) && displayProp.initializer.text === 'hidden')) {
                   displayCommand = false
@@ -209,6 +209,13 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
   extractLeadingComments(sf.endOfFileToken.getFullStart())
 
   return nodes
+}
+
+/** Typed helper: find a PropertyAssignment by name in an ObjectLiteralExpression. */
+function getProp(obj: ts.ObjectLiteralExpression, name: string): ts.PropertyAssignment | undefined {
+  return obj.properties.find(
+    (p): p is ts.PropertyAssignment => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === name
+  )
 }
 
 function getStringArg(call: ts.CallExpression, index: number): string | null {
@@ -487,25 +494,25 @@ function supportsCStyleComments(lang: string): boolean {
 
 /** Extracts input files from shellExample options and creates separate code blocks */
 function processShellExampleInputFiles(src: string, opts: ts.ObjectLiteralExpression, nodes: DocNode[]): void {
-  const inputFilesProp = opts.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'inputFiles')
+  const inputFilesProp = getProp(opts, 'inputFiles')
   
-  if (!inputFilesProp || !ts.isPropertyAssignment(inputFilesProp) || !ts.isArrayLiteralExpression(inputFilesProp.initializer)) {
+  if (!inputFilesProp || !ts.isArrayLiteralExpression(inputFilesProp.initializer)) {
     return
   }
 
   for (const el of inputFilesProp.initializer.elements) {
     if (!ts.isObjectLiteralExpression(el)) continue
-    const pathProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'path')
-    const contentProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'content')
-    const displayPathProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'displayPath')
-    const summaryProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'summary')
+    const pathProp = getProp(el, 'path')
+    const contentProp = getProp(el, 'content')
+    const displayPathProp = getProp(el, 'displayPath')
+    const summaryProp = getProp(el, 'summary')
 
-    if (!pathProp || !ts.isPropertyAssignment(pathProp) || !ts.isStringLiteralLike(pathProp.initializer)) continue
+    if (!pathProp || !ts.isStringLiteralLike(pathProp.initializer)) continue
     const filePath = pathProp.initializer.text
 
     // Read displayPath option (default: true to show path)
     let displayPath = true
-    if (displayPathProp && ts.isPropertyAssignment(displayPathProp)) {
+    if (displayPathProp) {
       if (displayPathProp.initializer.kind === ts.SyntaxKind.FalseKeyword || 
           (ts.isStringLiteralLike(displayPathProp.initializer) && displayPathProp.initializer.text === 'hidden')) {
         displayPath = false
@@ -514,13 +521,13 @@ function processShellExampleInputFiles(src: string, opts: ts.ObjectLiteralExpres
 
     // Read summary option (default: true to show summary)
     let summary = true
-    if (summaryProp && ts.isPropertyAssignment(summaryProp)) {
+    if (summaryProp) {
       if (summaryProp.initializer.kind === ts.SyntaxKind.FalseKeyword) {
         summary = false
       }
     }
 
-    if (contentProp && ts.isPropertyAssignment(contentProp) && ts.isStringLiteralLike(contentProp.initializer)) {
+    if (contentProp && ts.isStringLiteralLike(contentProp.initializer)) {
       const content = contentProp.initializer.text
       const lang = getLanguageFromExtension(filePath)
       
@@ -552,31 +559,31 @@ function processShellExampleOutputFiles(
   inputFiles: Array<{ path: string; content: string }>,
   execution: ShellCommandExecution | null
 ): void {
-  const outputFilesProp = opts.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'outputFiles')
+  const outputFilesProp = getProp(opts, 'outputFiles')
 
-  if (!outputFilesProp || !ts.isPropertyAssignment(outputFilesProp) || !ts.isArrayLiteralExpression(outputFilesProp.initializer)) {
+  if (!outputFilesProp || !ts.isArrayLiteralExpression(outputFilesProp.initializer)) {
     return
   }
 
   for (const el of outputFilesProp.initializer.elements) {
     if (!ts.isObjectLiteralExpression(el)) continue
-    const pathProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'path')
-    const containsProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'contains')
-    const matchesProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'matches')
-    const displayProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'display')
-    const displayPathProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'displayPath')
-    const summaryProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'summary')
+    const pathProp = getProp(el, 'path')
+    const containsProp = getProp(el, 'contains')
+    const matchesProp = getProp(el, 'matches')
+    const displayProp = getProp(el, 'display')
+    const displayPathProp = getProp(el, 'displayPath')
+    const summaryProp = getProp(el, 'summary')
     
-    const display = displayProp && ts.isPropertyAssignment(displayProp) && ts.isStringLiteralLike(displayProp.initializer)
+    const display = displayProp && ts.isStringLiteralLike(displayProp.initializer)
       ? displayProp.initializer.text : undefined
 
-    if (!pathProp || !ts.isPropertyAssignment(pathProp) || !ts.isStringLiteralLike(pathProp.initializer)) continue
+    if (!pathProp || !ts.isStringLiteralLike(pathProp.initializer)) continue
     const filePath = pathProp.initializer.text
     const lang = getLanguageFromExtension(filePath)
 
     // Read displayPath option (default: true to show path)
     let displayPath = true
-    if (displayPathProp && ts.isPropertyAssignment(displayPathProp)) {
+    if (displayPathProp) {
       if (displayPathProp.initializer.kind === ts.SyntaxKind.FalseKeyword || 
           (ts.isStringLiteralLike(displayPathProp.initializer) && displayPathProp.initializer.text === 'hidden')) {
         displayPath = false
@@ -585,7 +592,7 @@ function processShellExampleOutputFiles(
 
     // Read summary option (default: true to show summary)
     let summary = true
-    if (summaryProp && ts.isPropertyAssignment(summaryProp)) {
+    if (summaryProp) {
       if (summaryProp.initializer.kind === ts.SyntaxKind.FalseKeyword) {
         summary = false
       }
@@ -594,7 +601,7 @@ function processShellExampleOutputFiles(
     let emitDisplayNode = display !== 'none'
     let proseSuffix = '.'
 
-    if (matchesProp && ts.isPropertyAssignment(matchesProp) && ts.isRegularExpressionLiteral(matchesProp.initializer)) {
+    if (matchesProp && ts.isRegularExpressionLiteral(matchesProp.initializer)) {
       if (summary) {
         const regexText = src.slice(matchesProp.initializer.getStart(), matchesProp.initializer.getEnd())
         const proseText = displayPath 
@@ -602,7 +609,7 @@ function processShellExampleOutputFiles(
           : `Matches \`${regexText}\`${proseSuffix}`
         nodes.push({ kind: 'prose', text: proseText, terminal: true })
       }
-    } else if (containsProp && ts.isPropertyAssignment(containsProp) && ts.isStringLiteralLike(containsProp.initializer)) {
+    } else if (containsProp && ts.isStringLiteralLike(containsProp.initializer)) {
       const text = containsProp.initializer.text
       const isMultiLine = text.includes('\n')
       if (!isMultiLine && text.length < OUTPUT_FILE_INLINE_LIMIT) {
@@ -661,15 +668,15 @@ function processShellExampleOutputFiles(
 
 /** Extracts inputFiles entries statically from a shellExample opts AST node */
 function extractStaticInputFiles(opts: ts.ObjectLiteralExpression): Array<{ path: string; content: string }> {
-  const inputFilesProp = opts.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'inputFiles')
-  if (!inputFilesProp || !ts.isPropertyAssignment(inputFilesProp) || !ts.isArrayLiteralExpression(inputFilesProp.initializer)) return []
+  const inputFilesProp = getProp(opts, 'inputFiles')
+  if (!inputFilesProp || !ts.isArrayLiteralExpression(inputFilesProp.initializer)) return []
   const result: Array<{ path: string; content: string }> = []
   for (const el of inputFilesProp.initializer.elements) {
     if (!ts.isObjectLiteralExpression(el)) continue
-    const pathProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'path')
-    const contentProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'content')
-    if (!pathProp || !ts.isPropertyAssignment(pathProp) || !ts.isStringLiteralLike(pathProp.initializer)) continue
-    if (!contentProp || !ts.isPropertyAssignment(contentProp) || !ts.isStringLiteralLike(contentProp.initializer)) continue
+    const pathProp = getProp(el, 'path')
+    const contentProp = getProp(el, 'content')
+    if (!pathProp || !ts.isStringLiteralLike(pathProp.initializer)) continue
+    if (!contentProp || !ts.isStringLiteralLike(contentProp.initializer)) continue
     result.push({ path: pathProp.initializer.text, content: contentProp.initializer.text })
   }
   return result
@@ -678,34 +685,34 @@ function extractStaticInputFiles(opts: ts.ObjectLiteralExpression): Array<{ path
 /** Determines if command execution is needed based on shellExample options */
 function isExecutionNeeded(opts: ts.ObjectLiteralExpression): boolean {
   // Check if stdout.display is true
-  const stdoutProp = opts.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'stdout')
-  if (stdoutProp && ts.isPropertyAssignment(stdoutProp) && ts.isObjectLiteralExpression(stdoutProp.initializer)) {
-    const displayProp = stdoutProp.initializer.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'display')
-    if (displayProp && ts.isPropertyAssignment(displayProp) && displayProp.initializer.kind === ts.SyntaxKind.TrueKeyword) {
+  const stdoutProp = getProp(opts, 'stdout')
+  if (stdoutProp && ts.isObjectLiteralExpression(stdoutProp.initializer)) {
+    const displayProp = getProp(stdoutProp.initializer as ts.ObjectLiteralExpression, 'display')
+    if (displayProp && displayProp.initializer.kind === ts.SyntaxKind.TrueKeyword) {
       return true
     }
   }
 
   // Check if any outputFiles need display
-  const outputFilesProp = opts.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'outputFiles')
-  if (!outputFilesProp || !ts.isPropertyAssignment(outputFilesProp) || !ts.isArrayLiteralExpression(outputFilesProp.initializer)) {
+  const outputFilesProp = getProp(opts, 'outputFiles')
+  if (!outputFilesProp || !ts.isArrayLiteralExpression(outputFilesProp.initializer)) {
     return false
   }
 
   for (const el of outputFilesProp.initializer.elements) {
     if (!ts.isObjectLiteralExpression(el)) continue
-    const displayProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'display')
-    const containsProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'contains')
-    const matchesProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'matches')
+    const displayProp = getProp(el, 'display')
+    const containsProp = getProp(el, 'contains')
+    const matchesProp = getProp(el, 'matches')
     
     // display !== 'none' means we need to execute
-    const display = displayProp && ts.isPropertyAssignment(displayProp) && ts.isStringLiteralLike(displayProp.initializer)
+    const display = displayProp && ts.isStringLiteralLike(displayProp.initializer)
       ? displayProp.initializer.text : undefined
     
     // Need execution if display is not 'none' AND (no contains/matches OR they're multi-line)
     if (display !== 'none') {
-      const hasContains = containsProp && ts.isPropertyAssignment(containsProp) && ts.isStringLiteralLike(containsProp.initializer)
-      const hasMatches = matchesProp && ts.isPropertyAssignment(matchesProp) && ts.isRegularExpressionLiteral(matchesProp.initializer)
+      const hasContains = containsProp && ts.isStringLiteralLike(containsProp.initializer)
+      const hasMatches = matchesProp && ts.isRegularExpressionLiteral(matchesProp.initializer)
       
       if (!hasContains && !hasMatches) {
         // No inline assertion - need to execute to get full file content
@@ -726,16 +733,16 @@ function isExecutionNeeded(opts: ts.ObjectLiteralExpression): boolean {
 
 /** Extracts output file paths from shellExample options that need execution */
 function extractOutputFilePaths(opts: ts.ObjectLiteralExpression): string[] {
-  const outputFilesProp = opts.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'outputFiles')
-  if (!outputFilesProp || !ts.isPropertyAssignment(outputFilesProp) || !ts.isArrayLiteralExpression(outputFilesProp.initializer)) {
+  const outputFilesProp = getProp(opts, 'outputFiles')
+  if (!outputFilesProp || !ts.isArrayLiteralExpression(outputFilesProp.initializer)) {
     return []
   }
 
   const paths: string[] = []
   for (const el of outputFilesProp.initializer.elements) {
     if (!ts.isObjectLiteralExpression(el)) continue
-    const pathProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'path')
-    if (pathProp && ts.isPropertyAssignment(pathProp) && ts.isStringLiteralLike(pathProp.initializer)) {
+    const pathProp = getProp(el, 'path')
+    if (pathProp && ts.isStringLiteralLike(pathProp.initializer)) {
       paths.push(pathProp.initializer.text)
     }
   }
@@ -803,15 +810,15 @@ function appendShellExampleAnnotations(
     const key = prop.name.text
 
     if (key === 'stdout' && ts.isObjectLiteralExpression(prop.initializer)) {
-      const containsProp = prop.initializer.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'contains')
-      const displayProp = prop.initializer.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'display')
+      const containsProp = getProp(prop.initializer as ts.ObjectLiteralExpression, 'contains')
+      const displayProp = getProp(prop.initializer as ts.ObjectLiteralExpression, 'display')
       
       // If display is true, use cached execution or show the contains assertion
-      if (displayProp && ts.isPropertyAssignment(displayProp) && displayProp.initializer.kind === ts.SyntaxKind.TrueKeyword) {
+      if (displayProp && displayProp.initializer.kind === ts.SyntaxKind.TrueKeyword) {
         if (execution && execution.exitCode === 0) {
           lines.push(execution.stdout)
         }
-      } else if (containsProp && ts.isPropertyAssignment(containsProp) && ts.isStringLiteralLike(containsProp.initializer)) {
+      } else if (containsProp && ts.isStringLiteralLike(containsProp.initializer)) {
         // Show contains assertion only if display is not true
         lines.push(containsProp.initializer.text)
       }
@@ -820,17 +827,17 @@ function appendShellExampleAnnotations(
     if (key === 'inputFiles' && ts.isArrayLiteralExpression(prop.initializer)) {
       for (const el of prop.initializer.elements) {
         if (!ts.isObjectLiteralExpression(el)) continue
-        const pathProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'path')
-        const contentProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'content')
-        const displayPathProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'displayPath')
-        const summaryProp = el.properties.find(p => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === 'summary')
+        const pathProp = getProp(el, 'path')
+        const contentProp = getProp(el, 'content')
+        const displayPathProp = getProp(el, 'displayPath')
+        const summaryProp = getProp(el, 'summary')
 
-        if (!pathProp || !ts.isPropertyAssignment(pathProp) || !ts.isStringLiteralLike(pathProp.initializer)) continue
+        if (!pathProp || !ts.isStringLiteralLike(pathProp.initializer)) continue
         const filePath = pathProp.initializer.text
 
         // Read displayPath option (default: true to show path)
         let displayPath = true
-        if (displayPathProp && ts.isPropertyAssignment(displayPathProp)) {
+        if (displayPathProp) {
           if (displayPathProp.initializer.kind === ts.SyntaxKind.FalseKeyword || 
               (ts.isStringLiteralLike(displayPathProp.initializer) && displayPathProp.initializer.text === 'hidden')) {
             displayPath = false
@@ -839,13 +846,13 @@ function appendShellExampleAnnotations(
 
         // Read summary option (default: true to show summary)
         let summary = true
-        if (summaryProp && ts.isPropertyAssignment(summaryProp)) {
+        if (summaryProp) {
           if (summaryProp.initializer.kind === ts.SyntaxKind.FalseKeyword) {
             summary = false
           }
         }
 
-        if (contentProp && ts.isPropertyAssignment(contentProp) && ts.isStringLiteralLike(contentProp.initializer)) {
+        if (contentProp && ts.isStringLiteralLike(contentProp.initializer)) {
           const content = contentProp.initializer.text
           const lang = getLanguageFromExtension(filePath)
           // Only add single-line annotation for C-style languages; others emit a separate code block
