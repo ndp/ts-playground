@@ -7,7 +7,6 @@ import { join, dirname } from 'path'
 
 const __dir = dirname(fileURLToPath(import.meta.url))
 const cli = join(__dir, '../src/cli.ts')
-const nodeArgs = (extra: string[]) => [process.execPath, ['--experimental-strip-types', cli, ...extra]]
 
 function runCli(args: string[], opts: { expectFail?: boolean } = {}): { stdout: string; stderr: string; status: number } {
   const result = spawnSync(process.execPath, ['--experimental-strip-types', cli, ...args], {
