@@ -31,15 +31,19 @@ becomes
 ```ts
 const len = 'hello'.length
 len // => 5
+
 const count = [1, 2, 3].length
 count // => 3
+
 const nums = [1, 2, 3]
 nums // => [1, 2, 3]
+
 const point = { x: 1, y: 2 }
 point // => {
       //   x: 1,
       //   y: 2
       // }
+
 const value = getValue()
 value // != null
 ```

@@ -295,8 +295,8 @@ function extractBodyCode(src: string, bodyOrBlock: ts.Block | ts.Expression): st
     .join('\n')
     .trim()
 
-  // Clean up consecutive blank lines from dropped statements
-  result = result.replace(/\n\n+/g, '\n')
+  // Clean up excessive blank lines from dropped statements (preserve intentional single blank lines)
+  result = result.replace(/\n\n\n+/g, '\n\n')
 
   // Transform nested assert.ok(expr) → expr // OK
   result = transformNestedAssertOk(result)
