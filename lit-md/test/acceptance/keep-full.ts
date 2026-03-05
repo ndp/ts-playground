@@ -17,11 +17,9 @@ const CONFIG = { timeout: 5000 }
 // ## Single-Line Keep
 
 // Single-line statements use `// keep`:
-
 // ```
 // const CONFIG = { timeout: 5000 } // keep
 // ```
-
 example('use config', () => {
   const delay = CONFIG.timeout
   assert.equal(delay, 5000)
@@ -30,7 +28,6 @@ example('use config', () => {
 // ## Multi-Line Keep with // keep:full
 //
 // For functions and classes, use `// keep:full` to preserve the entire definition:
-
 // ```
 // function createCounter() { // keep:full
 //   let count = 0
