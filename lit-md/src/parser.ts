@@ -167,7 +167,7 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
             const displayCommand = opts ? readBoolOption(getProp(opts, 'displayCommand')) : true
 
             const lines: string[] = displayCommand ? [`$ ${cmd}`] : []
-            if (opts) appendShellExampleAnnotations(src, opts, lines, cmd, inputFiles, execution)
+            if (opts) appendShellExampleAnnotations(opts, lines, execution)
             if (lines.length > 0) {
               nodes.push({ kind: 'code', lang: 'sh', text: lines.join('\n'), title })
             }
@@ -753,11 +753,8 @@ function executeShellCommand(cmd: string, inputFiles: Array<{ path: string; cont
 
 /** Reads shellExample options and appends annotation lines (# => ..., single-line # input-file: ...) */
 function appendShellExampleAnnotations(
-  src: string,
   opts: ts.ObjectLiteralExpression,
   lines: string[],
-  cmd: string,
-  inputFiles: Array<{ path: string; content: string }>,
   execution: ShellCommandExecution | null
 ): void {
   for (const prop of opts.properties) {
