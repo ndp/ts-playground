@@ -152,43 +152,27 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
             const title = pendingFileLabel
             pendingFileLabel = undefined
             const optsArg = expr.arguments[1]
-            
-            // Extract multi-line input files and create separate code blocks
-            if (optsArg && ts.isObjectLiteralExpression(optsArg)) {
-              processShellExampleInputFiles(src, optsArg, nodes)
-            }
-            
-            // Determine if we need to execute the command upfront
+            const opts = optsArg && ts.isObjectLiteralExpression(optsArg) ? optsArg : undefined
+
+            if (opts) processShellExampleInputFiles(src, opts, nodes)
+
+            const inputFiles = opts ? extractStaticInputFiles(opts) : []
+
             let execution: ShellCommandExecution | null = null
-            if (optsArg && ts.isObjectLiteralExpression(optsArg)) {
-              if (isExecutionNeeded(optsArg)) {
-                const inputFiles = extractStaticInputFiles(optsArg)
-                const outputPaths = extractOutputFilePaths(optsArg)
-                execution = executeShellCommand(cmd, inputFiles, outputPaths)
-              }
+            if (opts && isExecutionNeeded(opts)) {
+              const outputPaths = extractOutputFilePaths(opts)
+              execution = executeShellCommand(cmd, inputFiles, outputPaths)
             }
-            
-            // Read displayCommand option (default: true to show command)
-            const displayCommand = !optsArg || !ts.isObjectLiteralExpression(optsArg)
-              ? true
-              : readBoolOption(getProp(optsArg, 'displayCommand'))
-            
-            // Add the shell command block (only if there's content to display)
+
+            const displayCommand = opts ? readBoolOption(getProp(opts, 'displayCommand')) : true
+
             const lines: string[] = displayCommand ? [`$ ${cmd}`] : []
-            if (optsArg && ts.isObjectLiteralExpression(optsArg)) {
-              const inputFiles = extractStaticInputFiles(optsArg)
-              appendShellExampleAnnotations(src, optsArg, lines, cmd, inputFiles, execution)
-            }
-            // Only add code node if there's content (command or annotations)
+            if (opts) appendShellExampleAnnotations(src, opts, lines, cmd, inputFiles, execution)
             if (lines.length > 0) {
               nodes.push({ kind: 'code', lang: 'sh', text: lines.join('\n'), title })
             }
 
-            // Add separate output file nodes after the shell block
-            if (optsArg && ts.isObjectLiteralExpression(optsArg)) {
-              const inputFiles = extractStaticInputFiles(optsArg)
-              processShellExampleOutputFiles(src, optsArg, nodes, cmd, inputFiles, execution)
-            }
+            if (opts) processShellExampleOutputFiles(src, opts, nodes, cmd, inputFiles, execution)
           }
           return
         }
