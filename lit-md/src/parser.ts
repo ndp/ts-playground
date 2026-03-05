@@ -75,7 +75,16 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
   }
 
   function processStatement(stmt: ts.Statement): void {
-    // Check if this statement has // keep comment
+    // Check for // keep:full (multi-line statements)
+    const fullStmt = getFullStatement(stmt, src)
+    if (fullStmt !== null) {
+      const title = pendingFileLabel
+      pendingFileLabel = undefined
+      mergeOrPushCode(nodes, fullStmt, lang, title)
+      return
+    }
+
+    // Check if this statement has // keep comment (single-line)
     const lineText = getStatementLine(stmt, src)
     if (lineText !== null && hasKeepComment(lineText)) {
       const title = pendingFileLabel
@@ -345,6 +354,10 @@ function hasKeepComment(text: string): boolean {
   return /\/\/\s*keep\b/.test(text)
 }
 
+function isFullKeep(text: string): boolean {
+  return /\/\/\s*keep:full\b/.test(text)
+}
+
 /** Extract the full line text of a statement (from statement start to end of line).
  *  Returns null if the statement spans multiple lines or we can't extract it. */
 function getStatementLine(stmt: ts.Statement, src: string): string | null {
@@ -359,6 +372,43 @@ function getStatementLine(stmt: ts.Statement, src: string): string | null {
   }
   
   return lineText
+}
+
+/** Extract a full multi-line statement including body.
+ *  Searches for // keep:full comment and extracts the entire statement.
+ *  Returns null if // keep:full not found. */
+function getFullStatement(stmt: ts.Statement, src: string): string | null {
+  const stmtStart = stmt.getStart()
+  const stmtEnd = stmt.getEnd()
+  
+  // Extract the entire statement
+  const stmtText = src.slice(stmtStart, stmtEnd)
+  
+  // Look for // keep:full in the statement
+  if (!isFullKeep(stmtText)) {
+    return null
+  }
+  
+  // Compute the indentation of the first line to dedent
+  const firstLineMatch = stmtText.match(/^(\s*)/)
+  const baseIndent = firstLineMatch ? firstLineMatch[1]!.length : 0
+  
+  // Dedent all lines by the base indentation
+  const dedented = stmtText
+    .split('\n')
+    .map(line => {
+      if (line.length >= baseIndent && line.slice(0, baseIndent).trim() === '') {
+        return line.slice(baseIndent)
+      }
+      return line
+    })
+    .join('\n')
+    .trimEnd()
+  
+  // Strip the // keep:full comment
+  const cleaned = dedented.replace(/\s*\/\/\s*keep:full\b.*$/gm, '')
+  
+  return cleaned
 }
 
 /** Rewrite a recognized assert.X(actual, expected) statement to a readable comment form.

@@ -244,6 +244,43 @@ describe('parse: import filtering', () => {
     ])
   })
 
+  test('// keep:full on function declaration extracts full body', () => {
+    const nodes = parse(
+      `function helper() { // keep:full\n  return 42\n}`
+    )
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'typescript', text: `function helper() {\n  return 42\n}`}
+    ])
+  })
+
+  test('// keep:full on class declaration extracts full body', () => {
+    const nodes = parse(
+      `class Helper { // keep:full\n  getValue() {\n    return 42\n  }\n}`
+    )
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'typescript', text: `class Helper {\n  getValue() {\n    return 42\n  }\n}`}
+    ])
+  })
+
+  test('// keep:full with test body merges them', () => {
+    const nodes = parse(
+      `import { test } from 'node:test'\nfunction helper() { // keep:full\n  return 42\n}\ntest('example', () => {\n  const x = helper()\n})`
+    )
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'typescript', text: `function helper() {\n  return 42\n}` },
+      { kind: 'code', lang: 'typescript', text: `const x = helper()`}
+    ])
+  })
+
+  test('// keep and // keep:full can be mixed', () => {
+    const nodes = parse(
+      `const CONFIG = { x: 1 } // keep\nfunction helper() { // keep:full\n  return 42\n}`
+    )
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'typescript', text: `const CONFIG = { x: 1 }\nfunction helper() {\n  return 42\n}`}
+    ])
+  })
+
 })
 
 describe('parse: code block merge (comment fence + test body)', () => {
