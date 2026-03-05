@@ -14,14 +14,13 @@ function mergeConsecutiveCodeBlocks(nodes: DocNode[]): DocNode[] {
   
   for (const node of nodes) {
     if (node.kind === 'code') {
-      const codeNode = node as CodeNode
-      if (currentCodeBlock && currentCodeBlock.lang === codeNode.lang && !currentCodeBlock.title && !codeNode.title) {
+      if (currentCodeBlock && currentCodeBlock.lang === node.lang && !currentCodeBlock.title && !node.title) {
         // Merge with current block
-        currentCodeBlock.text += '\n\n' + codeNode.text
+        currentCodeBlock.text += '\n\n' + node.text
       } else {
         // Save previous block and start new one
         if (currentCodeBlock) result.push(currentCodeBlock)
-        currentCodeBlock = { ...codeNode }
+        currentCodeBlock = { ...node }
       }
     } else {
       // Non-code node: flush current block and add this node
@@ -56,7 +55,7 @@ export function render(nodes: DocNode[]): string {
 function renderNode(node: DocNode): string {
   if (node.kind === 'prose') return node.text
   if (node.kind === 'output-file-display') return ''
-  let lang = langAliases[node.lang] ?? node.lang
+  const lang = langAliases[node.lang] ?? node.lang
   // Omit language if it's 'text'
   const info = lang === 'text' ? (node.title ?? '') : (node.title ? `${lang} ${node.title}` : lang)
   
