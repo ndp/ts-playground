@@ -2,10 +2,10 @@ import { example, metaExample } from '../../src/index.ts'
 import assert from 'node:assert/strict'
 
 // # Assertion Annotations
-//
+
 // Assertions inside `example()` bodies are rewritten as inline annotations,
 // turning passing tests into self-documenting code examples.
-//
+
 // ## assert.equal → `// => value`
 
 metaExample('example name', () => {
