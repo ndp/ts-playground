@@ -9,6 +9,9 @@ shellCommand returnCode assertions
 `describe` are by default omitted from md output. Alternatively, they can be converted to headers in the markdown output. User must specify the format: "##" means top leavel describe is marked by "##", and therefore nested describes would be marked by "###", and so on. This allows users to structure their documentation in a way that reflects the hierarchy of their tests and examples, making it easier to navigate and understand the generated markdown.  You could also specify "=" for "=====" underlines (and deeper ones would be be '-------'). If you specify '----', no nesting is supported... all describes will be '------', and therefore h2s.  This is passed in on the command line as --describe-format "#" or --describe-format "##"  or --describe-format "###" or --describe-format "=====" or --describe-format "----" (or whatever the user wants to use for headers). If the user doesn't specify a format, the default behavior is to omit describes from the markdown output.
 
 
+Allow "// keep" to end any non-comment line with "// keep" to indicate that the line should be included in the generated markdown output, even if it would normally be omitted. 
+
+
 ### Omit some comments from output
 Suggestion of //-  or /*-  to indicate that a comment should be omitted from the generated markdown output. This allows users to include comments in their code for clarity and documentation purposes without cluttering the generated documentation. The cli would simply ignore any comments that start with //- or /*- when generating the markdown output.
 

@@ -1,11 +1,9 @@
+import { shell, alias } from '../../src/index.ts'
+
 // # Aliases
 //
 // Use `alias` to register a short name for any shell command.
-// Alias calls do **not** appear in the documentation output —
-// they are invisible to the markdown renderer.
-
-import { shell, alias } from '../../src/index.ts'
-
+// In the `.ts` file we have `alias('greet', '/bin/echo')`.
 alias('greet', '/bin/echo')
 
 // ## Using an Alias
@@ -15,9 +13,11 @@ alias('greet', '/bin/echo')
 shell`greet "hello world"
 # => hello world`
 
-// ## Aliases for Long Commands
+// ## Custom paths
 //
-// Aliases are especially useful to shorten commands with flags or deep paths.
+// Your package may provide a special CLI or other tool to the users,
+// but you do not want to install it globally in order to generate the
+// documentation. eg. `alias('shout', '~/my-dev/tool7/bin/shout.sh')`.
 // Relative paths in the command string are resolved to absolute paths
 // at registration time, so the alias works regardless of the shell working directory.
 
