@@ -55,12 +55,9 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
 
       const prose = commentToProse(raw, r.kind)
       if (prose !== null) {
-        if (hasBlankLineBefore && prose !== '') {
-          nodes.push({ kind: 'prose', text: prose })
-          pendingNewParagraph = false
-        } else if (hasBlankLineBefore && prose === '') {
+        if (hasBlankLineBefore && prose === '') {
           pendingNewParagraph = true
-        } else if (pendingNewParagraph && prose !== '') {
+        } else if ((hasBlankLineBefore || pendingNewParagraph) && prose !== '') {
           nodes.push({ kind: 'prose', text: prose })
           pendingNewParagraph = false
         } else {
