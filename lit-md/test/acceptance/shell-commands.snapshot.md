@@ -19,3 +19,22 @@ Add `# => text` to assert that stdout contains a substring.
 echo "ready"
 # => ready
 ```
+
+### Asserting file output
+
+Add `# file: path contains "text"` to assert that a file created by the
+command contains a given substring.
+
+```sh
+echo "hello" > greeting.txt
+# file: greeting.txt contains "hello"
+```
+
+## Multiple Commands
+
+Multiple commands in one template run in sequence and render as a single `sh` block.
+
+```sh
+echo "first"
+echo "second"
+```
