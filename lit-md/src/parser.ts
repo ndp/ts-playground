@@ -248,7 +248,7 @@ function extractBodyCode(src: string, bodyOrBlock: ts.Block | ts.Expression): st
   const base = stmts[0]!.getFullStart()
   let raw = src.slice(base, extractEnd)
 
-  // Rewrite recognised assertion statements (end-to-start to preserve offsets)
+  // Rewrite recognized assertion statements (end-to-start to preserve offsets)
   const replacements: Array<{ start: number; end: number; text: string }> = []
   for (const stmt of stmts) {
     const rewritten = tryRewriteAssertion(src, stmt)
@@ -299,8 +299,8 @@ function isKeptImport(text: string): boolean {
   return /\/\/\s*keep\b/.test(text)
 }
 
-/** Rewrite a recognised assert.X(actual, expected) statement to a readable comment form.
- *  Returns the rewritten string, or null if the statement is not a recognised assertion.
+/** Rewrite a recognized assert.X(actual, expected) statement to a readable comment form.
+ *  Returns the rewritten string, or null if the statement is not a recognized assertion.
  *  Special case: assert.ok() at statement level returns empty string (drops the line). */
 function tryRewriteAssertion(src: string, stmt: ts.Statement): string | null {
   if (!ts.isExpressionStatement(stmt)) return null
@@ -412,10 +412,7 @@ function mergeOrPushProse(nodes: DocNode[], text: string): void {
 
 /** Transform nested assert.ok(expr) calls to expr // OK */
 function transformNestedAssertOk(code: string): string {
-  // Match assert.ok(...) but only those NOT at statement level
-  // Simple approach: match assert.ok(identifier) or assert.ok(expr)
-  // We use a regex to find and replace: assert\.ok\(([^)]+)\) → $1 // OK
-  // This is a heuristic that works for simple cases
+  // Heuristic: replaces assert.ok(expr) → expr // OK; may miss complex cases
   return code.replace(/assert\.ok\(([^)]+)\)/g, '$1 // OK')
 }
 
