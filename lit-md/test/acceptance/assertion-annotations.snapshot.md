@@ -58,3 +58,33 @@ It still runs and guards correctness, but doesn't clutter the docs.
 ```ts
 const items = [1, 2, 3]
 ```
+
+## assert.ok — Nested in Expression
+
+When `assert.ok(expr)` appears inside another expression (not at statement
+level), it is rewritten to `expr // OK`.
+
+```ts
+const xs = [1, 2, 3]
+(xs.length > 0 // OK, xs[0]) // => 1
+```
+
+## assert.strictEqual → `// => value`
+
+`assert.strictEqual` uses the same annotation style as `assert.equal`.
+
+```ts
+const count = [1, 2, 3].length
+count // => 3
+```
+
+## Multiple Assertions
+
+Each assertion in a body is independently annotated inline.
+
+```ts
+const s = 'hello'
+s.length // => 5
+s.toUpperCase() // => 'HELLO'
+s[0] // => 'h'
+```
