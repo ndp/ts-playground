@@ -342,8 +342,6 @@ function tryRewriteAssertion(src: string, stmt: ts.Statement): string | null {
   const [actual, expected] = expr.arguments
   if (!actual || !expected) return null
 
-  const actualText = src.slice(actual.getStart(), actual.getEnd())
-
   if (['equal', 'strictEqual', 'deepEqual', 'deepStrictEqual'].includes(method)) {
     return formatComparison(src, actual, expected, '=>')
   }
