@@ -364,7 +364,7 @@ test('t', () => {
 })
 `)
     const code = nodes.find(n => n.kind === 'code') as any
-    assert.equal(code?.text, "nodes // => [\n//   { kind: 'prose' }\n// ]")
+    assert.equal(code?.text, "nodes // => [\n      //   { kind: 'prose' }\n      // ]")
   })
 
   test('assert.notEqual(a, b) → a // != b', () => {

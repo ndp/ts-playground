@@ -277,7 +277,7 @@ function extractBodyCode(src: string, bodyOrBlock: ts.Block | ts.Expression): st
   // Rewrite recognized assertion statements (end-to-start to preserve offsets)
   const replacements: Array<{ start: number; end: number; text: string }> = []
   for (const stmt of stmts) {
-    const rewritten = tryRewriteAssertion(src, stmt)
+    const rewritten = tryRewriteAssertion(src, stmt, indent)
     if (rewritten !== null) {
       replacements.push({ start: stmt.getStart() - base, end: stmt.getEnd() - base, text: rewritten })
     }
@@ -343,7 +343,7 @@ function isKeptImport(text: string): boolean {
 /** Rewrite a recognized assert.X(actual, expected) statement to a readable comment form.
  *  Returns the rewritten string, or null if the statement is not a recognized assertion.
  *  Special case: assert.ok() at statement level returns empty string (drops the line). */
-function tryRewriteAssertion(src: string, stmt: ts.Statement): string | null {
+function tryRewriteAssertion(src: string, stmt: ts.Statement, bodyIndent: number): string | null {
   if (!ts.isExpressionStatement(stmt)) return null
   const expr = stmt.expression
   if (!ts.isCallExpression(expr)) return null
@@ -375,10 +375,10 @@ function tryRewriteAssertion(src: string, stmt: ts.Statement): string | null {
   if (!actual || !expected) return null
 
   if (['equal', 'strictEqual', 'deepEqual', 'deepStrictEqual'].includes(method)) {
-    return formatComparison(src, actual, expected, '=>')
+    return formatComparison(src, actual, expected, '=>', bodyIndent)
   }
   if (['notEqual', 'notStrictEqual', 'notDeepEqual', 'notDeepStrictEqual'].includes(method)) {
-    return formatComparison(src, actual, expected, '!=')
+    return formatComparison(src, actual, expected, '!=', bodyIndent)
   }
 
   return null
@@ -388,7 +388,8 @@ function formatComparison(
   src: string,
   actual: ts.Expression,
   expected: ts.Expression,
-  op: string
+  op: string,
+  bodyIndent: number
 ): string {
   const actualText = src.slice(actual.getStart(), actual.getEnd())
   const expectedRaw = src.slice(expected.getStart(), expected.getEnd())
@@ -401,8 +402,10 @@ function formatComparison(
     return `${actualText} // ${op} ${expectedText}`
   }
   // Multi-line: first line appended to actual, remaining lines become // comments
+  // Continuation lines are indented so that `//` aligns with the opening `//` after dedenting
   const first = lines[0]!
-  const rest = lines.slice(1).map(l => `// ${l}`)
+  const indent = ' '.repeat(actualText.length + 1 + bodyIndent)
+  const rest = lines.slice(1).map(l => `${indent}// ${l}`)
   return [`${actualText} // ${op} ${first}`, ...rest].join('\n')
 }
 
