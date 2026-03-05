@@ -4,7 +4,7 @@ import { writeFileSync, mkdtempSync, rmSync, readFileSync } from 'node:fs'
 import { join, isAbsolute } from 'node:path'
 import { tmpdir } from 'node:os'
 
-export type ProseNode = { kind: 'prose'; text: string; terminal?: true; noBlankAfter?: true }
+export type ProseNode = { kind: 'prose'; text: string; terminal?: true; noBlankAfter?: true; noBlankBefore?: true }
 export type CodeNode = { kind: 'code'; lang: string; text: string; title?: string }
 
 export type ShellCommandExecution = {
@@ -155,7 +155,7 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
                 .replace(/^metaExample\b/, 'example')
               nodes.push(codeNode(lang, rawCall, title))
               // 2. "becomes" prose
-              nodes.push({ kind: 'prose', text: 'becomes' })
+              nodes.push({ kind: 'prose', text: 'becomes', noBlankBefore: true, noBlankAfter: true })
               // 3. Rendered output as an md code block
               const langAlias = lang === 'typescript' ? 'ts' : lang === 'javascript' ? 'js' : lang
               const innerFence = `\`\`\`${langAlias}\n${code}\n\`\`\``

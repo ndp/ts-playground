@@ -9,9 +9,7 @@ example('example name', () => {
   assert.equal(len, 5)
 })
 ```
-
 becomes
-
 ````md
 ```ts
 const len = 'hello'.length

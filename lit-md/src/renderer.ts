@@ -45,7 +45,10 @@ export function render(nodes: DocNode[]): string {
   for (let i = 0; i < merged.length; i++) {
     if (i > 0) {
       const prev = merged[i - 1]!
-      out += prev.kind === 'prose' && prev.noBlankAfter ? '\n' : '\n\n'
+      const curr = merged[i]!
+      const noBlank = (prev.kind === 'prose' && prev.noBlankAfter) ||
+                      (curr.kind === 'prose' && curr.noBlankBefore)
+      out += noBlank ? '\n' : '\n\n'
     }
     out += renderNode(merged[i]!)
   }

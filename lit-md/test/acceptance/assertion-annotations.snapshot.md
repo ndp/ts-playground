@@ -11,9 +11,7 @@ example('example name', () => {
   assert.equal(len, 5)
 })
 ```
-
 becomes
-
 ````md
 ```ts
 const len = 'hello'.length
@@ -31,9 +29,7 @@ example('deepEqual single-line', () => {
   assert.deepEqual(nums, [1, 2, 3])
 })
 ```
-
 becomes
-
 ````md
 ```ts
 const nums = [1, 2, 3]
@@ -55,9 +51,7 @@ example('deepEqual multi-line', () => {
   })
 })
 ```
-
 becomes
-
 ````md
 ```ts
 const point = { x: 1, y: 2 }
@@ -76,9 +70,7 @@ example('notEqual', () => {
   assert.notEqual(value, null)
 })
 ```
-
 becomes
-
 ````md
 ```ts
 const value = getValue()
@@ -93,9 +85,7 @@ example('throws with pattern', () => {
   assert.throws(() => divide(1, 0), /division by zero/)
 })
 ```
-
 becomes
-
 ````md
 ```ts
 divide(1, 0) // throws /division by zero/
@@ -109,9 +99,7 @@ example('throws no pattern', () => {
   assert.throws(() => divide(1, 0))
 })
 ```
-
 becomes
-
 ````md
 ```ts
 divide(1, 0) // throws
@@ -129,9 +117,7 @@ example('ok dropped', () => {
   assert.ok(items.length > 0)
 })
 ```
-
 becomes
-
 ````md
 ```ts
 const items = [1, 2, 3]
@@ -148,9 +134,7 @@ example('strictEqual', () => {
   assert.strictEqual(count, 3)
 })
 ```
-
 becomes
-
 ````md
 ```ts
 const count = [1, 2, 3].length
@@ -170,9 +154,7 @@ example('multiple', () => {
   assert.equal(s[0], 'h')
 })
 ```
-
 becomes
-
 ````md
 ```ts
 const s = 'hello'
