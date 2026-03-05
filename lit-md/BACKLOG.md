@@ -3,75 +3,26 @@
 ## Engine
 shellCommand returnCode assertions
 
-### metaExample
-
-It looks like `example` but has a different output format. It is for producing documentation 
-for this tool itself. It will be used in its own acceptance tests and readme. 
-
-It works just like `example`, but before writing its normal output, it includes an
-`example` statement with exactly the same information as the `metaExample` statement. 
-
-This is followed by a text markdown node reading "becomes".
-
-Then, the normal output of the `example` statement is included as a markdown code block.
-Note that this is double quoting of the code block, so be careful.
-
-EXAMPLE
--------
-metaExample('example name', () => {
-    const len = 'hello'.length
-    assert.equal(len, 5)
-})
-
-Output
-------
-````ts
-example('example name', () => {
-  const len = 'hello'.length
-  assert.equal(len, 5)
-})
-````
-becomes
-````md
-```ts
-const len = 'hello'.length
-len // => 5
-```
-````
-
-EXAMPLE
--------
-metaExample(('example name') => {
-    const len = 'hello'.length
-    assert.equal(len, 5)
-})
-
-Output
-------
-```ts
-example('example name', () => {
-  const len = 'hello'.length
-  assert.equal(len, 5)
-})
-```
-becomes
-````md
-```ts
-const len = 'hello'.length
-len // => 5
-```
-````
-
 
 
  
 ## Markdown output
 
-`describe` are by default omitted from md output. Alternatively, they can be converted to headers in the markdown output. User must specify the format: "##" means top leavel describe is marked by "##", and therefore nested describes would be marked by "###", and so on. This allows users to structure their documentation in a way that reflects the hierarchy of their tests and examples, making it easier to navigate and understand the generated markdown.  You could also specify "=" for "=====" underlines (and deeper ones would be be '-------'). If you specify '----', no nesting is supported... all describes will be '------', and therefore h2s.  This is passed in on the command line as --describe-format "#" or --describe-format "##"  or --describe-format "###" or --describe-format "=====" or --describe-format "----" (or whatever the user wants to use for headers). If the user doesn't specify a format, the default behavior is to omit describes from the markdown output.
+Add a new CLI option --describe=<format>.
+Formats are:
+  --describe=hidden (default): current behavior; describes are omitted from markdown output
+  --describe="#": describes are converted to markdown headers  "#" (h1)
+  --describe="##": describes are converted to markdown headers  "##" (h2)
+  --describe="###": describes are converted to markdown headers  "###" (h3)
+  --describe="####": describes are converted to markdown headers  "####" (h4)
+
+If any of the header formats is chosen, nesting is supported. If a describe is nested
+inside another describe, it should be converted to a header that is one level deeper than its parent. For example, if the top-level describe is converted to "##", then a nested describe would be converted to "###", and a describe nested inside that would be converted to "####", and so on. If the user chooses the "hidden" format, describes will be omitted from the markdown output as they are currently.
 
 
 Allow "// keep" to end any non-comment line with "// keep" to indicate that the line should be included in the generated markdown output, even if it would normally be omitted. 
 
+Blank lines in the source code, if they are between two line comment lines, should be preserved in the generated markdown output as blank lines. This allows users to create paragraphs and separate sections in their documentation without needing to use additional comment lines.
 
 ### Omit some comments from output
 Suggestion of //-  or /*-  to indicate that a comment should be omitted from the generated markdown output. This allows users to include comments in their code for clarity and documentation purposes without cluttering the generated documentation. The cli would simply ignore any comments that start with //- or /*- when generating the markdown output.

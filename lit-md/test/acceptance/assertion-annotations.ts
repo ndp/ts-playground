@@ -6,56 +6,42 @@ import assert from 'node:assert/strict'
 // Assertions inside `example()` bodies are rewritten as inline annotations,
 // turning passing tests into self-documenting code examples.
 
-// ## assert.equal → `// => value`
+// ## Equality → `// => value`
 
-metaExample('example name', () => {
+metaExample('equal examples', () => {
   const len = 'hello'.length
   assert.equal(len, 5)
-})
 
-// ## assert.deepEqual — Single Line
-//
-// When the expected value fits on one line, it appears inline.
+  const count = [1, 2, 3].length
+  assert.strictEqual(count, 3)
 
-metaExample('deepEqual single-line', () => {
   const nums = [1, 2, 3]
   assert.deepEqual(nums, [1, 2, 3])
-})
 
-// ## assert.deepEqual — Multi-Line
-//
-// When the expected value spans multiple lines, the annotation wraps
-// across comment lines following the variable.
-
-metaExample('deepEqual multi-line', () => {
   const point = { x: 1, y: 2 }
   assert.deepEqual(point, {
     x: 1,
     y: 2
   })
-})
 
-// ## assert.notEqual → `// != value`
-
-metaExample('notEqual', () => {
   const value = getValue()
   assert.notEqual(value, null)
 })
 
-// ## assert.throws — With Pattern
+// ## Throws — With Pattern
 
 metaExample('throws with pattern', () => {
   assert.throws(() => divide(1, 0), /division by zero/)
 })
 
-// ## assert.throws — No Pattern
+// ## Throws — No Pattern
 
 metaExample('throws no pattern', () => {
   assert.throws(() => divide(1, 0))
 })
 
 // ## assert.ok — Dropped at Statement Level
-//
+
 // `assert.ok(expr)` as a standalone statement is silently removed from output.
 // It still runs and guards correctness, but doesn't clutter the docs.
 
@@ -64,17 +50,8 @@ metaExample('ok dropped', () => {
   assert.ok(items.length > 0)
 })
 
-// ## assert.strictEqual → `// => value`
-//
-// `assert.strictEqual` uses the same annotation style as `assert.equal`.
-
-metaExample('strictEqual', () => {
-  const count = [1, 2, 3].length
-  assert.strictEqual(count, 3)
-})
-
 // ## Multiple Assertions
-//
+
 // Each assertion in a body is independently annotated inline.
 
 metaExample('multiple', () => {

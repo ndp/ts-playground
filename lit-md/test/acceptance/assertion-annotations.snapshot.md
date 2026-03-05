@@ -3,69 +3,25 @@
 Assertions inside `example()` bodies are rewritten as inline annotations,
 turning passing tests into self-documenting code examples.
 
-## assert.equal → `// => value`
+## Equality → `// => value`
 
 ```ts
-example('example name', () => {
+example('equal examples', () => {
   const len = 'hello'.length
   assert.equal(len, 5)
-})
-```
-becomes
-````md
-```ts
-const len = 'hello'.length
-len // => 5
-```
-````
 
-## assert.deepEqual — Single Line
+  const count = [1, 2, 3].length
+  assert.strictEqual(count, 3)
 
-When the expected value fits on one line, it appears inline.
-
-```ts
-example('deepEqual single-line', () => {
   const nums = [1, 2, 3]
   assert.deepEqual(nums, [1, 2, 3])
-})
-```
-becomes
-````md
-```ts
-const nums = [1, 2, 3]
-nums // => [1, 2, 3]
-```
-````
 
-## assert.deepEqual — Multi-Line
-
-When the expected value spans multiple lines, the annotation wraps
-across comment lines following the variable.
-
-```ts
-example('deepEqual multi-line', () => {
   const point = { x: 1, y: 2 }
   assert.deepEqual(point, {
     x: 1,
     y: 2
   })
-})
-```
-becomes
-````md
-```ts
-const point = { x: 1, y: 2 }
-point // => {
-      //   x: 1,
-      //   y: 2
-      // }
-```
-````
 
-## assert.notEqual → `// != value`
-
-```ts
-example('notEqual', () => {
   const value = getValue()
   assert.notEqual(value, null)
 })
@@ -73,12 +29,23 @@ example('notEqual', () => {
 becomes
 ````md
 ```ts
+const len = 'hello'.length
+len // => 5
+const count = [1, 2, 3].length
+count // => 3
+const nums = [1, 2, 3]
+nums // => [1, 2, 3]
+const point = { x: 1, y: 2 }
+point // => {
+      //   x: 1,
+      //   y: 2
+      // }
 const value = getValue()
 value // != null
 ```
 ````
 
-## assert.throws — With Pattern
+## Throws — With Pattern
 
 ```ts
 example('throws with pattern', () => {
@@ -92,7 +59,7 @@ divide(1, 0) // throws /division by zero/
 ```
 ````
 
-## assert.throws — No Pattern
+## Throws — No Pattern
 
 ```ts
 example('throws no pattern', () => {
@@ -121,24 +88,6 @@ becomes
 ````md
 ```ts
 const items = [1, 2, 3]
-```
-````
-
-## assert.strictEqual → `// => value`
-
-`assert.strictEqual` uses the same annotation style as `assert.equal`.
-
-```ts
-example('strictEqual', () => {
-  const count = [1, 2, 3].length
-  assert.strictEqual(count, 3)
-})
-```
-becomes
-````md
-```ts
-const count = [1, 2, 3].length
-count // => 3
 ```
 ````
 
