@@ -418,3 +418,37 @@ shellExample provides more control and structured options for shell command exam
 
 ### Basic Usage
 ### With Assertions
+### Input and Output Files
+### Options Reference
+
+#### displayCommand
+
+- Type: boolean | 'hidden'
+- When 'hidden', command is executed but not shown in output
+- Default: true (command is shown)
+
+#### stdout
+
+- Type: { contains: string; display?: boolean }
+- contains: Assert output contains this string (required)
+- display: When true, dynamically execute and show actual stdout (default: false)
+
+#### outputFiles
+
+Array of output file assertions:
+
+- path: File path (relative to temp directory)
+- contains or matches: String or regex to match file contents
+- displayPath: Show the filename (default: true)
+- summary: Show summary line before contents (default: true)
+
+#### inputFiles
+
+Array of input files to create:
+
+- path: File path
+- content: File contents
+- displayPath: Show the filename (default: true)
+- summary: Show summary line (default: true)
+
+#### Example with All Options

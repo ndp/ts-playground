@@ -305,10 +305,9 @@ example('basic shellExample', () => shellExample('echo "hello world"'))
 */
 example('contains', () => shellExample('echo "ok"', {
   stdout: {contains: 'ok'}
-}))/*
-
+}))
+/*
 ### Input and Output Files
-
 */
 example('matches', () => shellExample('cat input.txt > output.txt', {
   inputFiles: [
@@ -317,8 +316,10 @@ example('matches', () => shellExample('cat input.txt > output.txt', {
   outputFiles: [
     {path: 'output.txt', matches: /Hello/}
   ]
-}))/*
+}))
 
+
+/*
 ### Options Reference
 
 #### displayCommand
