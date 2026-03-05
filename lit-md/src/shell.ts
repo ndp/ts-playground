@@ -80,19 +80,14 @@ export function _runShellExample(cmd: string, opts: ShellExampleOpts): void {
     for (const f of opts.inputFiles ?? []) {
       writeFileSync(resolvePath(f.path), f.content, 'utf8')
     }
-    let stdout: string
-    try {
-      const prefix = buildAliasPrefix()
-      const fullCmd = prefix ? `${prefix}${cmd}` : cmd
-      const result = spawnSync(fullCmd, { shell: true, encoding: 'utf8', cwd: tmpDir })
-      if (result.status !== 0) {
-        const err = result.stderr || result.error?.message || ''
-        throw new Error(`exit ${result.status ?? 'null'}${err ? ': ' + err : ''}`)
-      }
-      stdout = result.stdout
-    } catch (e: any) {
-      throw new Error(`Command failed: ${cmd}\n${e.message}`)
+    const prefix = buildAliasPrefix()
+    const fullCmd = prefix ? `${prefix}${cmd}` : cmd
+    const result = spawnSync(fullCmd, { shell: true, encoding: 'utf8', cwd: tmpDir })
+    if (result.status !== 0) {
+      const err = result.stderr || result.error?.message || ''
+      throw new Error(`Command failed: ${cmd}\nexit ${result.status ?? 'null'}${err ? ': ' + err : ''}`)
     }
+    const stdout = result.stdout
     if (opts.stdout !== undefined) {
       if (opts.stdout.contains !== undefined) {
         assert.ok(
