@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-import { readFileSync, writeFileSync, mkdirSync } from 'fs'
-import { join, dirname, basename, extname, resolve } from 'path'
-import { spawnSync } from 'child_process'
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
+import { join, dirname, basename, extname, resolve } from 'node:path'
+import { spawnSync } from 'node:child_process'
 import { parse } from './parser.ts'
 import { render } from './renderer.ts'
 import { typecheck } from './typecheck.ts'
