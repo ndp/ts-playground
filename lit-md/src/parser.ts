@@ -751,15 +751,6 @@ function executeShellCommand(cmd: string, inputFiles: Array<{ path: string; cont
   }
 }
 
-/** Executes a shell command with optional input files and captures stdout (legacy - use executeShellCommand) */
-function captureCommandOutput(cmd: string, inputFiles: Array<{ path: string; content: string }>): string {
-  const result = executeShellCommand(cmd, inputFiles, [])
-  if (!result || result.exitCode !== 0) {
-    throw new Error(`Command failed with exit code ${result?.exitCode ?? 'unknown'}`)
-  }
-  return result.stdout
-}
-
 /** Reads shellExample options and appends annotation lines (# => ..., single-line # input-file: ...) */
 function appendShellExampleAnnotations(
   src: string,
