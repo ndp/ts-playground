@@ -169,16 +169,9 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
             }
             
             // Read displayCommand option (default: true to show command)
-            let displayCommand = true
-            if (optsArg && ts.isObjectLiteralExpression(optsArg)) {
-              const displayProp = getProp(optsArg, 'displayCommand')
-              if (displayProp) {
-                if (displayProp.initializer.kind === ts.SyntaxKind.FalseKeyword || 
-                    (ts.isStringLiteralLike(displayProp.initializer) && displayProp.initializer.text === 'hidden')) {
-                  displayCommand = false
-                }
-              }
-            }
+            const displayCommand = !optsArg || !ts.isObjectLiteralExpression(optsArg)
+              ? true
+              : readBoolOption(getProp(optsArg, 'displayCommand'))
             
             // Add the shell command block (only if there's content to display)
             const lines: string[] = displayCommand ? [`$ ${cmd}`] : []
@@ -216,6 +209,21 @@ function getProp(obj: ts.ObjectLiteralExpression, name: string): ts.PropertyAssi
   return obj.properties.find(
     (p): p is ts.PropertyAssignment => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === name
   )
+}
+
+/** Returns false if prop's initializer is `false` or the string `'hidden'`, true otherwise. */
+function readBoolOption(prop: ts.PropertyAssignment | undefined): boolean {
+  if (!prop) return true
+  const init = prop.initializer
+  if (init.kind === ts.SyntaxKind.FalseKeyword) return false
+  if (ts.isStringLiteralLike(init) && init.text === 'hidden') return false
+  return true
+}
+
+/** Returns false if prop's initializer is `false`, true otherwise. */
+function readFlag(prop: ts.PropertyAssignment | undefined): boolean {
+  if (!prop) return true
+  return prop.initializer.kind !== ts.SyntaxKind.FalseKeyword
 }
 
 function getStringArg(call: ts.CallExpression, index: number): string | null {
@@ -510,22 +518,8 @@ function processShellExampleInputFiles(src: string, opts: ts.ObjectLiteralExpres
     if (!pathProp || !ts.isStringLiteralLike(pathProp.initializer)) continue
     const filePath = pathProp.initializer.text
 
-    // Read displayPath option (default: true to show path)
-    let displayPath = true
-    if (displayPathProp) {
-      if (displayPathProp.initializer.kind === ts.SyntaxKind.FalseKeyword || 
-          (ts.isStringLiteralLike(displayPathProp.initializer) && displayPathProp.initializer.text === 'hidden')) {
-        displayPath = false
-      }
-    }
-
-    // Read summary option (default: true to show summary)
-    let summary = true
-    if (summaryProp) {
-      if (summaryProp.initializer.kind === ts.SyntaxKind.FalseKeyword) {
-        summary = false
-      }
-    }
+    const displayPath = readBoolOption(displayPathProp)
+    const summary = readFlag(summaryProp)
 
     if (contentProp && ts.isStringLiteralLike(contentProp.initializer)) {
       const content = contentProp.initializer.text
@@ -581,22 +575,8 @@ function processShellExampleOutputFiles(
     const filePath = pathProp.initializer.text
     const lang = getLanguageFromExtension(filePath)
 
-    // Read displayPath option (default: true to show path)
-    let displayPath = true
-    if (displayPathProp) {
-      if (displayPathProp.initializer.kind === ts.SyntaxKind.FalseKeyword || 
-          (ts.isStringLiteralLike(displayPathProp.initializer) && displayPathProp.initializer.text === 'hidden')) {
-        displayPath = false
-      }
-    }
-
-    // Read summary option (default: true to show summary)
-    let summary = true
-    if (summaryProp) {
-      if (summaryProp.initializer.kind === ts.SyntaxKind.FalseKeyword) {
-        summary = false
-      }
-    }
+    const displayPath = readBoolOption(displayPathProp)
+    const summary = readFlag(summaryProp)
 
     let emitDisplayNode = display !== 'none'
     let proseSuffix = '.'
@@ -835,22 +815,8 @@ function appendShellExampleAnnotations(
         if (!pathProp || !ts.isStringLiteralLike(pathProp.initializer)) continue
         const filePath = pathProp.initializer.text
 
-        // Read displayPath option (default: true to show path)
-        let displayPath = true
-        if (displayPathProp) {
-          if (displayPathProp.initializer.kind === ts.SyntaxKind.FalseKeyword || 
-              (ts.isStringLiteralLike(displayPathProp.initializer) && displayPathProp.initializer.text === 'hidden')) {
-            displayPath = false
-          }
-        }
-
-        // Read summary option (default: true to show summary)
-        let summary = true
-        if (summaryProp) {
-          if (summaryProp.initializer.kind === ts.SyntaxKind.FalseKeyword) {
-            summary = false
-          }
-        }
+        const displayPath = readBoolOption(displayPathProp)
+        const summary = readFlag(summaryProp)
 
         if (contentProp && ts.isStringLiteralLike(contentProp.initializer)) {
           const content = contentProp.initializer.text
