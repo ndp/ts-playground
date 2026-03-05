@@ -7,6 +7,7 @@ import { render } from './renderer.ts'
 import { typecheck } from './typecheck.ts'
 import { stripTypesFlag } from './shell.ts'
 import { resolveOutputFiles } from './resolver.ts'
+import { resolveDescribeFormat, resetDescribeFormat } from './describe-format.ts'
 
 // --- Argument parsing ---
 
@@ -120,33 +121,49 @@ if (runTests) {
 
 // --- Generate markdown ---
 
-for (const inputPath of inputPaths) {
-  const src = readFileSync(inputPath, 'utf8')
-  const lang = extname(inputPath) === '.js' ? 'javascript' : 'typescript'
-  let nodes = parse(src, lang)
-  if (!dryrun) {
-    nodes = resolveOutputFiles(nodes)
-  }
-  const md = render(nodes, describeFormat)
+;(async () => {
+  for (const inputPath of inputPaths) {
+    // Reset the describe format override before processing each file
+    resetDescribeFormat()
+    
+    // Import the file to allow module-level setup (like setDescribeFormat calls)
+    const absolutePath = resolve(inputPath)
+    try {
+      await import(absolutePath)
+    } catch {
+      // File might not be valid JavaScript/TypeScript module, continue
+    }
+    
+    const src = readFileSync(inputPath, 'utf8')
+    const lang = extname(inputPath) === '.js' ? 'javascript' : 'typescript'
+    let nodes = parse(src, lang)
+    if (!dryrun) {
+      nodes = resolveOutputFiles(nodes)
+    }
+    // Use resolved format (CLI value + file override)
+    const finalDescribeFormat = resolveDescribeFormat(describeFormat)
+    const md = render(nodes, finalDescribeFormat)
 
-  let outPath: string
-  if (updateSnapshots) {
-    const base = basename(inputPath, extname(inputPath))
-    outPath = join(dirname(resolve(inputPath)), `${base}.snapshot.md`)
-  } else if (outFlag) {
-    outPath = outFlag
-  } else if (outputDir) {
-    mkdirSync(outputDir, { recursive: true })
-    outPath = join(outputDir, basename(inputPath, extname(inputPath)) + '.md')
-  } else {
-    outPath = join(dirname(inputPath), basename(inputPath, extname(inputPath)) + '.md')
-  }
+    let outPath: string
+    if (updateSnapshots) {
+      const base = basename(inputPath, extname(inputPath))
+      outPath = join(dirname(resolve(inputPath)), `${base}.snapshot.md`)
+    } else if (outFlag) {
+      outPath = outFlag
+    } else if (outputDir) {
+      mkdirSync(outputDir, { recursive: true })
+      outPath = join(outputDir, basename(inputPath, extname(inputPath)) + '.md')
+    } else {
+      outPath = join(dirname(inputPath), basename(inputPath, extname(inputPath)) + '.md')
+    }
 
-  if (dryrun) {
-    console.log(`dry run: would write ${outPath}`)
-  } else {
-    writeFileSync(outPath, md + '\n', 'utf8')
-    console.log(`wrote ${outPath}`)
+    if (dryrun) {
+      console.log(`dry run: would write ${outPath}`)
+    } else {
+      writeFileSync(outPath, md + '\n', 'utf8')
+      console.log(`wrote ${outPath}`)
+    }
   }
-}
+})()
+
 

@@ -7,6 +7,7 @@ import {dirname, join, extname, basename} from 'path'
 import {parse} from '../src/parser.ts'
 import {render} from '../src/renderer.ts'
 import {resolveOutputFiles} from '../src/resolver.ts'
+import {resetDescribeFormat} from '../src/describe-format.ts'
 
 const __dir = dirname(fileURLToPath(import.meta.url))
 const files = readdirSync(join(__dir, 'acceptance'), { withFileTypes: true })
@@ -49,9 +50,19 @@ function computeDiff(name: string, expected: string, actual: string): string | n
 describe('acceptance', () => {
   files.forEach(dirent => {
     const name = basename(dirent.name, extname(dirent.name))
-    test(name, () => {
+    test(name, async () => {
+      // Reset the describe format override before each test
+      resetDescribeFormat()
+      
       const inputPath = join(__dir, 'acceptance', dirent.name)
       const snapshotPath = join(__dir, 'acceptance', `${name}.snapshot.md`)
+
+      // Import the file to allow module-level setup (like setDescribeFormat calls)
+      try {
+        await import(inputPath)
+      } catch {
+        // File might not be importable, continue
+      }
 
       const src = readFileSync(inputPath, 'utf8')
       const lang = extname(inputPath) === '.js' ? 'javascript' : 'typescript'
@@ -64,7 +75,9 @@ describe('acceptance', () => {
       else if (name.includes('describe-h3')) describeFormat = '###'
       else if (name.includes('describe-h4')) describeFormat = '####'
       
-      const generated = render(resolveOutputFiles(parse(src, lang)), describeFormat).trimEnd()
+      const { resolveDescribeFormat } = await import('../src/describe-format.ts')
+      const finalDescribeFormat = resolveDescribeFormat(describeFormat)
+      const generated = render(resolveOutputFiles(parse(src, lang)), finalDescribeFormat).trimEnd()
       const expected = readFileSync(snapshotPath, 'utf8').trimEnd()
 
       const diff = computeDiff(name, expected, generated)
