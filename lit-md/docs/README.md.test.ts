@@ -129,9 +129,14 @@ shellExample('lit-md --describe="#" tmp.ts', {
     contains: '## Validation'
   }]
 })
-// Format options: `hidden` (default), `#`, `##`, `###`, `####`
-// Each represents the base header level for top-level describes.
-// Nested describes go one level deeper.
+// Format options: `hidden` (default), `#`, `##`, `###`, `####`, `auto`
+// - `hidden`: Omit describes (default behavior)
+// - `#`, `##`, `###`, `####`: Explicitly set base header level for top-level describes
+// - `auto`: Dynamically determine header levels based on document structure
+//
+// With explicit levels, nested describes go one level deeper than their parent.
+// With `auto`, if no headers exist yet, describes start at h1. Otherwise,
+// describes start one level deeper than the last header in the document.
 
 shellExample('lit-md --describe="##" tmp.ts', {
   inputFiles: [{
@@ -144,6 +149,21 @@ shellExample('lit-md --describe="##" tmp.ts', {
   }, {
     path: 'tmp.md',
     contains: '### Nested'
+  }]
+})
+
+// The `auto` format intelligently adapts to existing document structure.
+shellExample('lit-md --describe="auto" tmp.ts', {
+  inputFiles: [{
+    path: 'tmp.ts',
+    content: `import { describe, example } from 'node:test'\n\ndescribe('First Group', () => {\n  example('test 1', () => {})\n})\n\n// # Existing Header\n\ndescribe('Second Group', () => {\n  example('test 2', () => {})\n})`
+  }],
+  outputFiles: [{
+    path: 'tmp.md',
+    contains: '# First Group'  // No prior headers, so starts at h1
+  }, {
+    path: 'tmp.md',
+    contains: '## Second Group'  // After h1 header, starts at h2
   }]
 })
 

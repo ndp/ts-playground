@@ -42,6 +42,7 @@ export function render(nodes: DocNode[], describeFormat: string = 'hidden'): str
   const merged = mergeConsecutiveCodeBlocks(nodes.filter(n => n.kind !== 'output-file-display'))
   if (!merged.length) return ''
   let out = ''
+  let lastHeaderLevel = 0
   for (let i = 0; i < merged.length; i++) {
     if (i > 0) {
       const prev = merged[i - 1]!
@@ -50,17 +51,38 @@ export function render(nodes: DocNode[], describeFormat: string = 'hidden'): str
                       (curr.kind === 'prose' && curr.noBlankBefore)
       out += noBlank ? '\n' : '\n\n'
     }
-    out += renderNode(merged[i]!, describeFormat)
+    const rendered = renderNode(merged[i]!, describeFormat, lastHeaderLevel)
+    out += rendered
+    // Update lastHeaderLevel after rendering
+    const node = merged[i]!
+    if (node.kind === 'describe' && describeFormat !== 'hidden') {
+      const baseLevel = describeFormat === 'auto' ? lastHeaderLevel : describeFormat.length
+      lastHeaderLevel = baseLevel + node.depth
+      lastHeaderLevel = Math.min(lastHeaderLevel, 6)
+    } else if (node.kind === 'prose') {
+      // Check for headers in prose and update lastHeaderLevel
+      const proseHeaderLevel = getMaxHeaderLevelInProse(node.text)
+      if (proseHeaderLevel > 0) {
+        lastHeaderLevel = proseHeaderLevel
+      }
+    }
   }
   return out
 }
 
-function renderNode(node: DocNode, describeFormat: string = 'hidden'): string {
+function renderNode(node: DocNode, describeFormat: string = 'hidden', lastHeaderLevel: number = 0): string {
   if (node.kind === 'prose') return node.text
   if (node.kind === 'output-file-display') return ''
   if (node.kind === 'describe') {
     if (describeFormat === 'hidden') return ''
-    const baseLevel = describeFormat.length > 0 ? describeFormat.length : 1
+    let baseLevel: number
+    if (describeFormat === 'auto') {
+      // If no headers yet, start at h1. Otherwise, go one level deeper than last header
+      baseLevel = lastHeaderLevel === 0 ? 1 : lastHeaderLevel + 1
+    } else {
+      // Explicit format (e.g., "#", "##", etc.)
+      baseLevel = describeFormat.length > 0 ? describeFormat.length : 1
+    }
     const level = baseLevel + node.depth
     const hashes = '#'.repeat(Math.min(level, 6))
     return `${hashes} ${node.name}`
@@ -90,4 +112,19 @@ function findMaxBacktickSequence(text: string): number {
     }
   }
   return maxSeq
+}
+
+/** Detects the maximum header level in prose text (1-6) */
+function getMaxHeaderLevelInProse(text: string): number {
+  let maxLevel = 0
+  const lines = text.split('\n')
+  for (const line of lines) {
+    // Match lines that start with # characters
+    const match = line.match(/^(#+)\s/)
+    if (match) {
+      const level = match[1].length
+      maxLevel = Math.max(maxLevel, Math.min(level, 6))
+    }
+  }
+  return maxLevel
 }

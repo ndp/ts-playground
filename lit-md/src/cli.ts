@@ -62,8 +62,14 @@ Options:
   --out <output.md>         Write to a specific output file (requires single input)
   --outputDir <dir>         Write generated markdown files to this directory
   --describe <format>       Control describe() block rendering (default: hidden)
-                            Formats: hidden, #, ##, ###, ####
-                            With header formats, nesting is supported
+                            Formats:
+                              hidden  - Omit describes (default)
+                              #       - Render as h1 headers, nested as h2, h3, etc.
+                              ##      - Render as h2 headers, nested as h3, h4, etc.
+                              ###     - Render as h3 headers, nested as h4, h5, etc.
+                              ####    - Render as h4 headers, nested as h5, h6, etc.
+                              auto    - Dynamically determine level based on document structure
+                                        (h1 if no headers exist, else one level deeper than last header)
 
 Examples:
   lit-md README.md.test.ts
@@ -71,6 +77,7 @@ Examples:
   lit-md --out /tmp/docs.md README.md.test.ts
   lit-md --outputDir ./docs src/**/*.md.test.ts
   lit-md --describe="#" README.md.test.ts
+  lit-md --describe="auto" README.md.test.ts
 `)
   process.exit(0)
 }
@@ -79,6 +86,12 @@ Examples:
 
 if (!inputPaths.length) {
   console.error('Usage: lit-md [--test] [--typecheck] [--dryrun] [-u|--update-snapshots] [--out <output.md>] [--outputDir <dir>] <file.ts|js> [file2 ...]')
+  process.exit(1)
+}
+
+const validDescribeFormats = ['hidden', 'auto', '#', '##', '###', '####']
+if (!validDescribeFormats.includes(describeFormat)) {
+  console.error(`error: invalid --describe format: ${describeFormat}. Valid formats: ${validDescribeFormats.join(', ')}`)
   process.exit(1)
 }
 
