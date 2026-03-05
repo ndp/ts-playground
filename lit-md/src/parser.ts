@@ -75,17 +75,18 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
   }
 
   function processStatement(stmt: ts.Statement): void {
-    // Handle import declarations
+    // Check if this statement has // keep comment
+    const lineText = getStatementLine(stmt, src)
+    if (lineText !== null && hasKeepComment(lineText)) {
+      const title = pendingFileLabel
+      pendingFileLabel = undefined
+      const cleanedLine = lineText.replace(/\s*\/\/\s*keep\b.*$/, '')
+      mergeOrPushCode(nodes, cleanedLine, lang, title)
+      return
+    }
+
+    // Handle import declarations (legacy code path, now handled above)
     if (ts.isImportDeclaration(stmt)) {
-      // Get the full line text (including any trailing comment like // keep)
-      const lineEnd = src.indexOf('\n', stmt.getEnd())
-      const lineText = src.slice(stmt.getStart(), lineEnd === -1 ? src.length : lineEnd).trimEnd()
-      if (isKeptImport(lineText)) {
-        const title = pendingFileLabel
-        pendingFileLabel = undefined
-        const cleanedLine = lineText.replace(/\s*\/\/\s*keep\b.*$/, '')
-        mergeOrPushCode(nodes, cleanedLine, lang, title)
-      }
       return
     }
 
@@ -338,6 +339,26 @@ function commentToProse(raw: string, kind: ts.CommentKind): string | null {
 
 function isKeptImport(text: string): boolean {
   return /\/\/\s*keep\b/.test(text)
+}
+
+function hasKeepComment(text: string): boolean {
+  return /\/\/\s*keep\b/.test(text)
+}
+
+/** Extract the full line text of a statement (from statement start to end of line).
+ *  Returns null if the statement spans multiple lines or we can't extract it. */
+function getStatementLine(stmt: ts.Statement, src: string): string | null {
+  const lineEnd = src.indexOf('\n', stmt.getEnd())
+  const lineText = src.slice(stmt.getStart(), lineEnd === -1 ? src.length : lineEnd).trimEnd()
+  
+  // Check if statement fits on one line (heuristic: doesn't contain opening brace on different line)
+  const lines = lineText.split('\n')
+  if (lines.length > 1) {
+    // Multi-line statement - for now, only process if it's a simple case
+    return null
+  }
+  
+  return lineText
 }
 
 /** Rewrite a recognized assert.X(actual, expected) statement to a readable comment form.

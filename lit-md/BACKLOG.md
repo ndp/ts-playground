@@ -20,9 +20,7 @@ If any of the header formats is chosen, nesting is supported. If a describe is n
 inside another describe, it should be converted to a header that is one level deeper than its parent. For example, if the top-level describe is converted to "##", then a nested describe would be converted to "###", and a describe nested inside that would be converted to "####", and so on. If the user chooses the "hidden" format, describes will be omitted from the markdown output as they are currently.
 
 
-Allow "// keep" to end any non-comment line with "// keep" to indicate that the line should be included in the generated markdown output, even if it would normally be omitted. 
-
-Blank lines in the source code, if they are between two line comment lines, should be preserved in the generated markdown output as blank lines. This allows users to create paragraphs and separate sections in their documentation without needing to use additional comment lines.
+Allow "// keep" to end ts code lines, eg. functions or variable declarations or import statements (already implemented).  "// keep" to indicate that the line should be included in the generated markdown output, even if it would normally be omitted. 
 
 ### Omit some comments from output
 Suggestion of //-  or /*-  to indicate that a comment should be omitted from the generated markdown output. This allows users to include comments in their code for clarity and documentation purposes without cluttering the generated documentation. The cli would simply ignore any comments that start with //- or /*- when generating the markdown output.

@@ -207,6 +207,43 @@ describe('parse: import filtering', () => {
     ])
   })
 
+  test('// keep on variable declaration keeps it', () => {
+    const nodes = parse(
+      `const CONFIG = { timeout: 5000 } // keep`
+    )
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'typescript', text: `const CONFIG = { timeout: 5000 }`}
+    ])
+  })
+
+  test('// keep on type alias keeps it', () => {
+    const nodes = parse(
+      `type Alias = string // keep`
+    )
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'typescript', text: `type Alias = string`}
+    ])
+  })
+
+  test('multiple statements with // keep are merged', () => {
+    const nodes = parse(
+      `const CONFIG = { timeout: 5000 } // keep\ntype Alias = string // keep`
+    )
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'typescript', text: `const CONFIG = { timeout: 5000 }\ntype Alias = string`}
+    ])
+  })
+
+  test('// keep with test body creates separate code blocks (for now)', () => {
+    const nodes = parse(
+      `import { test } from 'node:test'\nconst CONFIG = { x: 1 } // keep\ntest('example', () => {\n  const y = 1\n})`
+    )
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'typescript', text: `const CONFIG = { x: 1 }` },
+      { kind: 'code', lang: 'typescript', text: `const y = 1`}
+    ])
+  })
+
 })
 
 describe('parse: code block merge (comment fence + test body)', () => {
