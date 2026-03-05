@@ -91,7 +91,16 @@ export function _runShellExample(cmd: string, opts: ShellExampleOpts): void {
       )
     }
     for (const fa of opts.outputFiles ?? []) {
-      const content = readFileSync(resolvePath(fa.path), 'utf8')
+      let content: string
+      try {
+        content = readFileSync(resolvePath(fa.path), 'utf8')
+      } catch (e) {
+        const err = e as NodeJS.ErrnoException
+        if (err.code === 'ENOENT') {
+          throw new Error(`Output file not found: ${fa.path}\n\nThe command may not have created this file, or it may be in a different location.\nCommand: ${cmd}`)
+        }
+        throw e
+      }
       if (fa.contains !== undefined) {
         assert.ok(content.includes(fa.contains), `file ${fa.path} does not contain: ${JSON.stringify(fa.contains)}`)
       }

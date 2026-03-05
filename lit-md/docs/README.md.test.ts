@@ -66,7 +66,7 @@ shellExample('lit-md tmp.ts', {
     content: `import { example } from 'node:test'\nimport assert from 'node:assert/strict'\n\nexample('greet', () => {\n  const msg = 'Hello, world!'\n  assert.equal(msg.length, 13)\n})`
   }],
   outputFiles: [{
-    path: 'tmp.md',
+    path: 'tmp.md'
   }]
 })
 
@@ -270,7 +270,7 @@ describe('shellExample structured', () => {
   example('output file contents', () => {
     shellExample('echo "Hello, World!" | tee greeting.txt', {
       stdout: {
-        contains:"Hello",
+        contains: "Hello",
         display: true /* outputs standard out after the command */
       },
       outputFiles: [{
@@ -282,7 +282,90 @@ describe('shellExample structured', () => {
     })
   })
   shellExample('echo "Hello, World!" | tee greeting.txt', {
-    stdout: {contains:"Hello", display: true},
+    stdout: {contains: "Hello", display: true},
     outputFiles: [{contains: 'Hello', path: 'greeting.txt', summary: true}]
   })
 })
+
+/*
+## shellExample
+
+shellExample provides more control and structured options for shell command examples. Use when you need to:
+
+- Capture and display stdout dynamically
+- Create input files before running
+- Assert output files match patterns
+- Hide/customize what's displayed
+
+### Basic Usage
+*/
+example('basic shellExample', () => shellExample('echo "hello world"'))
+/*
+### With Assertions
+*/
+example('contains', () => shellExample('echo "ok"', {
+  stdout: {contains: 'ok'}
+}))/*
+
+### Input and Output Files
+
+*/
+example('matches', () => shellExample('cat input.txt > output.txt', {
+  inputFiles: [
+    {path: 'input.txt', content: 'Hello'}
+  ],
+  outputFiles: [
+    {path: 'output.txt', matches: /Hello/}
+  ]
+}))/*
+
+### Options Reference
+
+#### displayCommand
+
+- Type: boolean | 'hidden'
+- When 'hidden', command is executed but not shown in output
+- Default: true (command is shown)
+
+#### stdout
+
+- Type: { contains: string; display?: boolean }
+- contains: Assert output contains this string (required)
+- display: When true, dynamically execute and show actual stdout (default: false)
+
+#### outputFiles
+
+Array of output file assertions:
+
+- path: File path (relative to temp directory)
+- contains or matches: String or regex to match file contents
+- displayPath: Show the filename (default: true)
+- summary: Show summary line before contents (default: true)
+
+#### inputFiles
+
+Array of input files to create:
+
+- path: File path
+- content: File contents
+- displayPath: Show the filename (default: true)
+- summary: Show summary line (default: true)
+
+#### Example with All Options
+
+*/
+example('all options', () =>
+  shellExample(
+    'cat input.txt && echo "Done" | tee result.log', {
+      displayCommand: true,
+      inputFiles: [
+        {path: 'input.txt', content: 'Config data', displayPath: true, summary: true}
+      ],
+      stdout: {
+        contains: 'Done',
+        display: true  // Show actual output
+      },
+      outputFiles: [
+        {path: 'result.log', matches: /Done/, displayPath: true, summary: true}
+      ]
+    }))

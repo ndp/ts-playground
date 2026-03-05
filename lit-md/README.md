@@ -385,7 +385,7 @@ You can even output the output file contents, or the stdout:
 ```ts
 shellExample('echo "Hello, World!" | tee greeting.txt', {
   stdout: {
-    contains:"Hello",
+    contains: "Hello",
     display: true /* outputs standard out after the command */
   },
   outputFiles: [{
@@ -406,3 +406,15 @@ Output file `greeting.txt` contains `Hello`:
 ```
 Hello, World!
 ```
+
+## shellExample
+
+shellExample provides more control and structured options for shell command examples. Use when you need to:
+
+- Capture and display stdout dynamically
+- Create input files before running
+- Assert output files match patterns
+- Hide/customize what's displayed
+
+### Basic Usage
+### With Assertions
