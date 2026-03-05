@@ -55,7 +55,16 @@ describe('acceptance', () => {
 
       const src = readFileSync(inputPath, 'utf8')
       const lang = extname(inputPath) === '.js' ? 'javascript' : 'typescript'
-      const generated = render(resolveOutputFiles(parse(src, lang))).trimEnd()
+      
+      // Detect describe format from filename (e.g., describe-h1 -> #)
+      let describeFormat = 'hidden'
+      if (name.includes('describe-hidden')) describeFormat = 'hidden'
+      else if (name.includes('describe-h1')) describeFormat = '#'
+      else if (name.includes('describe-h2')) describeFormat = '##'
+      else if (name.includes('describe-h3')) describeFormat = '###'
+      else if (name.includes('describe-h4')) describeFormat = '####'
+      
+      const generated = render(resolveOutputFiles(parse(src, lang)), describeFormat).trimEnd()
       const expected = readFileSync(snapshotPath, 'utf8').trimEnd()
 
       const diff = computeDiff(name, expected, generated)

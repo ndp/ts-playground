@@ -110,7 +110,7 @@ test('example', () => {
 
 describe('parse: describe() transparency', () => {
 
-  test('describe wrapper is transparent — code inside is still extracted', () => {
+  test('describe wrapper extracts code inside with describe node', () => {
     const nodes = parse(`
 import { describe, test } from 'node:test'
 describe('group', () => {
@@ -120,19 +120,23 @@ describe('group', () => {
 })
 `)
     assert.deepEqual(nodes, [
+      { kind: 'describe', name: 'group', depth: 0 },
       { kind: 'code', lang: 'typescript', text: 'const x = 42'}
     ])
   })
 
-  test('describe name is discarded', () => {
+  test('describe is emitted as DescribeNode', () => {
     const nodes = parse(`
 import { describe, test } from 'node:test'
 describe('My Group', () => {
   test('t', () => { const x = 1 })
 })
 `)
-    // no node should contain the describe name
-    assert.ok(!JSON.stringify(nodes).includes('My Group'))
+    // describe name should be in a DescribeNode
+    assert.ok(JSON.stringify(nodes).includes('My Group'))
+    const describeNode = nodes.find(n => n.kind === 'describe')
+    assert.ok(describeNode)
+    assert.equal((describeNode as any).name, 'My Group')
   })
 
   test('prose comments between tests inside describe are captured', () => {
@@ -146,12 +150,13 @@ describe('group', () => {
 })
 `)
     assert.deepEqual(nodes, [
+      { kind: 'describe', name: 'group', depth: 0 },
       { kind: 'prose', text: 'before second test' },
       { kind: 'code', lang: 'typescript', text: 'const y = 2'}
     ])
   })
 
-  test('nested describe is transparent', () => {
+  test('nested describe structure is preserved with depth', () => {
     const nodes = parse(`
 import { describe, test } from 'node:test'
 describe('outer', () => {
@@ -163,6 +168,8 @@ describe('outer', () => {
 })
 `)
     assert.deepEqual(nodes, [
+      { kind: 'describe', name: 'outer', depth: 0 },
+      { kind: 'describe', name: 'inner', depth: 1 },
       { kind: 'code', lang: 'typescript', text: 'const z = 3'}
     ])
   })

@@ -25,6 +25,8 @@ encode('') // => ''
 
 `decode` reverses `encode`:
 
+
+
 ```ts
 decode(encode('world')) // => 'world'
 ```

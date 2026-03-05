@@ -110,6 +110,43 @@ shellExample('lit-md tmp.ts', {
   }]
 })
 
+// ### Control describe() block rendering with --describe
+//
+// By default, describe() block names are hidden from output (`--describe=hidden`).
+// You can render them as markdown headers using the `--describe` flag.
+// When rendered as headers, nested describes become progressively deeper header levels.
+
+shellExample('lit-md --describe="#" tmp.ts', {
+  inputFiles: [{
+    path: 'tmp.ts',
+    content: `import { describe, example } from 'node:test'\nimport assert from 'node:assert/strict'\n\ndescribe('User API', () => {\n  example('create user', () => {\n    const id = 1\n    assert.equal(typeof id, 'number')\n  })\n\n  describe('Validation', () => {\n    example('reject empty name', () => {\n      const valid = false\n      assert.equal(valid, false)\n    })\n  })\n})`
+  }],
+  outputFiles: [{
+    path: 'tmp.md',
+    contains: '# User API'
+  }, {
+    path: 'tmp.md',
+    contains: '## Validation'
+  }]
+})
+// Format options: `hidden` (default), `#`, `##`, `###`, `####`
+// Each represents the base header level for top-level describes.
+// Nested describes go one level deeper.
+
+shellExample('lit-md --describe="##" tmp.ts', {
+  inputFiles: [{
+    path: 'tmp.ts',
+    content: `import { describe, example } from 'node:test'\n\ndescribe('API', () => {\n  example('test', () => {})\n  describe('Nested', () => {\n    example('nested test', () => {})\n  })\n})`
+  }],
+  outputFiles: [{
+    path: 'tmp.md',
+    contains: '## API'
+  }, {
+    path: 'tmp.md',
+    contains: '### Nested'
+  }]
+})
+
 // ## Merging imports into examples
 //
 // If a comment ends with a code fence and an example follows,

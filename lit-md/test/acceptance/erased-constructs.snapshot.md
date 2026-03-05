@@ -7,6 +7,8 @@ They run (and assert correctness), but don't clutter the docs.
 describe() names are discarded — only the examples and comments inside appear.
 The word "Math" never appears in the output.
 
+
+
 ```ts
 const sum = 1 + 1
 sum // => 2
@@ -15,6 +17,9 @@ sum // => 2
 ## Prose Inside describe()
 
 Comments between examples inside `describe()` become interleaved prose blocks.
+
+
+
 Convert a string to upper case:
 
 ```ts
@@ -32,6 +37,10 @@ result // => 'world'
 ## Nested describe()
 
 Deeply nested `describe()` wrappers are also transparent.
+
+
+
+
 
 ```ts
 const x = 6 * 7

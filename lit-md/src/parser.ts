@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os'
 
 export type ProseNode = { kind: 'prose'; text: string; terminal?: true; noBlankAfter?: true; noBlankBefore?: true }
 export type CodeNode = { kind: 'code'; lang: string; text: string; title?: string }
+export type DescribeNode = { kind: 'describe'; name: string; depth: number }
 
 export type ShellCommandExecution = {
   stdout: string
@@ -21,7 +22,7 @@ export type OutputFileDisplayNode = {
   inputFiles: Array<{ path: string; content: string }>
   execution?: ShellCommandExecution
 }
-export type DocNode = ProseNode | CodeNode | OutputFileDisplayNode
+export type DocNode = ProseNode | CodeNode | OutputFileDisplayNode | DescribeNode
 
 export function parse(src: string, lang = 'typescript'): DocNode[] {
   if (!src.trim()) return []
@@ -67,14 +68,14 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
     }
   }
 
-  function visitStatements(statements: ts.NodeArray<ts.Statement>): void {
+  function visitStatements(statements: ts.NodeArray<ts.Statement>, depth: number = 0): void {
     for (const stmt of statements) {
       extractLeadingComments(stmt.getFullStart())
-      processStatement(stmt)
+      processStatement(stmt, depth)
     }
   }
 
-  function processStatement(stmt: ts.Statement): void {
+  function processStatement(stmt: ts.Statement, depth: number = 0): void {
     // Check for // keep:full (multi-line statements)
     const fullStmt = getFullStatement(stmt, src)
     if (fullStmt !== null) {
@@ -122,13 +123,27 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
             if (code.trim()) {
               const title = pendingFileLabel
               pendingFileLabel = undefined
-              // Check if the previous prose node ended with a code fence → merge
-              const prev = nodes[nodes.length - 1]
-              if (prev?.kind === 'prose') {
-                const fenceMatch = extractTrailingFence(prev.text)
+              // Check if we can find a prose node with a trailing code fence to merge with
+              // (looking past any describe nodes)
+              let proseNodeIdx = -1
+              for (let i = nodes.length - 1; i >= 0; i--) {
+                if (nodes[i]!.kind === 'prose') {
+                  proseNodeIdx = i
+                  break
+                } else if (nodes[i]!.kind !== 'describe') {
+                  // Stop if we hit a non-prose, non-describe node
+                  break
+                }
+              }
+              
+              if (proseNodeIdx >= 0) {
+                const proseNode = nodes[proseNodeIdx]!
+                const fenceMatch = extractTrailingFence((proseNode as any).text)
                 if (fenceMatch) {
-                  prev.text = fenceMatch.prose
-                  prev.noBlankAfter = true
+                  (proseNode as any).text = fenceMatch.prose;
+                  (proseNode as any).noBlankAfter = true
+                  // Remove any describe nodes between the prose and here
+                  nodes.splice(proseNodeIdx + 1)
                   const mergedCode = fenceMatch.fenceCode + '\n' + code
                   nodes.push(codeNode(lang, mergedCode, title))
                 } else {
@@ -148,9 +163,11 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
           }
         }
         if (name === 'describe') {
+          const descName = getStringArg(expr, 0)
           const body = getFnBody(expr, 1)
-          if (body && ts.isBlock(body)) {
-            visitStatements(body.statements)
+          if (body && ts.isBlock(body) && descName !== null) {
+            nodes.push({ kind: 'describe', name: descName, depth })
+            visitStatements(body.statements, depth + 1)
             return
           }
         }

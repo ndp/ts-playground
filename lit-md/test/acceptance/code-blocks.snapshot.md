@@ -27,6 +27,8 @@ sum // => 30
 `describe()` is transparent — examples inside it still emit code blocks.
 See also: `describe-transparency`.
 
+
+
 ```ts
 const raw = '  hello  '
 raw.trim() // => 'hello'

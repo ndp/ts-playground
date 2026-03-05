@@ -21,7 +21,14 @@ function extractFlag(flag: string): boolean {
 
 function extractFlagValue(flag: string): string | undefined {
   const idx = args.indexOf(flag)
-  if (idx === -1) return undefined
+  if (idx === -1) {
+    // Check for --flag=value format
+    const eqIdx = args.findIndex(arg => arg.startsWith(flag + '='))
+    if (eqIdx === -1) return undefined
+    const value = args[eqIdx]!.slice(flag.length + 1)
+    args.splice(eqIdx, 1)
+    return value
+  }
   const value = args[idx + 1]
   args.splice(idx, 2)
   return value
@@ -34,6 +41,7 @@ const runTypecheck = extractFlag('--typecheck')
 const updateSnapshots = extractFlag('--update-snapshots') || extractFlag('-u')
 const outFlag = extractFlagValue('--out')
 const outputDir = extractFlagValue('--outputDir')
+const describeFormat = extractFlagValue('--describe') || 'hidden'
 
 const inputPaths = args.filter(a => !a.startsWith('--'))
 
@@ -52,12 +60,16 @@ Options:
   -u, --update-snapshots    Update snapshot files instead of generating markdown
   --out <output.md>         Write to a specific output file (requires single input)
   --outputDir <dir>         Write generated markdown files to this directory
+  --describe <format>       Control describe() block rendering (default: hidden)
+                            Formats: hidden, #, ##, ###, ####
+                            With header formats, nesting is supported
 
 Examples:
   lit-md README.md.test.ts
   lit-md --test --typecheck README.md.test.ts
   lit-md --out /tmp/docs.md README.md.test.ts
   lit-md --outputDir ./docs src/**/*.md.test.ts
+  lit-md --describe="#" README.md.test.ts
 `)
   process.exit(0)
 }
@@ -115,7 +127,7 @@ for (const inputPath of inputPaths) {
   if (!dryrun) {
     nodes = resolveOutputFiles(nodes)
   }
-  const md = render(nodes)
+  const md = render(nodes, describeFormat)
 
   let outPath: string
   if (updateSnapshots) {

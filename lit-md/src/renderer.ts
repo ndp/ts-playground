@@ -38,7 +38,7 @@ function mergeConsecutiveCodeBlocks(nodes: DocNode[]): DocNode[] {
   return result
 }
 
-export function render(nodes: DocNode[]): string {
+export function render(nodes: DocNode[], describeFormat: string = 'hidden'): string {
   const merged = mergeConsecutiveCodeBlocks(nodes.filter(n => n.kind !== 'output-file-display'))
   if (!merged.length) return ''
   let out = ''
@@ -50,14 +50,21 @@ export function render(nodes: DocNode[]): string {
                       (curr.kind === 'prose' && curr.noBlankBefore)
       out += noBlank ? '\n' : '\n\n'
     }
-    out += renderNode(merged[i]!)
+    out += renderNode(merged[i]!, describeFormat)
   }
   return out
 }
 
-function renderNode(node: DocNode): string {
+function renderNode(node: DocNode, describeFormat: string = 'hidden'): string {
   if (node.kind === 'prose') return node.text
   if (node.kind === 'output-file-display') return ''
+  if (node.kind === 'describe') {
+    if (describeFormat === 'hidden') return ''
+    const baseLevel = describeFormat.length > 0 ? describeFormat.length : 1
+    const level = baseLevel + node.depth
+    const hashes = '#'.repeat(Math.min(level, 6))
+    return `${hashes} ${node.name}`
+  }
   const lang = langAliases[node.lang] ?? node.lang
   // Omit language if it's 'text'
   const info = lang === 'text' ? (node.title ?? '') : (node.title ? `${lang} ${node.title}` : lang)
