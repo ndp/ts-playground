@@ -1,3 +1,4 @@
+console.log('REMOVEMESTART')
 // ## Kept imports should merge into one code block
 //
 // When using `// keep` on imports, and they're followed by example code,
@@ -11,3 +12,4 @@ example('combined imports and code', () => {
   equal(1 + 1, 2)
   const result = 1 + 1
 })
+console.log('REMOVEMEEND')
