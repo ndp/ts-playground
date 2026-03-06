@@ -1,8 +1,9 @@
-# Aliases
+## Aliases
 
 Use `alias` to register a short name for any shell command.
 In the `.ts` file we have `alias('greet', '/bin/echo')`.
-## Using an Alias
+
+### Using an Alias
 
 Once registered, the alias name works like any shell command.
 
@@ -11,7 +12,7 @@ greet "hello world"
 # => hello world
 ```
 
-## Custom paths
+### Custom paths
 
 Your package may provide a special CLI or other tool to the users,
 but you do not want to install it globally in order to generate the

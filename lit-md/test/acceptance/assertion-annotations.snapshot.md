@@ -1,9 +1,9 @@
-# Assertion Annotations
+## Assertion Annotations
 
 Assertions inside `example()` bodies are rewritten as inline annotations,
 turning passing tests into self-documenting code examples.
 
-## Equality → `// => value`
+### Equality → `// => value`
 
 ```ts
 example('equal examples', () => {
@@ -49,7 +49,7 @@ value // != null
 ```
 ````
 
-## Throws — With Pattern
+### Throws — With Pattern
 
 ```ts
 example('throws with pattern', () => {
@@ -63,7 +63,7 @@ divide(1, 0) // throws /division by zero/
 ```
 ````
 
-## Throws — No Pattern
+### Throws — No Pattern
 
 ```ts
 example('throws no pattern', () => {
@@ -77,7 +77,7 @@ divide(1, 0) // throws
 ```
 ````
 
-## assert.ok — Dropped at Statement Level
+### assert.ok — Dropped at Statement Level
 
 `assert.ok(expr)` as a standalone statement is silently removed from output.
 It still runs and guards correctness, but doesn't clutter the docs.
@@ -95,7 +95,7 @@ const items = [1, 2, 3]
 ```
 ````
 
-## Multiple Assertions
+### Multiple Assertions
 
 Each assertion in a body is independently annotated inline.
 

@@ -1,3 +1,7 @@
+import { setDescribeFormat, describe, example } from '../../src/index.ts'
+import assert from 'node:assert/strict'
+setDescribeFormat('auto')
+
 // # Describe with Auto Headers
 
 // When using `--describe=auto`, describe() block names are rendered as headers
@@ -6,8 +10,6 @@
 // than the last header in the document. Nested describes go one level deeper
 // than their parent.
 
-import { describe, example } from '../../src/index.ts'
-import assert from 'node:assert/strict'
 
 // ## Auto with no prior headers
 

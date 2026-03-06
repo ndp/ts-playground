@@ -1,64 +1,73 @@
-# Keeping Full Statements
+## Keeping Full Statements
 
 The `// keep` directive includes statements in the output.
 For multi-line statements like functions and classes, use `// keep:full` to include the entire body.
-## Single-Line Keep
+
+### Single-Line Keep
 
 Single-line statements use `// keep`:
-```ts
+````ts
 const CONFIG = { timeout: 5000 } // keep
 const delay = CONFIG.timeout
 delay // => 5000
-```
+describe('Multi-Line Keep with
+    // For functions and classes, use `
+    // ```
+    // function createCounter() {
+    //   let count = 0
+    //   return {
+    //     increment() { count++ },
+    //     get: () => count
+    //   }
+    // }
+    // ```
 
-## Multi-Line Keep with // keep:full
+    function createCounter() {
+      let count = 0
+      return {
+        increment() { count++ },
+        get: () => count
+      }
+    }
 
-For functions and classes, use `// keep:full` to preserve the entire definition:
-```ts
-function createCounter() { // keep:full
-  let count = 0
-  return {
-    increment() { count++ },
-    get: () => count
-  }
-}
-const counter = createCounter()
-counter.increment()
-counter.get() // => 1
-```
+    example('counter example', () => {
+      const counter = createCounter()
+      counter.increment()
+      assert.equal(counter.get(), 1)
+    })
+  })
+describe('Classes with
+    // ```
+    // class Logger {
+    //   private messages: string[] = []
+    //
+    //   log(msg: string) {
+    //     this.messages.push(msg)
+    //   }
+    //
+    //   getMessages() {
+    //     return this.messages
+    //   }
+    // }
+    // ```
+    class Logger {
+      private messages: string[] = []
 
-## Classes with // keep:full
+      log(msg: string) {
+        this.messages.push(msg)
+      }
 
-```
-class Logger { // keep:full
-  private messages: string[] = []
+      getMessages() {
+        return this.messages
+      }
+    }
 
-  log(msg: string) {
-    this.messages.push(msg)
-  }
-
-  getMessages() {
-    return this.messages
-  }
-}
-```
-
-```ts
-example('logger example', () => {
-  const logger = new Logger()
-  logger.log('hello')
-  const msgs = logger.getMessages()
-  assert.equal(msgs.length, 1)
-  assert.equal(msgs[0], 'hello')
-})
-```
-becomes
-````md
-```ts
-const logger = new Logger()
-logger.log('hello')
-const msgs = logger.getMessages()
-msgs.length // => 1
-msgs[0] // => 'hello'
-```
+    metaExample('logger example', () => {
+      const logger = new Logger()
+      logger.log('hello')
+      const msgs = logger.getMessages()
+      assert.equal(msgs.length, 1)
+      assert.equal(msgs[0], 'hello')
+    })
+  })
 ````

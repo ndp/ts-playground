@@ -42,7 +42,7 @@ const runTypecheck = extractFlag('--typecheck')
 const updateSnapshots = extractFlag('--update-snapshots') || extractFlag('-u')
 const outFlag = extractFlagValue('--out')
 const outputDir = extractFlagValue('--outDir')
-const describeFormat = extractFlagValue('--describe') || 'hidden'
+const describeFormat = extractFlagValue('--describe') || '##'
 
 const inputPaths = args.filter(a => !a.startsWith('--'))
 
@@ -74,11 +74,11 @@ Options:
   -u, --update-snapshots    Update snapshot files instead of generating markdown
   --out <output.md>         Write to a specific output file (requires single input)
   --outDir <dir>           Write generated markdown files to this directory
-  --describe <format>       Control describe() block rendering (default: hidden)
+  --describe <format>       Control describe() block rendering (default: ##)
                             Formats:
-                              hidden  - Omit describes (default)
+                              hidden  - Omit describes
                               #       - Render as h1 headers, nested as h2, h3, etc.
-                              ##      - Render as h2 headers, nested as h3, h4, etc.
+                              ##      - Render as h2 headers, nested as h3, h4, etc. (default)
                               ###     - Render as h3 headers, nested as h4, h5, etc.
                               ####    - Render as h4 headers, nested as h5, h6, etc.
                               auto    - Dynamically determine level based on document structure

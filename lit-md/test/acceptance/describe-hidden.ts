@@ -1,9 +1,11 @@
+import {describe, example, setDescribeFormat} from '../../src/index.ts'
+import assert from 'node:assert/strict'
+setDescribeFormat('hidden')
+
 // # Describe Hidden Format
 //
 // When using `--describe=hidden`, describe() block names are omitted from output (default behavior).
 
-import { describe, example } from '../../src/index.ts'
-import assert from 'node:assert/strict'
 
 // ## Basic describe with examples
 

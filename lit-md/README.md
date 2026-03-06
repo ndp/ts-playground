@@ -150,8 +150,8 @@ const msg = greet('world')
 
 ### Control describe() block rendering with --describe
 
-By default, describe() block names are hidden from output (`--describe=hidden`).
-    You can render them as markdown headers using the `--describe` flag.
+By default, describe() block names are rendered as H2 headers (`--describe=##`).
+    You can change this behavior using the `--describe` flag.
     When rendered as headers, nested describes become progressively deeper header levels.
 
 ```ts
@@ -212,9 +212,10 @@ valid // => false
 ```
 ````
 
-Format options: `hidden` (default), `#`, `##`, `###`, `####`, `auto`
-- `hidden`: Omit describes (default behavior)
-- `#`, `##`, `###`, `####`: Explicitly set base header level for top-level describes
+Format options: `##` (default), `hidden`, `#`, `###`, `####`, `auto`
+- `##`: Render as h2 headers, nested as h3, h4, etc. (default behavior)
+- `hidden`: Omit describes
+- `#`, `###`, `####`: Explicitly set base header level for top-level describes
 - `auto`: Dynamically determine header levels based on document structure
 
 With explicit levels, nested describes go one level deeper than their parent.

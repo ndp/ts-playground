@@ -68,7 +68,8 @@ describe('acceptance', () => {
       const lang = extname(inputPath) === '.js' ? 'javascript' : 'typescript'
       
       // Detect describe format from filename (e.g., describe-h1 -> #, describe-auto -> auto)
-      let describeFormat = 'hidden'
+      // Default to '##' to match the CLI default
+      let describeFormat = '##'
       if (name.includes('describe-hidden')) describeFormat = 'hidden'
       else if (name.includes('describe-auto')) describeFormat = 'auto'
       else if (name.includes('describe-h1')) describeFormat = '#'

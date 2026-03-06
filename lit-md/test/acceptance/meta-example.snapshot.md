@@ -1,4 +1,4 @@
-# Meta Example
+## Meta Example
 
 `metaExample` documents how `example` works.
 It shows the `example` call and its rendered output side by side.

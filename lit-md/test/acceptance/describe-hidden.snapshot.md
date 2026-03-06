@@ -1,6 +1,7 @@
 # Describe Hidden Format
 
 When using `--describe=hidden`, describe() block names are omitted from output (default behavior).
+
 ## Basic describe with examples
 
 
