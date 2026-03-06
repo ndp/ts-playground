@@ -2,18 +2,25 @@
 
 Literate test files that generate `README.md`s.
 
+## Introduction
+
 Some projects require quite detailed examples, and it can be challenging
 to keep them up-to-date and correct in documentation. With lit-md,
 write your documentation as a TypeScript or JavaScript test file.
 lit-md generates the markdown after your tests have verified
 that every example actually works.
 
+- works with Typescript or Javascript
+- generates clean markdown with minimal cruft, while still allowing
+  you to include relevant code outside of examples when needed
+- provides utilities to include shell commands and their outputs as part of your documentation
+- supports flexible assertion methods for both code examples and shell commands,
+  with options to display actual outputs in the generated markdown
+- fully tested with its own test suite, which also serves as documentation and examples for users
+
 There are other tools with the same aims (e.g. docco, literate.js),
 but this follows in the Literate programming tradition but updated
 for the Typescript and TDD era.
-
-lit-md is designed to work with Node's built-in test runner and
-assertion library. Typescript is optional but fully-supported.
 
 ```sh
 node --test README.md.test.ts   # run examples as tests
@@ -21,204 +28,151 @@ tsc README.md.test.ts           # typecheck
 lit-md README.md.test.ts        # generate README.md
 lit-md --test --typecheck README.md.test.ts  # all-in-one!
 ```
-## How it works
-
+ ## How it Works
 A lit-md file contain prose in comments and examples in test bodies.
 At a basic level, a file is processed and comments are directly transferred
 into markdown, with examples bodies becoming fenced code blocks.
 To make this work well, there are quite a few nuances and features to control
 what appears in the output and how it looks.
 
-
-## Core concepts
-
-### Comments become prose
-
-Line and block comments both become markdown.
-
 ```ts
-// Input file "tmp.ts":
-/*
- * # Section
- * 
- * A description.
- */
-```
+describe('Core concepts', () => {
+  /*
+  Comments become markdown.
+  */
+  shellExample('lit-md tmp.ts', {
+    inputFiles: [{
+      path: 'tmp.ts',
+      content: `/*\n * # Section\n * \n * A description.\n */`
+    }],
+    outputFiles: [{
+      path: 'tmp.md'
+    }]
+  })
+  // (Single line comments with the `//` prefix are also supported.)
 
-```sh
-$ lit-md tmp.ts
-```
+  describe('example() bodies become code blocks', () => {
+    // The body of each example call becomes a fenced code block.
+    shellExample('lit-md tmp.ts', {
+      inputFiles: [{
+        path: 'tmp.ts',
+        content: `import { example } from 'node:test'\nimport assert from 'node:assert/strict'\n\nexample('greet', () => {\n  const msg = 'Hello, world!'\n  assert.equal(msg.length, 13)\n})`
+      }],
+      outputFiles: [{
+        path: 'tmp.md'
+      }]
+    })
+  })
 
-Output file `tmp.md`:
-```markdown
-# Section
-
-A description.
-```
-
-Comments with the `//` prefix are also supported.
-
-### example() bodies become code blocks
-
-The body of each example call becomes a fenced code block.
-
-```ts
-// Input file "tmp.ts":
-import { example } from 'node:test'
+  describe('Cruft is removed', () => {
+    /*
+    All other code, like imports, describe() blocks, and variables/functions
+    defined outside examples, is hidden from output by default.
+    */
+    shellExample('lit-md tmp.ts', {
+      inputFiles: [{
+        path: 'tmp.ts',
+        displayPath: false,
+        content:
+          `import { describe, example } from 'node:test'
 import assert from 'node:assert/strict'
 
-example('greet', () => {
-  const msg = 'Hello, world!'
-  assert.equal(msg.length, 13)
-})
-```
-
-```sh
-$ lit-md tmp.ts
-```
-
-Output file `tmp.md`:
-````markdown
-```ts
-const msg = 'Hello, world!'
-msg.length // => 13
-```
-````
-
-### describe() and imports are hidden by default
-
-Imports, describe() and non-example code are stripped from the output by default,
-but they still run and can be used inside examples.
-
-```ts
-// Input file "tmp.ts":
-import { describe, example } from 'node:test'
-import assert from 'node:assert/strict'
+const myGlobal = 52
+function adder (a: number, b: number) { a + b }
 
 describe('Math tests', () => {
   example('add', () => {
-    const x = 1 + 1
-    assert.equal(x, 2)
+    const x = adder(1, 1)
+    assert.equal(x, 2)  
   })
-})
-```
+})`
+      }],
+      outputFiles: [{
+        displayPath: false,
+        path: 'tmp.md'
+      }]
+    })
 
-```sh
-$ lit-md tmp.ts
-```
-
-Output file `tmp.md` contains `const x = 1 + 1`:
-````markdown
-```ts
-const x = 1 + 1
-x // => 2
-```
-````
-
-Use `// keep` to keep an "import" relevant to the story:
-
-```ts
-// Input file "tmp.ts":
-import { example } from 'node:test'
+    // Use `// keep` or `
+    // that is relevant to the story:
+    shellExample('lit-md tmp.ts', {
+      inputFiles: [{
+        path: 'tmp.ts',
+        content: `import { example } from 'node:test'
 import { greet } from './greet.ts' // keep
 
 example('test', () => {
   const msg = greet('world')
+})`
+      }],
+      outputFiles: [{
+        path: 'tmp.md',
+        contains: "import { greet }"
+      }]
+    })
+  })
+
+  describe('Control describe() block rendering with --describe', () => {
+    /*
+    By default, describe() block names are hidden from output (`--describe=hidden`).
+    You can render them as markdown headers using the `--describe` flag.
+    When rendered as headers, nested describes become progressively deeper header levels.
+    */
+    shellExample('lit-md --describe="#" tmp.ts', {
+      inputFiles: [{
+        path: 'tmp.ts',
+        content: `import { describe, example } from 'node:test'\nimport assert from 'node:assert/strict'\n\ndescribe('User API', () => {\n  example('create user', () => {\n    const id = 1\n    assert.equal(typeof id, 'number')\n  })\n\n  describe('Validation', () => {\n    example('reject empty name', () => {\n      const valid = false\n      assert.equal(valid, false)\n    })\n  })\n})`
+      }],
+      outputFiles: [{
+        path: 'tmp.md',
+        contains: '# User API'
+      }, {
+        path: 'tmp.md',
+        contains: '## Validation'
+      }]
+    })
+    // Format options: `hidden` (default), `#`, `##`, `###`, `####`, `auto`
+    // - `hidden`: Omit describes (default behavior)
+    // - `#`, `##`, `###`, `####`: Explicitly set base header level for top-level describes
+    // - `auto`: Dynamically determine header levels based on document structure
+    //
+    // With explicit levels, nested describes go one level deeper than their parent.
+    // With `auto`, if no headers exist yet, describes start at h1. Otherwise,
+    // describes start one level deeper than the last header in the document.
+
+    shellExample('lit-md --describe="##" tmp.ts', {
+      inputFiles: [{
+        path: 'tmp.ts',
+        content: `import { describe, example } from 'node:test'\n\ndescribe('API', () => {\n  example('test', () => {})\n  describe('Nested', () => {\n    example('nested test', () => {})\n  })\n})`
+      }],
+      outputFiles: [{
+        path: 'tmp.md',
+        contains: '## API'
+      }, {
+        path: 'tmp.md',
+        contains: '### Nested'
+      }]
+    })
+
+    // The `auto` format intelligently adapts to existing document structure.
+    shellExample('lit-md --describe="auto" tmp.ts', {
+      inputFiles: [{
+        path: 'tmp.ts',
+        content: `import { describe, example } from 'node:test'\n\ndescribe('First Group', () => {\n  example('test 1', () => {})\n})\n\n// # Existing Header\n\ndescribe('Second Group', () => {\n  example('test 2', () => {})\n})`
+      }],
+      outputFiles: [{
+        path: 'tmp.md',
+        contains: '# First Group'  // No prior headers, so starts at h1
+      }, {
+        path: 'tmp.md',
+        contains: '## Second Group'  // After h1 header, starts at h2
+      }]
+    })
+  })
 })
 ```
-
-```sh
-$ lit-md tmp.ts
-```
-
-Output file `tmp.md` contains `import { greet }`:
-````markdown
-```ts
-import { greet } from './greet.ts'
-
-const msg = greet('world')
-```
-````
-
-Functions and variables defined outside `example()` don't appear in output.
-They run and can be called inside examples, but stay out of the docs.
-
-```ts
-// Input file "tmp.ts":
-import { example } from 'node:test'
-import assert from 'node:assert/strict'
-
-example('greet', () => {
-  const msg = greet('world')
-  assert.equal(msg, 'Hello, world!')
-})
-
-function greet(name: string) { return `Hello, ${name}!` }
-```
-
-```sh
-$ lit-md tmp.ts
-```
-
-Output file `tmp.md` contains `const msg = greet('world')`:
-````markdown
-```ts
-const msg = greet('world')
-msg // => 'Hello, world!'
-```
-````
-
-## Merging imports into examples
-
-If a comment ends with a code fence and an example follows,
-they merge into one code block.
-
-````ts
-// Input file "tmp.ts":
-import { example } from 'node:test'
-import assert from 'node:assert/strict'
-
-// Use it like this:
-//
-// ```typescript
-// import { parse } from '@ndp-software/lit-md'
-// ```
-
-example('example', () => {
-  const x = 1
-  assert.equal(x, 1)
-})
-````
-
-```sh
-$ lit-md tmp.ts
-```
-
-Output file `tmp.md` contains `import { parse }`:
-````markdown
-Use it like this:
-
-```ts
-import { parse } from '@ndp-software/lit-md'
-const x = 1
-x // => 1
-```
-````
-
-Output file `tmp.md` contains `const x = 1`:
-````markdown
-Use it like this:
-
-```ts
-import { parse } from '@ndp-software/lit-md'
-const x = 1
-x // => 1
-```
-````
 
 ## Filename labels
-
-Place // file: before an `example` to add a file label in the output.
 
 ```ts
 // Input file "tmp.ts":
@@ -238,25 +192,16 @@ const msg = 'hello'
 ## Assertion transformation
 
 Assertions inside examples are transformed to annotations:
-- assert.equal(a, b) becomes a // => b
+  - assert.equal(a, b) becomes a // => b
 
 ```ts
-// Input file "tmp.ts":
-import { example } from 'node:test'
-import assert from 'node:assert/strict'
-
-example('equal', () => {
+example('assert.equals transformation', () => {
   const msg = 'hello'
   assert.equal(msg.length, 5)
 })
 ```
-
-```sh
-$ lit-md tmp.ts
-```
-
-Output file `tmp.md` contains `// => 5`:
-````markdown
+becomes
+````md
 ```ts
 const msg = 'hello'
 msg.length // => 5
@@ -265,14 +210,11 @@ msg.length // => 5
 
 ## CLI
 
-The lit-md CLI generates markdown from TypeScript or JavaScript files.
-
-### Basic usage
-
-```sh
-node ./cli.ts README.md.test.ts
-# generates README.md next to README.md.test.ts
-```
+The lit-md CLI is used to do the transformations.
+    ```sh
+    node ./cli.ts README.md.test.ts
+    # generates README.md next to README.md.test.ts
+    ```
 
 ```ts
 // Input file "tmp.ts":
@@ -306,50 +248,87 @@ $ lit-md tmp.ts --out /tmp/docs.md
 
 Output file `/tmp/docs.md` contains `# Documentation`.
 
-### JavaScript files
-
-`.js` files work exactly the same way — code blocks use `js` instead of `ts`.
-
-```js
-// Input file "tmp.js":
-// # My JS Doc
-import { example } from 'node:test'
-example('test', () => {})
-```
+Use lit-md --help for a options.
 
 ```sh
-$ lit-md tmp.js
-```
+$ lit-md --help
+lit-md - Generate markdown documentation from test files
 
-Output file `tmp.md` contains `# My JS Doc`:
-```markdown
-# My JS Doc
+Usage: lit-md [options] <file.ts|js> [file2 ...]
+
+Options:
+  --help, -h                Show this help message
+  --test                    Run tests before generating markdown
+  --typecheck               Run type checking before generating markdown
+  --dryrun                  Show what would be written without writing files
+  -u, --update-snapshots    Update snapshot files instead of generating markdown
+  --out <output.md>         Write to a specific output file (requires single input)
+  --outputDir <dir>         Write generated markdown files to this directory
+  --describe <format>       Control describe() block rendering (default: hidden)
+                            Formats:
+                              hidden  - Omit describes (default)
+                              #       - Render as h1 headers, nested as h2, h3, etc.
+                              ##      - Render as h2 headers, nested as h3, h4, etc.
+                              ###     - Render as h3 headers, nested as h4, h5, etc.
+                              ####    - Render as h4 headers, nested as h5, h6, etc.
+                              auto    - Dynamically determine level based on document structure
+                                        (h1 if no headers exist, else one level deeper than last header)
+
+Examples:
+  lit-md README.md.test.ts
+  lit-md --test --typecheck README.md.test.ts
+  lit-md --out /tmp/docs.md README.md.test.ts
+  lit-md --outputDir ./docs src/**/*.md.test.ts
+  lit-md --describe="#" README.md.test.ts
+  lit-md --describe="auto" README.md.test.ts
 ```
 
 ## Shell examples
 
 Use `shell` to include executable shell commands in the README.
-It's concise and verifies a 0 return code:
+  It's concise and verifies a 0 return code:
 
+### shell template
+
+```ts
+example('basic: verify command succeeds', () => {
+  shell`echo "hello world"`
+})
+```
+becomes
+````md
 ```ts
 shell`echo "hello world"`
 ```
+````
 
 Multi-line command work, and can include comment lines:
 
 ```ts
-shell`
-  echo "hello"
-  # => hello
-`
+example('with stdout assertion', () => {
+  shell`
+      echo "hello"
+      # => hello
+    `
+})
 ```
+becomes
+````md
+```ts
+shell`
+    echo "hello"
+    # => hello
+  `
+```
+````
 
-## shellExample
+### shellExample
+
 `shellExample` provides a more structured way to include shell commands,
-with support for
--- input file generation and
--- output file assertions, and
--- more detailed stdout assertions.
+    with support for
+    - input file generation and
+    - output file assertions, and
+    - more detailed stdout assertions.
 
 ```ts
 shellExample('echo "hello world"')
@@ -393,7 +372,7 @@ File assertions can also use regex in contains or strings in matches:
 ```ts
 shellExample('cp input.txt output.txt', {
   inputFiles: [{path: 'input.txt', content: 'data.json'}],
-  outputFiles: [{path: 'output.txt', contains: /\.json$/}]
+  outputFiles: [{path: 'output.txt', contains: /\.json/}]
 })
 ```
 
@@ -424,93 +403,91 @@ Output file `greeting.txt` contains `Hello`:
 Hello, World!
 ```
 
-## shellExample
-
 shellExample provides more control and structured options for shell command examples. Use when you need to:
 
-- Capture and display stdout dynamically
-- Create input files before running
-- Assert output files match patterns
-- Hide/customize what's displayed
+  - Capture and display stdout dynamically
+  - Create input files before running
+  - Assert output files match patterns
+  - Hide/customize what's displayed
 
-### Basic Usage
+### Advanced Usage
 
 ```ts
 shellExample('echo "hello world"')
 ```
 
-### With Assertions
+With Assertions
 
 ```ts
 shellExample('echo "ok"', {
-  stdout: {contains: 'ok'}
-})
+      stdout: {contains: 'ok'}
+    })
 ```
 
-### Input and Output Files
+Input and Output Files
 
 ```ts
 shellExample('cat input.txt > output.txt', {
-  inputFiles: [
-    {path: 'input.txt', content: 'Hello'}
-  ],
-  outputFiles: [
-    {path: 'output.txt', matches: /Hello/}
-  ]
-})
+      inputFiles: [
+        {path: 'input.txt', content: 'Hello'}
+      ],
+      outputFiles: [
+        {path: 'output.txt', matches: /Hello/}
+      ]
+    })
 ```
 
-### Options Reference
+Options Reference
 
-#### displayCommand
+    #### displayCommand
 
-- Type: `boolean` | `'hidden'`
-- When 'hidden' or false, command is executed but not shown in output
-- Default: true (command is shown)
+    - Type: `boolean` | `'hidden'`
+    - When 'hidden' or false, command is executed but not shown in output
+    - Default: true (command is shown)
 
-#### stdout
+    #### stdout
 
-- Type: { contains?: string | RegExp; matches?: string | RegExp; display?: boolean }
-- `contains`: Assert output contains this string or matches regex pattern (optional)
-- `matches`: Assert output matches this string (substring) or regex pattern (optional)
-- `display`: When true, dynamically execute and show actual stdout (default: false)
-- At least one of contains/matches is typically specified, but both are optional
+    - Type: { contains?: string | RegExp; matches?: string | RegExp; display?: boolean }
+    - `contains`: Assert output contains this string or matches regex pattern (optional)
+    - `matches`: Assert output matches this string (substring) or regex pattern (optional)
+    - `display`: When true, dynamically execute and show actual stdout (default: false)
+    - At least one of contains/matches is typically specified, but both are optional
 
-#### outputFiles
+    #### outputFiles
 
-Array of output file assertions:
+    Array of output file assertions:
 
-- `path`: File path (relative to temp directory)
-- `contains`: String or regex to check if file contains this value (optional)
-- `matches`: String or regex to check if file matches this value (optional)
-- `displayPath`: Show the filename (default: true)
-- `summary`: Show summary line before contents (default: true)
+    - `path`: File path (relative to temp directory)
+    - `contains`: String or regex to check if file contains this value (optional)
+    - `matches`: String or regex to check if file matches this value (optional)
+    - `displayPath`: Show the filename (default: true)
+    - `summary`: Show summary line before contents (default: true)
 
-#### inputFiles
+    #### inputFiles
 
-Array of input files to create:
+    Array of input files to create:
 
-- `path`: File path
-- `content`: File contents
-- `displayPath`: Show the filename (default: true)
-- `summary`: Show summary line (default: true)
+    - `path`: File path
+    - `content`: File contents
+    - `displayPath`: Show the filename (default: true)
+    - `summary`: Show summary line (default: true)
 
-#### Example with All Options
+    #### Example with All Options
 
 ```ts
 shellExample(
-    'cat input.txt && echo "Done" | tee result.log', {
-      displayCommand: true,
-      inputFiles: [
-        {path: 'input.txt', content: 'Config data', displayPath: true, summary: true}
-      ],
-      stdout: {
-        contains: 'Done',
-        display: true,  // Show actual output
-        matches: /Done/ // Both contains and matches are optional
-      },
-      outputFiles: [
-        {path: 'result.log', matches: /Done/, displayPath: true, summary: true}
-      ]
-    })
+        'cat input.txt && echo "Done" | tee result.log', {
+          displayCommand: true,
+          inputFiles: [
+            {path: 'input.txt', content: 'Config data', displayPath: true, summary: true}
+          ],
+          stdout: {
+            contains: 'Done',
+            display: true,  // Show actual output
+            matches: /Done/ // Both contains and matches are optional
+          },
+          outputFiles: [
+            {path: 'result.log', matches: /Done/, displayPath: true, summary: true}
+          ]
+        })
 ```
