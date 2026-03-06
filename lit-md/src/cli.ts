@@ -41,7 +41,7 @@ const runTests = extractFlag('--test')
 const runTypecheck = extractFlag('--typecheck')
 const updateSnapshots = extractFlag('--update-snapshots') || extractFlag('-u')
 const outFlag = extractFlagValue('--out')
-const outputDir = extractFlagValue('--outputDir')
+const outputDir = extractFlagValue('--outDir')
 const describeFormat = extractFlagValue('--describe') || 'hidden'
 
 const inputPaths = args.filter(a => !a.startsWith('--'))
@@ -73,7 +73,7 @@ Options:
   --dryrun                  Show what would be written without writing files
   -u, --update-snapshots    Update snapshot files instead of generating markdown
   --out <output.md>         Write to a specific output file (requires single input)
-  --outputDir <dir>         Write generated markdown files to this directory
+  --outDir <dir>           Write generated markdown files to this directory
   --describe <format>       Control describe() block rendering (default: hidden)
                             Formats:
                               hidden  - Omit describes (default)
@@ -88,7 +88,7 @@ Examples:
   lit-md README.md.test.ts
   lit-md --test --typecheck README.md.test.ts
   lit-md --out /tmp/docs.md README.md.test.ts
-  lit-md --outputDir ./docs src/**/*.md.test.ts
+  lit-md --outDir ./docs src/**/*.md.test.ts
   lit-md --describe="#" README.md.test.ts
   lit-md --describe="auto" README.md.test.ts
 `)
@@ -98,7 +98,7 @@ Examples:
 // --- Validation ---
 
 if (!inputPaths.length) {
-  console.error('Usage: lit-md [--test] [--typecheck] [--dryrun] [-u|--update-snapshots] [--out <output.md>] [--outputDir <dir>] <file.ts|js> [file2 ...]')
+  console.error('Usage: lit-md [--test] [--typecheck] [--dryrun] [-u|--update-snapshots] [--out <output.md>] [--outDir <dir>] <file.ts|js> [file2 ...]')
   process.exit(1)
 }
 
@@ -109,7 +109,7 @@ if (!validDescribeFormats.includes(describeFormat)) {
 }
 
 if (outFlag && outputDir) {
-  console.error('error: --out and --outputDir are mutually exclusive')
+  console.error('error: --out and --outDir are mutually exclusive')
   process.exit(1)
 }
 

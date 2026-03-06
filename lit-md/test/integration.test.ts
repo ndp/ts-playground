@@ -70,24 +70,24 @@ describe('integration: lit-md CLI end-to-end', () => {
     assert.ok(stderr.includes('--out can only be used with a single input file'))
   })
 
-  test('--outputDir: places all outputs in specified directory', () => {
+  test('--outDir: places all outputs in specified directory', () => {
     const outDir = join(__dir, 'fixtures/_outputdir_test')
     const input1 = join(__dir, 'acceptance/basic-prose.ts')
     const input2 = join(__dir, 'acceptance/code-blocks.ts')
     try {
-      runCli(['--outputDir', outDir, input1, input2])
+      runCli(['--outDir', outDir, input1, input2])
       assert.ok(existsSync(join(outDir, 'basic-prose.md')))
     } finally {
       try { rmSync(outDir, { recursive: true }) } catch {}
     }
   })
 
-  test('--outputDir creates directory if it does not exist', () => {
+  test('--outDir creates directory if it does not exist', () => {
     const outDir = join(__dir, 'fixtures/_new_dir_test')
     const input = join(__dir, 'acceptance/basic-prose.ts')
     try {
       assert.ok(!existsSync(outDir), 'dir should not exist before test')
-      runCli(['--outputDir', outDir, input])
+      runCli(['--outDir', outDir, input])
       assert.ok(existsSync(join(outDir, 'basic-prose.md')))
     } finally {
       try { rmSync(outDir, { recursive: true }) } catch {}

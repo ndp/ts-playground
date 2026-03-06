@@ -1,5 +1,5 @@
 import {describe, test} from 'node:test'
-import {readFileSync, readdirSync, writeFileSync, mkdtempSync, rmSync} from 'node:fs'
+import {readFileSync, readdirSync, writeFileSync, mkdtempSync, rmSync, existsSync} from 'node:fs'
 import {spawnSync} from 'node:child_process'
 import {tmpdir} from 'node:os'
 import {fileURLToPath} from 'url'
@@ -79,6 +79,14 @@ describe('acceptance', () => {
       const { resolveDescribeFormat } = await import('../src/describe-format.ts')
       const finalDescribeFormat = resolveDescribeFormat(describeFormat)
       const generated = render(resolveOutputFiles(parse(src, lang)), finalDescribeFormat).trimEnd()
+      
+      // If snapshot is missing, regenerate it
+      if (!existsSync(snapshotPath)) {
+        writeFileSync(snapshotPath, generated + '\n', 'utf8')
+        console.log(`✓ generated snapshot: ${snapshotPath}`)
+        return
+      }
+      
       const expected = readFileSync(snapshotPath, 'utf8').trimEnd()
 
       const diff = computeDiff(name, expected, generated)

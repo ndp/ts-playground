@@ -51,7 +51,7 @@ Options:
   --dryrun                  Show what would be written without writing files
   -u, --update-snapshots    Update snapshot files instead of generating markdown
   --out <output.md>         Write to a specific output file (requires single input)
-  --outputDir <dir>         Write generated markdown files to this directory
+  --outDir <dir>           Write generated markdown files to this directory
   --describe <format>       Control describe() block rendering (default: hidden)
                             Formats:
                               hidden  - Omit describes (default)
@@ -66,7 +66,7 @@ Examples:
   lit-md README.md.test.ts
   lit-md --test --typecheck README.md.test.ts
   lit-md --out /tmp/docs.md README.md.test.ts
-  lit-md --outputDir ./docs src/**/*.md.test.ts
+  lit-md --outDir ./docs src/**/*.md.test.ts
   lit-md --describe="#" README.md.test.ts
   lit-md --describe="auto" README.md.test.ts
 ```
