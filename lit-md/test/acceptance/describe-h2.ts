@@ -3,8 +3,10 @@
 // When using `--describe=##`, describe() block names are rendered as H2 headers.
 // Nested describes become deeper header levels.
 
-import { describe, example } from '../../src/index.ts'
+import { describe, example, setDescribeFormat } from '../../src/index.ts'
 import assert from 'node:assert/strict'
+
+setDescribeFormat('##')
 
 // ## Basic describe with examples
 

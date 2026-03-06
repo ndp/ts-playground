@@ -4,7 +4,7 @@ When using `--describe=###`, describe() block names are rendered as H3 headers.
 Nested describes become deeper header levels.
 ## Basic describe with examples
 
-## Basic Group
+### Basic Group
 
 ```ts
 1 + 1 // => 2
@@ -14,17 +14,17 @@ Nested describes become deeper header levels.
 
 ## Nested describes
 
-## Outer Group
+### Outer Group
 
 Some description about the outer group
 
-### Inner Group
+#### Inner Group
 
 ```ts
 5 - 2 // => 3
 ```
 
-### Another Inner Group
+#### Another Inner Group
 
 ```ts
 10 / 2 // => 5
@@ -32,11 +32,11 @@ Some description about the outer group
 
 ## Deeply nested describes
 
-## Level 1
+### Level 1
 
-### Level 2
+#### Level 2
 
-#### Level 3
+##### Level 3
 
 ```ts
 typeof 'test' // => 'string'

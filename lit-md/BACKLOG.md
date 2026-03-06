@@ -42,6 +42,20 @@ RENDER
 ### shellExample: add the ability to suppress input file output in the markdown. 
 
 
+Should report error if script returns non-zero exit code.
+
+Should  be able to assert on exit code with something like:
+```ts
+shellExample('ls /nonexistent', { exitCode: 2 })
+``` 
+
+If a "contains" fails, it needs to show you the actual content that was generated if there is not a good diff. For the output file I had, which was empty, it wasn't obvious what happened.
+
+
+Describe should be able to handle quotes better, with escaping. For example:
+describe('My Project's README.', () => {
+
+
 ## PUBLISHING
 
 Publishing-prep checklist (not yet implemented)

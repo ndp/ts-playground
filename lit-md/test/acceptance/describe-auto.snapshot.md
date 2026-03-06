@@ -5,9 +5,10 @@ that adapt to the document structure. If no headers exist yet, the first
 describe starts at h1. If headers exist, describes start one level deeper
 than the last header in the document. Nested describes go one level deeper
 than their parent.
+
 ## Auto with no prior headers
 
-## First Group
+### First Group
 
 ```ts
 1 + 1 // => 2
@@ -29,7 +30,7 @@ than their parent.
 
 ## Second Header
 
-## Third Group
+### Third Group
 
 ```ts
 10 / 2 // => 5
@@ -37,15 +38,15 @@ than their parent.
 
 ## Nested describes with auto
 
-## Outer Group
+### Outer Group
 
-### Inner Group
+#### Inner Group
 
 ```ts
 3 + 4 // => 7
 ```
 
-### Another Inner Group
+##### Another Inner Group
 
 ```ts
 8 - 3 // => 5
@@ -53,11 +54,11 @@ than their parent.
 
 ## Deeply nested with auto
 
-## Level 1
+### Level 1
 
-### Level 2
+#### Level 2
 
-#### Level 3
+###### Level 3
 
 ```ts
 typeof 'test' // => 'string'
@@ -67,7 +68,7 @@ typeof 'test' // => 'string'
 
 ### Third Header
 
-## Fourth Group
+#### Fourth Group
 
 ```ts
 7 * 2 // => 14

@@ -2,7 +2,11 @@
 //
 // A TypeScript utility for base64 encoding strings.
 
-import { describe, example } from '../index.ts'
+import { setDescribeFormat } from '../../../src/index.ts'
+
+setDescribeFormat('hidden')
+
+import { describe, example } from '../../../src/index.ts'
 import assert from 'node:assert/strict'
 import { encode, decode } from './encoder.ts' // keep
 

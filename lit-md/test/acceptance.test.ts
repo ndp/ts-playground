@@ -67,18 +67,8 @@ describe('acceptance', () => {
       const src = readFileSync(inputPath, 'utf8')
       const lang = extname(inputPath) === '.js' ? 'javascript' : 'typescript'
       
-      // Detect describe format from filename (e.g., describe-h1 -> #, describe-auto -> auto)
-      // Default to '##' to match the CLI default
-      let describeFormat = '##'
-      if (name.includes('describe-hidden')) describeFormat = 'hidden'
-      else if (name.includes('describe-auto')) describeFormat = 'auto'
-      else if (name.includes('describe-h1')) describeFormat = '#'
-      else if (name.includes('describe-h2')) describeFormat = '##'
-      else if (name.includes('describe-h3')) describeFormat = '###'
-      else if (name.includes('describe-h4')) describeFormat = '####'
-      
       const { resolveDescribeFormat } = await import('../src/describe-format.ts')
-      const finalDescribeFormat = resolveDescribeFormat(describeFormat)
+      const finalDescribeFormat = resolveDescribeFormat('##')
       const generated = render(resolveOutputFiles(parse(src, lang)), finalDescribeFormat).trimEnd()
       
       // If snapshot is missing, regenerate it

@@ -1,4 +1,4 @@
-export type DescribeFormatType = 'hidden' | '#' | '##' | '###' | '####'
+export type DescribeFormatType = 'hidden' | '#' | '##' | '###' | '####' | 'auto'
 
 let overrideFormat: DescribeFormatType | undefined = undefined
 
@@ -9,6 +9,7 @@ let overrideFormat: DescribeFormatType | undefined = undefined
  * @param format - The format to use for rendering describe() block names:
  *   - 'hidden': omit describe names (default)
  *   - '#', '##', '###', '####': render as H1-H4 headers with nesting support
+ *   - 'auto': dynamically determine level based on document structure (h1 if no headers exist, else one level deeper than last header)
  * 
  * @example
  * ```ts
