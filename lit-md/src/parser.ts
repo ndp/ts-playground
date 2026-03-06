@@ -200,6 +200,16 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
             const optsArg = expr.arguments[1]
             const opts = optsArg && ts.isObjectLiteralExpression(optsArg) ? optsArg : undefined
 
+            // Check if meta: true is explicitly set
+            const metaProp = opts ? getProp(opts, 'meta') : undefined
+            const hasMeta = metaProp && metaProp.initializer.kind === ts.SyntaxKind.TrueKeyword
+            
+            // If meta is true, add a code block showing the reconstructed shellExample call
+            if (hasMeta) {
+              const reconstructed = reconstructShellExampleWithoutMeta(src, expr, cmd, opts)
+              nodes.push(codeNode('ts', reconstructed))
+            }
+
             if (opts) processShellExampleInputFiles(opts, nodes)
 
             const inputFiles = opts ? extractStaticInputFiles(opts) : []
@@ -254,6 +264,24 @@ function readBoolOption(prop: ts.PropertyAssignment | undefined): boolean {
 function readFlag(prop: ts.PropertyAssignment | undefined): boolean {
   if (!prop) return true
   return prop.initializer.kind !== ts.SyntaxKind.FalseKeyword
+}
+
+/** Reconstructs shellExample call without the meta option. */
+function reconstructShellExampleWithoutMeta(src: string, expr: ts.CallExpression, cmd: string, opts: ts.ObjectLiteralExpression | undefined): string {
+  if (!opts) {
+    return `shellExample('${cmd.replace(/'/g, "\\'")}')`
+  }
+
+  // Extract options text and remove meta: true
+  const optsText = src.slice(opts.getStart(), opts.getEnd())
+  
+  // Remove "meta: true," or "meta: true" variations
+  let cleanedOpts = optsText
+    .replace(/,?\s*meta:\s*true\s*,?/g, ',')  // Remove meta: true with surrounding commas
+    .replace(/^\{\s*,/, '{')  // Remove leading comma after {
+    .replace(/,\s*\}$/, '}')  // Remove trailing comma before }
+  
+  return `shellExample('${cmd.replace(/'/g, "\\'")}'${cleanedOpts !== '{}' ? `, ${cleanedOpts}` : ''})`
 }
 
 /** Create a CodeNode, omitting the `title` key entirely when undefined. */

@@ -115,3 +115,19 @@ shellExample('sort input.txt >output.txt', {
     }
   ]
 })
+
+// ## With meta Option
+//
+// Using `shellExample` with `meta: true` outputs the call itself before the command:
+shellExample('echo "meta test"', {
+  meta: true,
+  stdout: {}
+})
+
+// With other options and meta:
+shellExample('echo "version 1.2.3" > version.txt', {
+  outputFiles: [
+    {path: 'version.txt', matches: /version \d+\.\d+\.\d+/}
+  ],
+  meta: true
+})

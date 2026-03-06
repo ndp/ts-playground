@@ -65,6 +65,7 @@ export interface ShellExampleOpts {
   outputFiles?: ShellFileAssertion[]
   inputFiles?: Array<{ path: string; content: string; displayPath?: boolean | 'hidden'; summary?: boolean }>
   displayCommand?: boolean | 'hidden'
+  meta?: boolean
 }
 
 /** Internal: executes a shell command and runs any assertions. Throws on failure.

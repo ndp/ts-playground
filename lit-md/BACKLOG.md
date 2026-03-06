@@ -25,7 +25,9 @@ Update docs/README.md.test.ts to reflect new --describe option and its behavior.
 
 
 ## Acceptance tests
+npm run test:update should be `test:acceptance:update`, as it only applies to acceptance tests
 
+when an acceptance test runs, if there is no snapshot, it should generate one (and not fail)
 
 
 ## CLI

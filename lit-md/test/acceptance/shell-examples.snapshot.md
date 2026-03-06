@@ -162,3 +162,35 @@ fourth line
 second line
 third line
 ```
+
+## With meta Option
+
+Using `shellExample` with `meta: true` outputs the call itself before the command:
+
+```ts
+shellExample('echo "meta test"', {
+  stdout: {}
+})
+```
+
+```sh
+$ echo "meta test"
+```
+
+With other options and meta:
+
+```ts
+shellExample('echo "version 1.2.3" > version.txt', {
+  outputFiles: [
+    {path: 'version.txt', matches: /version \d+\.\d+\.\d+/}
+  ]})
+```
+
+```sh
+$ echo "version 1.2.3" > version.txt
+```
+
+Output file `version.txt` matches `/version \d+\.\d+\.\d+/`:
+```
+version 1.2.3
+```
