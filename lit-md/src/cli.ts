@@ -46,6 +46,19 @@ const describeFormat = extractFlagValue('--describe') || 'hidden'
 
 const inputPaths = args.filter(a => !a.startsWith('--'))
 
+// --- File name rewriting helper ---
+
+function getOutputFileName(inputPath: string): string {
+  const base = basename(inputPath)
+  // Check if file ends with .lit-md.ts or .lit-md.js pattern
+  if (base.endsWith('.lit-md.ts') || base.endsWith('.lit-md.js')) {
+    // Remove the entire .lit-md.ts or .lit-md.js extension
+    return base.slice(0, -(base.endsWith('.lit-md.ts') ? '.lit-md.ts'.length : '.lit-md.js'.length)) + '.md'
+  }
+  // Otherwise, remove the final extension (.ts, .js, etc.) and add .md
+  return basename(inputPath, extname(inputPath)) + '.md'
+}
+
 // --- Help ---
 
 if (showHelp) {
@@ -159,15 +172,16 @@ if (runTests) {
 
     let outPath: string
     if (updateSnapshots) {
-      const base = basename(inputPath, extname(inputPath))
-      outPath = join(dirname(resolve(inputPath)), `${base}.snapshot.md`)
+      const outputFileName = getOutputFileName(inputPath)
+      const fileNameWithoutMd = outputFileName.slice(0, -3) // Remove .md
+      outPath = join(dirname(resolve(inputPath)), `${fileNameWithoutMd}.snapshot.md`)
     } else if (outFlag) {
       outPath = outFlag
     } else if (outputDir) {
       mkdirSync(outputDir, { recursive: true })
-      outPath = join(outputDir, basename(inputPath, extname(inputPath)) + '.md')
+      outPath = join(outputDir, getOutputFileName(inputPath))
     } else {
-      outPath = join(dirname(inputPath), basename(inputPath, extname(inputPath)) + '.md')
+      outPath = join(dirname(inputPath), getOutputFileName(inputPath))
     }
 
     if (dryrun) {
