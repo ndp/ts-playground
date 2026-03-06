@@ -39,10 +39,10 @@ but this follows in the Literate programming tradition but updated
 for the Typescript and TDD era.
 
 ```sh
-node --test README.md.test.ts   # run examples as tests
-tsc README.md.test.ts           # typecheck
-lit-md README.md.test.ts        # generate README.md
-lit-md --test --typecheck README.md.test.ts  # all-in-one!
+node --test README.lit-md.ts   # run examples as tests
+tsc README.lit-md.ts           # typecheck
+lit-md README.lit-md.ts        # generate README.md
+lit-md --test --typecheck README.lit-md.ts  # all-in-one!
 ```
  ## How it Works
 A lit-md file contain prose in comments and examples in test bodies.
@@ -215,49 +215,6 @@ describe('Assertion transformation', () => {
   })
 })
 
-describe('CLI', () => {
-  /*
-  The lit-md CLI is used to do the transformations.
-    ```sh
-    node ./cli.ts README.md.test.ts
-    # generates README.md next to README.md.test.ts
-    ```
-    */
-
-  shellExample('lit-md tmp.ts', {
-    inputFiles: [{
-      path: 'tmp.ts',
-      content: `// # My Document\nimport { example } from 'node:test'\nexample('test', () => {})`
-    }],
-    outputFiles: [{
-      path: 'tmp.md',
-      contains: '# My Document'
-    }]
-  })
-
-  describe('Custom output path', () => {
-    /*
-    Use --out to write to a different location.
-    */
-    shellExample('lit-md tmp.ts --out /tmp/docs.md', {
-      inputFiles: [{
-        path: 'tmp.ts',
-        content: `// # Documentation\nimport { example } from 'node:test'`
-      }],
-      outputFiles: [{
-        path: '/tmp/docs.md',
-        contains: '# Documentation'
-      }]
-    })
-  })
-
-  // Use lit-md --help for a options.
-  shellExample('lit-md --help', {
-    stdout: {
-      display: true
-    }
-  })
-})
 
 describe('Shell examples', () => {
   /*

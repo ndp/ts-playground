@@ -16,7 +16,7 @@ between all changes to confirm that all tests pass, code is valid typescript, an
 
 ## Documentation
 
-After any change, consider what documentation needs to be updated, looking in `./docs/README.md.test.ts`. Do NOT modify ./README.md directly; modify the ts file and run `npm run readme` to update the readme.
+After any change, consider what documentation needs to be updated, looking in `./docs/README.lit-md.ts`. Do NOT modify ./README.md directly; modify the ts file and run `npm run readme` to update the readme.
 
 There is also a good set of acceptance tests in the acceptance folder. For larger changes add to this suite.
 

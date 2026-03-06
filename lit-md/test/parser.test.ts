@@ -725,6 +725,21 @@ describe('parse: shellExample() → sh code block', () => {
     ])
   })
 
+  test('shellExample with inputFiles display: "hidden" → hides code block', () => {
+    const nodes = parse(`shellExample('node cli.ts', { inputFiles: [{ display: 'hidden', path: 'tmp.ts', content: '// Line 1\\n// Line 2', displayPath: 'hidden' }] })`)
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'sh', text: '$ node cli.ts'}
+    ])
+  })
+
+
+  test('shellExample with inputFiles display: false → hides code block', () => {
+    const nodes = parse(`shellExample('node cli.ts', { inputFiles: [{ display: false, path: 'tmp.ts', content: '// Line 1\\n// Line 2', displayPath: 'hidden' }] })`)
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'sh', text: '$ node cli.ts'}
+    ])
+  })
+
   test('shellExample with outputFiles displayPath: false → hides file name in prose', () => {
     const nodes = parse(`shellExample('sort input.txt', { outputFiles: [{ path: 'output.txt', contains: 'hello', displayPath: false }] })`)
     assert.deepEqual(nodes, [

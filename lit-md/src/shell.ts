@@ -60,10 +60,18 @@ export interface ShellFileAssertion {
   summary?: boolean
 }
 
+type ExampleInputFile = {
+  path: string;
+  content: string;
+  displayPath?: boolean | 'hidden';
+  display?: boolean | 'hidden';
+  summary?: boolean
+}
+
 export interface ShellExampleOpts {
   stdout?: { contains?: string | RegExp; matches?: string | RegExp; display?: boolean }
   outputFiles?: ShellFileAssertion[]
-  inputFiles?: Array<{ path: string; content: string; displayPath?: boolean | 'hidden'; summary?: boolean }>
+  inputFiles?: Array<ExampleInputFile>
   displayCommand?: boolean | 'hidden'
   meta?: boolean
 }

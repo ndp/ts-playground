@@ -13,6 +13,7 @@ import { shellExample } from '../../src/index.ts'
 // output without an assertion.
 
 shellExample('echo "hello stdout"', {
+  meta: true,
   stdout: { display: true }
 })
 
@@ -23,6 +24,7 @@ shellExample('echo "hello stdout"', {
 // Combine with `stdout: { display: true }` to show just the output.
 
 shellExample('echo "quiet output"', {
+  meta: true,
   displayCommand: false,
   stdout: { display: true }
 })
@@ -34,7 +36,16 @@ shellExample('echo "quiet output"', {
 // Set `displayPath: false` to show the file content without the filename label.
 
 shellExample('cat input.txt', {
+  meta: true,
   inputFiles: [{ path: 'input.txt', content: 'hello world', displayPath: false }]
+})
+
+// ## inputFiles: display false
+// By default, input files are shown with their content and filename.
+// Set `display: false` to suppress the file content entirely.
+shellExample('cat input.txt', {
+  meta: true,
+  inputFiles: [{ path: 'input.txt', content: 'hello world', display: false }]
 })
 
 // ## outputFiles: displayPath false

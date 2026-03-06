@@ -14,12 +14,13 @@ export type ShellCommandExecution = {
   exitCode: number
 }
 
+export type InputFileInfo = { path: string, content: string }
 export type OutputFileDisplayNode = {
   kind: 'output-file-display'
   path: string
   lang: string
   cmd: string
-  inputFiles: Array<{ path: string; content: string }>
+  inputFiles: Array<InputFileInfo>
   execution?: ShellCommandExecution
 }
 export type DocNode = ProseNode | CodeNode | OutputFileDisplayNode | DescribeNode
@@ -648,6 +649,8 @@ function processShellExampleInputFiles(opts: ts.ObjectLiteralExpression, nodes: 
     const contentProp = getProp(el, 'content')
     const displayPathProp = getProp(el, 'displayPath')
     const summaryProp = getProp(el, 'summary')
+    const displayProp = getProp(el, 'display')
+    const displayContent = readBoolOption(displayProp)
 
     if (!pathProp || !ts.isStringLiteralLike(pathProp.initializer)) continue
     const filePath = pathProp.initializer.text
@@ -655,7 +658,7 @@ function processShellExampleInputFiles(opts: ts.ObjectLiteralExpression, nodes: 
     const displayPath = readBoolOption(displayPathProp)
     const summary = readFlag(summaryProp)
 
-    if (contentProp && ts.isStringLiteralLike(contentProp.initializer)) {
+    if (contentProp && displayContent && ts.isStringLiteralLike(contentProp.initializer)) {
       const content = contentProp.initializer.text
       const lang = getLanguageFromExtension(filePath)
       
@@ -684,7 +687,7 @@ function processShellExampleOutputFiles(
   opts: ts.ObjectLiteralExpression,
   nodes: DocNode[],
   cmd: string,
-  inputFiles: Array<{ path: string; content: string }>,
+  inputFiles: Array<InputFileInfo>,
   execution: ShellCommandExecution | null
 ): void {
   const outputFilesProp = getProp(opts, 'outputFiles')
@@ -780,10 +783,10 @@ function processShellExampleOutputFiles(
 }
 
 /** Extracts inputFiles entries statically from a shellExample opts AST node */
-function extractStaticInputFiles(opts: ts.ObjectLiteralExpression): Array<{ path: string; content: string }> {
+function extractStaticInputFiles(opts: ts.ObjectLiteralExpression): Array<InputFileInfo> {
   const inputFilesProp = getProp(opts, 'inputFiles')
   if (!inputFilesProp || !ts.isArrayLiteralExpression(inputFilesProp.initializer)) return []
-  const result: Array<{ path: string; content: string }> = []
+  const result: Array<InputFileInfo> = []
   for (const el of inputFilesProp.initializer.elements) {
     if (!ts.isObjectLiteralExpression(el)) continue
     const pathProp = getProp(el, 'path')
@@ -862,7 +865,7 @@ function extractOutputFilePaths(opts: ts.ObjectLiteralExpression): string[] {
 }
 
 /** Executes a shell command with optional input files and captures stdout + output files */
-function executeShellCommand(cmd: string, inputFiles: Array<{ path: string; content: string }>, outputFilePaths: string[]): ShellCommandExecution | null {
+function executeShellCommand(cmd: string, inputFiles: Array<InputFileInfo>, outputFilePaths: string[]): ShellCommandExecution | null {
   const tmpDir = mkdtempSync(join(tmpdir(), 'lit-md-exec-'))
   const resolvePath = (p: string) => isAbsolute(p) ? p : join(tmpDir, p)
   try {
