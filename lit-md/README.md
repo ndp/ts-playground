@@ -35,46 +35,66 @@ into markdown, with examples bodies becoming fenced code blocks.
 To make this work well, there are quite a few nuances and features to control
 what appears in the output and how it looks.
 
+## Core concepts
+
+Comments become markdown.
+
 ```ts
-describe('Core concepts', () => {
-  /*
-  Comments become markdown.
-  */
-  shellExample('lit-md tmp.ts', {
-    inputFiles: [{
-      path: 'tmp.ts',
-      content: `/*\n * # Section\n * \n * A description.\n */`
-    }],
-    outputFiles: [{
-      path: 'tmp.md'
-    }]
-  })
-  // (Single line comments with the `//` prefix are also supported.)
+// Input file "tmp.ts":
+/*
+ * # Section
+ * 
+ * A description.
+ */
+```
 
-  describe('example() bodies become code blocks', () => {
-    // The body of each example call becomes a fenced code block.
-    shellExample('lit-md tmp.ts', {
-      inputFiles: [{
-        path: 'tmp.ts',
-        content: `import { example } from 'node:test'\nimport assert from 'node:assert/strict'\n\nexample('greet', () => {\n  const msg = 'Hello, world!'\n  assert.equal(msg.length, 13)\n})`
-      }],
-      outputFiles: [{
-        path: 'tmp.md'
-      }]
-    })
-  })
+```sh
+$ lit-md tmp.ts
+```
 
-  describe('Cruft is removed', () => {
-    /*
-    All other code, like imports, describe() blocks, and variables/functions
+Output file `tmp.md`:
+```markdown
+# Section
+
+A description.
+```
+
+(Single line comments with the `//` prefix are also supported.)
+
+### example() bodies become code blocks
+
+The body of each example call becomes a fenced code block.
+
+```ts
+// Input file "tmp.ts":
+import { example } from 'node:test'
+import assert from 'node:assert/strict'
+
+example('greet', () => {
+  const msg = 'Hello, world!'
+  assert.equal(msg.length, 13)
+})
+```
+
+```sh
+$ lit-md tmp.ts
+```
+
+Output file `tmp.md`:
+````markdown
+```ts
+const msg = 'Hello, world!'
+msg.length // => 13
+```
+````
+
+### Cruft is removed
+
+All other code, like imports, describe() blocks, and variables/functions
     defined outside examples, is hidden from output by default.
-    */
-    shellExample('lit-md tmp.ts', {
-      inputFiles: [{
-        path: 'tmp.ts',
-        displayPath: false,
-        content:
-          `import { describe, example } from 'node:test'
+
+```ts
+import { describe, example } from 'node:test'
 import assert from 'node:assert/strict'
 
 const myGlobal = 52
@@ -85,91 +105,189 @@ describe('Math tests', () => {
     const x = adder(1, 1)
     assert.equal(x, 2)  
   })
-})`
-      }],
-      outputFiles: [{
-        displayPath: false,
-        path: 'tmp.md'
-      }]
-    })
+})
+```
 
-    // Use `// keep` or `
-    // that is relevant to the story:
-    shellExample('lit-md tmp.ts', {
-      inputFiles: [{
-        path: 'tmp.ts',
-        content: `import { example } from 'node:test'
+```sh
+$ lit-md tmp.ts
+```
+
+Output:
+````markdown
+
+
+```ts
+const x = adder(1, 1)
+x // => 2
+```
+````
+
+Use `// keep` or `// keep:full `to keep any statement or full function
+that is relevant to the story:
+
+```ts
+// Input file "tmp.ts":
+import { example } from 'node:test'
 import { greet } from './greet.ts' // keep
 
 example('test', () => {
   const msg = greet('world')
-})`
-      }],
-      outputFiles: [{
-        path: 'tmp.md',
-        contains: "import { greet }"
-      }]
-    })
-  })
+})
+```
 
-  describe('Control describe() block rendering with --describe', () => {
-    /*
-    By default, describe() block names are hidden from output (`--describe=hidden`).
+```sh
+$ lit-md tmp.ts
+```
+
+Output file `tmp.md` contains `import { greet }`:
+````markdown
+```ts
+import { greet } from './greet.ts'
+
+const msg = greet('world')
+```
+````
+
+### Control describe() block rendering with --describe
+
+By default, describe() block names are hidden from output (`--describe=hidden`).
     You can render them as markdown headers using the `--describe` flag.
     When rendered as headers, nested describes become progressively deeper header levels.
-    */
-    shellExample('lit-md --describe="#" tmp.ts', {
-      inputFiles: [{
-        path: 'tmp.ts',
-        content: `import { describe, example } from 'node:test'\nimport assert from 'node:assert/strict'\n\ndescribe('User API', () => {\n  example('create user', () => {\n    const id = 1\n    assert.equal(typeof id, 'number')\n  })\n\n  describe('Validation', () => {\n    example('reject empty name', () => {\n      const valid = false\n      assert.equal(valid, false)\n    })\n  })\n})`
-      }],
-      outputFiles: [{
-        path: 'tmp.md',
-        contains: '# User API'
-      }, {
-        path: 'tmp.md',
-        contains: '## Validation'
-      }]
-    })
-    // Format options: `hidden` (default), `#`, `##`, `###`, `####`, `auto`
-    // - `hidden`: Omit describes (default behavior)
-    // - `#`, `##`, `###`, `####`: Explicitly set base header level for top-level describes
-    // - `auto`: Dynamically determine header levels based on document structure
-    //
-    // With explicit levels, nested describes go one level deeper than their parent.
-    // With `auto`, if no headers exist yet, describes start at h1. Otherwise,
-    // describes start one level deeper than the last header in the document.
 
-    shellExample('lit-md --describe="##" tmp.ts', {
-      inputFiles: [{
-        path: 'tmp.ts',
-        content: `import { describe, example } from 'node:test'\n\ndescribe('API', () => {\n  example('test', () => {})\n  describe('Nested', () => {\n    example('nested test', () => {})\n  })\n})`
-      }],
-      outputFiles: [{
-        path: 'tmp.md',
-        contains: '## API'
-      }, {
-        path: 'tmp.md',
-        contains: '### Nested'
-      }]
-    })
+```ts
+// Input file "tmp.ts":
+import { describe, example } from 'node:test'
+import assert from 'node:assert/strict'
 
-    // The `auto` format intelligently adapts to existing document structure.
-    shellExample('lit-md --describe="auto" tmp.ts', {
-      inputFiles: [{
-        path: 'tmp.ts',
-        content: `import { describe, example } from 'node:test'\n\ndescribe('First Group', () => {\n  example('test 1', () => {})\n})\n\n// # Existing Header\n\ndescribe('Second Group', () => {\n  example('test 2', () => {})\n})`
-      }],
-      outputFiles: [{
-        path: 'tmp.md',
-        contains: '# First Group'  // No prior headers, so starts at h1
-      }, {
-        path: 'tmp.md',
-        contains: '## Second Group'  // After h1 header, starts at h2
-      }]
+describe('User API', () => {
+  example('create user', () => {
+    const id = 1
+    assert.equal(typeof id, 'number')
+  })
+
+  describe('Validation', () => {
+    example('reject empty name', () => {
+      const valid = false
+      assert.equal(valid, false)
     })
   })
 })
+```
+
+```sh
+$ lit-md --describe="#" tmp.ts
+```
+
+Output file `tmp.md` contains `# User API`:
+````markdown
+# User API
+
+```ts
+const id = 1
+typeof id // => 'number'
+```
+
+## Validation
+
+```ts
+const valid = false
+valid // => false
+```
+````
+
+Output file `tmp.md` contains `## Validation`:
+````markdown
+# User API
+
+```ts
+const id = 1
+typeof id // => 'number'
+```
+
+## Validation
+
+```ts
+const valid = false
+valid // => false
+```
+````
+
+Format options: `hidden` (default), `#`, `##`, `###`, `####`, `auto`
+- `hidden`: Omit describes (default behavior)
+- `#`, `##`, `###`, `####`: Explicitly set base header level for top-level describes
+- `auto`: Dynamically determine header levels based on document structure
+
+With explicit levels, nested describes go one level deeper than their parent.
+With `auto`, if no headers exist yet, describes start at h1. Otherwise,
+describes start one level deeper than the last header in the document.
+
+```ts
+// Input file "tmp.ts":
+import { describe, example } from 'node:test'
+
+describe('API', () => {
+  example('test', () => {})
+  describe('Nested', () => {
+    example('nested test', () => {})
+  })
+})
+```
+
+```sh
+$ lit-md --describe="##" tmp.ts
+```
+
+Output file `tmp.md` contains `## API`:
+```markdown
+## API
+
+### Nested
+```
+
+Output file `tmp.md` contains `### Nested`:
+```markdown
+## API
+
+### Nested
+```
+
+The `auto` format intelligently adapts to existing document structure.
+
+```ts
+// Input file "tmp.ts":
+import { describe, example } from 'node:test'
+
+describe('First Group', () => {
+  example('test 1', () => {})
+})
+
+// # Existing Header
+
+describe('Second Group', () => {
+  example('test 2', () => {})
+})
+```
+
+```sh
+$ lit-md --describe="auto" tmp.ts
+```
+
+Output file `tmp.md` contains `# First Group`:
+```markdown
+# First Group
+
+# Existing Header
+
+## Second Group
+```
+
+Output file `tmp.md` contains `## Second Group`:
+```markdown
+# First Group
+
+# Existing Header
+
+## Second Group
 ```
 
 ## Filename labels

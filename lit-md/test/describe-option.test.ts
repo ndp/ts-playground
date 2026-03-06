@@ -1,5 +1,5 @@
 import { describe, test } from 'node:test'
-import { deepStrictEqual } from 'node:assert/strict'
+import assert, { deepStrictEqual } from 'node:assert/strict'
 import { parse } from '../src/parser.ts'
 import { render } from '../src/renderer.ts'
 
@@ -116,5 +116,14 @@ describe('Top Level', () => {
     if (!topLevel || !nested || !deepNested) {
       throw new Error('Expected nesting headers not found')
     }
+  })
+
+  test('describe with // keep:full comment in body is still rendered as header', () => {
+    // Minimal reproduction: a describe block whose body contains "// keep:full"
+    // in a comment should still be rendered as a header, not as raw code.
+    const src = `describe('My Section', () => {\n  // keep:full\n})`
+    const nodes = parse(src, 'typescript')
+    const md = render(nodes, '##')
+    assert.ok(md.includes('## My Section'), `Expected "## My Section" but got:\n${md}`)
   })
 })

@@ -399,13 +399,16 @@ function getFullStatement(stmt: ts.Statement, src: string): string | null {
   const stmtStart = stmt.getStart()
   const stmtEnd = stmt.getEnd()
   
-  // Extract the entire statement
-  const stmtText = src.slice(stmtStart, stmtEnd)
-  
-  // Look for // keep:full in the statement
-  if (!isFullKeep(stmtText)) {
+  // Only check the first line for // keep:full to avoid false positives
+  // from the directive appearing in nested comments or string content.
+  const firstLineEnd = src.indexOf('\n', stmtStart)
+  const firstLine = src.slice(stmtStart, firstLineEnd === -1 ? src.length : firstLineEnd)
+  if (!isFullKeep(firstLine)) {
     return null
   }
+
+  // Extract the entire statement
+  const stmtText = src.slice(stmtStart, stmtEnd)
   
   // Compute the indentation of the first line to dedent
   const firstLineMatch = stmtText.match(/^(\s*)/)
