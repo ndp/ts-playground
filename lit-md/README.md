@@ -521,12 +521,32 @@ Output file `greeting.txt` contains `Hello`:
 Hello, World!
 ```
 
+You can also display the `shellExample` call itself in the output using the `meta` option:
+
+```ts
+shellExample('echo "Hello, World!"', {
+        meta: true,
+        stdout: {}
+      })
+```
+
+```ts
+shellExample('echo "Hello, World!"', {
+      stdout: {}
+    })
+```
+
+```sh
+$ echo "Hello, World!"
+```
+
 shellExample provides more control and structured options for shell command examples. Use when you need to:
 
   - Capture and display stdout dynamically
   - Create input files before running
   - Assert output files match patterns
   - Hide/customize what's displayed
+  - Show the function call itself with `meta: true`
 
 ### Advanced Usage
 
@@ -589,6 +609,14 @@ Options Reference
     - `content`: File contents
     - `displayPath`: Show the filename (default: true)
     - `summary`: Show summary line (default: true)
+
+    #### meta
+
+    - Type: `boolean`
+    - When true, outputs a fenced code block showing the `shellExample` call itself before the command output
+    - The `meta: true` option is removed from the reconstructed call for cleaner documentation
+    - Default: false (only shows the command and its output)
+    - Useful for showing both the code and its result in documentation
 
     #### Example with All Options
 
