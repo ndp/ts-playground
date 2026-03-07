@@ -84,13 +84,15 @@ Options:
                               auto    - Dynamically determine level based on document structure
                                         (h1 if no headers exist, else one level deeper than last header)
 
+By default, output is written to stdout. Use --out or --outDir to write to files.
+
 Examples:
-  lit-md README.md.test.ts
-  lit-md --test --typecheck README.md.test.ts
-  lit-md --out /tmp/docs.md README.md.test.ts
-  lit-md --outDir ./docs src/**/*.md.test.ts
-  lit-md --describe="#" README.md.test.ts
-  lit-md --describe="auto" README.md.test.ts
+  lit-md README.md.test.ts                                  # outputs to stdout
+  lit-md --test --typecheck README.md.test.ts               # outputs to stdout after testing
+  lit-md --out /tmp/docs.md README.md.test.ts               # writes to file
+  lit-md --outDir ./docs src/**/*.md.test.ts                # writes to directory
+  lit-md --describe="#" README.md.test.ts                   # outputs to stdout with custom format
+  lit-md --describe="auto" README.md.test.ts                # outputs to stdout with auto format
 `)
   process.exit(0)
 }
@@ -155,7 +157,28 @@ if (runTests) {
     // Import the file to allow module-level setup (like setDescribeFormat calls)
     const absolutePath = resolve(inputPath)
     try {
-      await import(absolutePath)
+      // Suppress test output during import and test execution
+      const origStdoutWrite = process.stdout.write
+      const origStderrWrite = process.stderr.write
+      const origLog = console.log
+      const origInfo = console.info
+      const origWarn = console.warn
+      try {
+        process.stdout.write = () => true as any
+        process.stderr.write = () => true as any
+        console.log = () => {}
+        console.info = () => {}
+        console.warn = () => {}
+        await import(absolutePath)
+        // Wait for deferred test execution to complete while output is suppressed
+        await new Promise(resolve => setTimeout(resolve, 100))
+      } finally {
+        process.stdout.write = origStdoutWrite
+        process.stderr.write = origStderrWrite
+        console.log = origLog
+        console.info = origInfo
+        console.warn = origWarn
+      }
     } catch {
       // File might not be valid JavaScript/TypeScript module, continue
     }
@@ -170,7 +193,8 @@ if (runTests) {
     const finalDescribeFormat = resolveDescribeFormat(describeFormat)
     const md = render(nodes, finalDescribeFormat)
 
-    let outPath: string
+    let outPath: string | null = null
+    let isStdout = false
     if (updateSnapshots) {
       const outputFileName = getOutputFileName(inputPath)
       const fileNameWithoutMd = outputFileName.slice(0, -3) // Remove .md
@@ -181,14 +205,20 @@ if (runTests) {
       mkdirSync(outputDir, { recursive: true })
       outPath = join(outputDir, getOutputFileName(inputPath))
     } else {
-      outPath = join(dirname(inputPath), getOutputFileName(inputPath))
+      isStdout = true
     }
 
     if (dryrun) {
-      console.log(`dry run: would write ${outPath}`)
+      if (isStdout) {
+        console.error(`dry run: would write to stdout`)
+      } else {
+        console.error(`dry run: would write ${outPath}`)
+      }
+    } else if (isStdout) {
+      process.stdout.write(md + '\n')
     } else {
-      writeFileSync(outPath, md + '\n', 'utf8')
-      console.log(`wrote ${outPath}`)
+      writeFileSync(outPath!, md + '\n', 'utf8')
+      console.error(`wrote ${outPath}`)
     }
   }
 })()

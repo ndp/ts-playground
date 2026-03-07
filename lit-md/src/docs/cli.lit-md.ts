@@ -4,17 +4,17 @@ const _flag = stripTypesFlag()
 alias('lit-md', ['node', _flag, './src/cli.ts'].filter(Boolean).join(' '))
 
 describe('CLI', () => {
-  // The lit-md CLI is used to do the transformations.
+  // By default, output is written to stdout.
   shellExample('lit-md tmp.ts', {
     displayCommand: true,
     inputFiles: [{
       path: 'tmp.ts',
       content: `// # My Document\nimport { example } from 'node:test'\nexample('test', () => {})`
     }],
-    outputFiles: [{
-      path: 'tmp.md',
-      contains: '# My Document'
-    }]
+    stdout: {
+      contains: '# My Document',
+      display: true
+    }
   })
 
   describe('Custom output path', () => {

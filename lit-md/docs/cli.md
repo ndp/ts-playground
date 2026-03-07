@@ -1,6 +1,6 @@
 ## CLI
 
-The lit-md CLI is used to do the transformations.
+By default, output is written to stdout.
 
 ```ts
 // Input file "tmp.ts":
@@ -11,10 +11,6 @@ example('test', () => {})
 
 ```sh
 $ lit-md tmp.ts
-```
-
-Output file `tmp.md` contains `# My Document`:
-```markdown
 # My Document
 ```
 
@@ -52,21 +48,23 @@ Options:
   -u, --update-snapshots    Update snapshot files instead of generating markdown
   --out <output.md>         Write to a specific output file (requires single input)
   --outDir <dir>           Write generated markdown files to this directory
-  --describe <format>       Control describe() block rendering (default: hidden)
+  --describe <format>       Control describe() block rendering (default: ##)
                             Formats:
-                              hidden  - Omit describes (default)
+                              hidden  - Omit describes
                               #       - Render as h1 headers, nested as h2, h3, etc.
-                              ##      - Render as h2 headers, nested as h3, h4, etc.
+                              ##      - Render as h2 headers, nested as h3, h4, etc. (default)
                               ###     - Render as h3 headers, nested as h4, h5, etc.
                               ####    - Render as h4 headers, nested as h5, h6, etc.
                               auto    - Dynamically determine level based on document structure
                                         (h1 if no headers exist, else one level deeper than last header)
 
+By default, output is written to stdout. Use --out or --outDir to write to files.
+
 Examples:
-  lit-md README.md.test.ts
-  lit-md --test --typecheck README.md.test.ts
-  lit-md --out /tmp/docs.md README.md.test.ts
-  lit-md --outDir ./docs src/**/*.md.test.ts
-  lit-md --describe="#" README.md.test.ts
-  lit-md --describe="auto" README.md.test.ts
+  lit-md README.md.test.ts                                  # outputs to stdout
+  lit-md --test --typecheck README.md.test.ts               # outputs to stdout after testing
+  lit-md --out /tmp/docs.md README.md.test.ts               # writes to file
+  lit-md --outDir ./docs src/**/*.md.test.ts                # writes to directory
+  lit-md --describe="#" README.md.test.ts                   # outputs to stdout with custom format
+  lit-md --describe="auto" README.md.test.ts                # outputs to stdout with auto format
 ```

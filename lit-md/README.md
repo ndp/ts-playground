@@ -34,12 +34,13 @@ that work well with the node ecosystem.
 node --test README.lit-md.ts
 # You can also typecheck:
 tsc README.lit-md.ts
-# An it can be converted from Typescript to a plain old markdown
-# README file with `lit-md`:
-lit-md README.lit-md.ts        # generates README.md
+# Or convert it from TypeScript to markdown with `lit-md`:
+lit-md README.lit-md.ts        # outputs to stdout
+# Or write to a file with --out:
+lit-md README.lit-md.ts --out README.md
 
 # Or, you can do it all in one step with:
-lit-md --test --typecheck README.lit-md.ts  # all-in-one!
+lit-md --test --typecheck README.lit-md.ts --out README.md  # all-in-one!
 ```
 ## How it Works
 A **lit-md** file contains prose in comments and examples in test bodies.
