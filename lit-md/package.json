@@ -45,7 +45,7 @@
     "build": "npm run build:types && npm run build:js",
     "build:types": "tsc -p tsconfig.build.json",
     "build:js": "esbuild ./index.ts --bundle --format=esm --platform=node --target=es2022 --sourcemap --outfile=./dist/index.js",
-    "build:docs": "node ./src/cli.ts --describe='##' --test --typecheck --out ./docs/cli.md ./src/docs/cli.lit-md.ts"
+    "build:docs": "node ./src/cli.ts --describe='##' --test --typecheck --out ./docs/cli.md ./src/docs/cli.lit-md.ts && node ./src/cli.ts --describe='##' --test --typecheck --out ./docs/shell-examples.md ./src/docs/shell-examples.lit-md.ts"
   },
   "devDependencies": {
     "@types/node": "^25",
