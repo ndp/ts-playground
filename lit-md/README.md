@@ -34,13 +34,12 @@ that work well with the node ecosystem.
 node --test README.lit-md.ts
 # You can also typecheck:
 tsc README.lit-md.ts
-# Or convert it from TypeScript to markdown with `lit-md`:
-lit-md README.lit-md.ts        # outputs to stdout
-# Or write to a file with --out:
-lit-md README.lit-md.ts --out README.md
+# An it can be converted from Typescript to a plain old markdown
+# README file with `lit-md`:
+lit-md README.lit-md.ts        # generates README.md
 
 # Or, you can do it all in one step with:
-lit-md --test --typecheck README.lit-md.ts --out README.md  # all-in-one!
+lit-md --test --typecheck README.lit-md.ts  # all-in-one!
 ```
 ## How it Works
 A **lit-md** file contains prose in comments and examples in test bodies.
@@ -80,27 +79,6 @@ $ lit-md tmp.ts --out out.md
 ```
 
 Output:
-````markdown
-## My Project README.
-
-This is a really great project! 
-Adding numbers is as simple as using the "+" operator:
-
-```ts
-const a = 1
-const b = 2
-console.log(a + b) // => 3
-```
-
-Also supported is multiplication:
-
-```ts
-const x = 3
-const y = 4
-console.log(x * y) // => 12
-```
-````
-
 For more information on the CLI, see [CLI documentation](./docs/cli.md).
 
 ## Shell examples
@@ -139,3 +117,5 @@ shellExample('echo "hello"', {
 })
 ```
 ````
+
+For more information on the `shellExample`, see [shellCommand documentation](./docs/shell-examples.md).

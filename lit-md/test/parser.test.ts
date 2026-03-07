@@ -69,6 +69,73 @@ describe('parse: comments → prose', () => {
     ])
   })
 
+  test('trailing single line comment after code appears in output', () => {
+    const nodes = parse(`
+import { test } from 'node:test'
+test('example', () => {
+  const x = 1
+})
+// For more information, see the docs.
+`)
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'typescript', text: 'const x = 1' },
+      { kind: 'prose', text: 'For more information, see the docs.' }
+    ])
+  })
+
+  test('trailing block comment after code appears in output', () => {
+    const nodes = parse(`
+import { test } from 'node:test'
+test('example', () => {
+  const x = 1
+})
+/*
+For more information, see the docs.
+*/
+`)
+    assert.deepEqual(nodes, [
+      { kind: 'code', lang: 'typescript', text: 'const x = 1' },
+      { kind: 'prose', text: 'For more information, see the docs.' }
+    ])
+  })
+
+  test('trailing comments after describe block appear in output', () => {
+    const nodes = parse(`
+import { describe, test } from 'node:test'
+describe('group', () => {
+  test('inner', () => {
+    const x = 42
+  })
+})
+// See documentation for details.
+`)
+    assert.deepEqual(nodes, [
+      { kind: 'describe', name: 'group', depth: 0 },
+      { kind: 'code', lang: 'typescript', text: 'const x = 42' },
+      { kind: 'prose', text: 'See documentation for details.' }
+    ])
+  })
+
+  test('trailing comment inside describe block (before closing brace)', () => {
+    const nodes = parse(`
+import { describe, test } from 'node:test'
+describe('group', () => {
+  test('inner', () => {
+    const x = 42
+  })
+
+  /*
+  For more information, see the docs.
+  */
+})
+`)
+    assert.deepEqual(nodes, [
+      { kind: 'describe', name: 'group', depth: 0 },
+      { kind: 'code', lang: 'typescript', text: 'const x = 42' },
+      { kind: 'prose', text: 'For more information, see the docs.' }
+    ])
+  })
+
 })
 
 describe('parse: test() with no body statements produces no code node', () => {

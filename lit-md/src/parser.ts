@@ -69,10 +69,16 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
     }
   }
 
-  function visitStatements(statements: ts.NodeArray<ts.Statement>, depth: number = 0): void {
+  function visitStatements(statements: ts.NodeArray<ts.Statement>, depth: number = 0, parentBlock?: ts.Block): void {
     for (const stmt of statements) {
       extractLeadingComments(stmt.getFullStart())
       processStatement(stmt, depth)
+    }
+    
+    // Extract trailing comments after the last statement
+    if (statements.length > 0 && parentBlock) {
+      const lastStatement = statements[statements.length - 1]!
+      extractLeadingComments(lastStatement.end)
     }
   }
 
@@ -161,7 +167,7 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
           const body = getFnBody(expr, 1)
           if (body && ts.isBlock(body) && descName !== null) {
             nodes.push({ kind: 'describe', name: descName, depth })
-            visitStatements(body.statements, depth + 1)
+            visitStatements(body.statements, depth + 1, body)
             return
           }
         }
