@@ -208,10 +208,15 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
 
             const inputFiles = opts ? extractStaticInputFiles(opts) : []
 
+            const exitCodeProp = opts ? getProp(opts, 'exitCode') : undefined
+            const expectedExitCode = exitCodeProp && ts.isNumericLiteral(exitCodeProp.initializer)
+              ? parseInt(exitCodeProp.initializer.text, 10)
+              : 0
+
             let execution: ShellCommandExecution | null = null
             if (opts && isExecutionNeeded(opts)) {
               const outputPaths = extractOutputFilePaths(opts)
-              execution = executeShellCommand(cmd, inputFiles, outputPaths)
+              execution = executeShellCommand(cmd, inputFiles, outputPaths, expectedExitCode)
             }
 
             const displayCommand = opts ? readBoolOption(getProp(opts, 'displayCommand')) : true
@@ -844,7 +849,7 @@ function extractOutputFilePaths(opts: ts.ObjectLiteralExpression): string[] {
 }
 
 /** Executes a shell command with optional input files and captures stdout + output files */
-function executeShellCommand(cmd: string, inputFiles: Array<InputFileInfo>, outputFilePaths: string[]): ShellCommandExecution | null {
+function executeShellCommand(cmd: string, inputFiles: Array<InputFileInfo>, outputFilePaths: string[], expectedExitCode = 0): ShellCommandExecution | null {
   const tmpDir = mkdtempSync(join(tmpdir(), 'lit-md-exec-'))
   const resolvePath = (p: string) => isAbsolute(p) ? p : join(tmpDir, p)
   try {
@@ -856,9 +861,9 @@ function executeShellCommand(cmd: string, inputFiles: Array<InputFileInfo>, outp
     // Execute command
     const result = spawnSync(cmd, { shell: true, encoding: 'utf8', cwd: tmpDir })
     
-    // Capture output files
+    // Capture output files when exit code matches expectation
     const outputFiles = new Map<string, string>()
-    if (result.status === 0) {
+    if ((result.status ?? 1) === expectedExitCode) {
       for (const filePath of outputFilePaths) {
         try {
           const content = readFileSync(resolvePath(filePath), 'utf8')
@@ -890,6 +895,13 @@ function appendShellExampleAnnotations(
   for (const prop of opts.properties) {
     if (!ts.isPropertyAssignment(prop) || !ts.isIdentifier(prop.name)) continue
     const key = prop.name.text
+
+    if (key === 'exitCode' && ts.isNumericLiteral(prop.initializer)) {
+      const code = parseInt(prop.initializer.text, 10)
+      if (code !== 0) {
+        lines.push(`# exits: ${code}`)
+      }
+    }
 
     if (key === 'stdout' && ts.isObjectLiteralExpression(prop.initializer)) {
       const containsProp = getProp(prop.initializer as ts.ObjectLiteralExpression, 'contains')

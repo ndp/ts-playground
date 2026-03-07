@@ -74,6 +74,7 @@ export interface ShellExampleOpts {
   inputFiles?: Array<ExampleInputFile>
   displayCommand?: boolean | 'hidden'
   meta?: boolean
+  exitCode?: number
 }
 
 /** Internal: executes a shell command and runs any assertions. Throws on failure.
@@ -88,22 +89,30 @@ export function _runShellExample(cmd: string, opts: ShellExampleOpts): void {
     const prefix = buildAliasPrefix()
     const fullCmd = prefix ? `${prefix}${cmd}` : cmd
     const result = spawnSync(fullCmd, { shell: true, encoding: 'utf8', cwd: tmpDir })
-    if (result.status !== 0) {
+    const actualExitCode = result.status ?? 1
+    if (opts.exitCode !== undefined) {
+      if (actualExitCode !== opts.exitCode) {
+        const err = result.stderr || result.error?.message || ''
+        throw new Error(`Command failed: ${cmd}\nexit ${actualExitCode} (expected exit code ${opts.exitCode})${err ? ': ' + err : ''}`)
+      }
+    } else if (actualExitCode !== 0) {
       const err = result.stderr || result.error?.message || ''
-      throw new Error(`Command failed: ${cmd}\nexit ${result.status ?? 'null'}${err ? ': ' + err : ''}`)
+      throw new Error(`Command failed: ${cmd}\nexit ${actualExitCode}${err ? ': ' + err : ''}`)
     }
     const stdout = result.stdout
     if (opts.stdout !== undefined) {
       if (opts.stdout.contains !== undefined) {
+        const actualDesc = stdout === '' ? '(empty)' : stdout
         assert.ok(
           matchesPattern(stdout, opts.stdout.contains),
-          `stdout did not contain: ${JSON.stringify(opts.stdout.contains)}\nActual: ${JSON.stringify(stdout)}`
+          `stdout did not contain: ${JSON.stringify(opts.stdout.contains)}\nActual: ${actualDesc}`
         )
       }
       if (opts.stdout.matches !== undefined) {
+        const actualDesc = stdout === '' ? '(empty)' : stdout
         assert.ok(
           matchesPattern(stdout, opts.stdout.matches),
-          `stdout did not match: ${opts.stdout.matches}\nActual: ${JSON.stringify(stdout)}`
+          `stdout did not match: ${opts.stdout.matches}\nActual: ${actualDesc}`
         )
       }
     }
@@ -118,11 +127,18 @@ export function _runShellExample(cmd: string, opts: ShellExampleOpts): void {
         }
         throw e
       }
+      const actualDesc = content === '' ? '(empty)' : content
       if (fa.contains !== undefined) {
-        assert.ok(matchesPattern(content, fa.contains), `file ${fa.path} does not contain: ${JSON.stringify(fa.contains)}`)
+        assert.ok(
+          matchesPattern(content, fa.contains),
+          `file ${fa.path} does not contain: ${JSON.stringify(fa.contains)}\nActual:\n${actualDesc}`
+        )
       }
       if (fa.matches !== undefined) {
-        assert.ok(matchesPattern(content, fa.matches), `file ${fa.path} does not match: ${fa.matches}`)
+        assert.ok(
+          matchesPattern(content, fa.matches),
+          `file ${fa.path} does not match: ${fa.matches}\nActual:\n${actualDesc}`
+        )
       }
     }
     // Clean up absolute-path inputFiles (relative ones are removed with tmpDir below)

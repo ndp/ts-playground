@@ -65,6 +65,48 @@ describe('shellExample: runtime behaviour', () => {
 
 })
 
+describe('shellExample: exitCode assertion', () => {
+
+  test('succeeds when command exits with expected non-zero exitCode', () => {
+    _runShellExample('exit 2', { exitCode: 2 })
+  })
+
+  test('succeeds when command exits 0 and exitCode is 0', () => {
+    _runShellExample('echo "ok"', { exitCode: 0 })
+  })
+
+  test('throws when command exits with wrong exitCode', () => {
+    assert.throws(
+      () => _runShellExample('exit 1', { exitCode: 2 }),
+      /expected exit code 2/
+    )
+  })
+
+  test('throws when command exits non-zero and no exitCode specified', () => {
+    assert.throws(() => _runShellExample('exit 1', {}), /Command failed/)
+  })
+
+  test('error message includes actual and expected exit codes', () => {
+    assert.throws(
+      () => _runShellExample('exit 3', { exitCode: 1 }),
+      (err: Error) => {
+        assert.ok(err.message.includes('exit 3'), `message should include actual: ${err.message}`)
+        assert.ok(err.message.includes('expected exit code 1'), `message should include expected: ${err.message}`)
+        return true
+      }
+    )
+  })
+
+  test('can combine exitCode with stdout assertion', () => {
+    // Some commands write to stdout before failing
+    _runShellExample('echo "error output"; exit 1', {
+      exitCode: 1,
+      stdout: { contains: 'error output' }
+    })
+  })
+
+})
+
 describe('shellExample: outputFiles assertions', () => {
   const tmp = mkdtempSync(join(tmpdir(), 'lit-md-test-'))
 
@@ -152,6 +194,42 @@ describe('shellExample: outputFiles assertions', () => {
     assert.throws(
       () => _runShellExample(`cat "${outFile}"`, { outputFiles: [{ path: outFile, matches: 'missing' }] }),
       /does not match/
+    )
+  })
+
+  test('error message shows actual content when contains assertion fails', () => {
+    const outFile = join(tmp, 'out12.txt')
+    writeFileSync(outFile, 'actual content here')
+    assert.throws(
+      () => _runShellExample(`cat "${outFile}"`, { outputFiles: [{ path: outFile, contains: 'expected text' }] }),
+      (err: Error) => {
+        assert.ok(err.message.includes('actual content here'), `message should show actual: ${err.message}`)
+        return true
+      }
+    )
+  })
+
+  test('error message shows (empty) when file is empty and contains assertion fails', () => {
+    const outFile = join(tmp, 'out13.txt')
+    _runShellExample(`touch "${outFile}"`, {})
+    assert.throws(
+      () => _runShellExample(`cat "${outFile}"`, { outputFiles: [{ path: outFile, contains: 'something' }] }),
+      (err: Error) => {
+        assert.ok(err.message.includes('(empty)'), `message should say empty: ${err.message}`)
+        return true
+      }
+    )
+  })
+
+  test('error message shows actual content when matches assertion fails', () => {
+    const outFile = join(tmp, 'out14.txt')
+    writeFileSync(outFile, 'some actual content')
+    assert.throws(
+      () => _runShellExample(`cat "${outFile}"`, { outputFiles: [{ path: outFile, matches: /missing/ }] }),
+      (err: Error) => {
+        assert.ok(err.message.includes('some actual content'), `message should show actual: ${err.message}`)
+        return true
+      }
     )
   })
 
