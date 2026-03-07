@@ -1,7 +1,8 @@
 import { describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import { parse } from '../src/parser.ts'
-import {readFileSync} from 'fs'
+import { render } from '../src/renderer.ts'
+import { readFileSync } from 'fs'
 
 describe('parse: comments → prose', () => {
 
@@ -810,6 +811,98 @@ describe('parse: shellExample() → sh code block', () => {
       { kind: 'output-file-display', path: 'a.txt', lang: 'text', cmd: 'cmd', inputFiles: [] },
       { kind: 'output-file-display', path: 'b.txt', lang: 'text', cmd: 'cmd', inputFiles: [] }
     ])
+  })
+
+})
+
+describe('parse: describe() names with quotes', () => {
+
+  test('describe with apostrophe in double-quoted name is correctly parsed', () => {
+    const nodes = parse(`
+import { describe, example } from 'node:test'
+describe("My Project's README.", () => {
+  example('inner', () => { const x = 1 })
+})
+`)
+    const descNode = nodes.find(n => n.kind === 'describe')
+    assert.equal((descNode as any)?.name, "My Project's README.")
+  })
+
+  test('describe with apostrophe in escaped single-quoted name is correctly parsed', () => {
+    const nodes = parse(`
+import { describe, example } from 'node:test'
+describe('My Project\\'s README.', () => {
+  example('inner', () => { const x = 1 })
+})
+`)
+    const descNode = nodes.find(n => n.kind === 'describe')
+    assert.equal((descNode as any)?.name, "My Project's README.")
+  })
+
+  test('describe name with quotes renders correctly as markdown header', () => {
+    const nodes = parse(`
+import { describe } from 'node:test'
+describe("My Project's README.", () => {})
+`)
+    const rendered = render(nodes, '##')
+    assert.ok(rendered.includes("## My Project's README."), `Expected header in: ${rendered}`)
+  })
+
+  test('describe name with double quotes renders correctly as markdown header', () => {
+    const nodes = parse(`
+import { describe } from 'node:test'
+describe('Contains "double quotes"', () => {})
+`)
+    const rendered = render(nodes, '##')
+    assert.ok(rendered.includes('## Contains "double quotes"'), `Expected header in: ${rendered}`)
+  })
+
+})
+
+describe('parse: shellExample meta with special characters in cmd', () => {
+
+  test("shellExample meta: cmd with single quote is escaped in generated TypeScript", () => {
+    // cmd value: ls '/some path' (has single quotes)
+    const nodes = parse(`shellExample("ls '/some path'", { meta: true })`)
+    const tsNode = nodes.find(n => n.kind === 'code' && n.lang === 'ts')
+    assert.ok(tsNode, 'should generate ts code node')
+    const text = (tsNode as any).text as string
+    // Should have escaped single quotes
+    assert.ok(text.includes("\\'"), `Should have escaped apostrophe in: ${text}`)
+    // The text should represent the original cmd correctly
+    assert.ok(text.includes("ls \\'/some path\\'"), `Should preserve path with quotes in: ${text}`)
+  })
+
+  test("shellExample meta: cmd with backslash preserves backslash in reconstructed call", () => {
+    // Source: shellExample('echo \\n', ...) → cmd value = echo + backslash + n
+    // Reconstructed should have echo \\n (two backslashes in text value → one backslash when TS evaluates)
+    const nodes = parse(`shellExample('echo \\\\n', { meta: true })`)
+    const tsNode = nodes.find(n => n.kind === 'code' && n.lang === 'ts')
+    assert.ok(tsNode, 'should generate ts code node')
+    const text = (tsNode as any).text as string
+    // The text string value should have two backslashes before n (\\n in text = \n when evaluated)
+    assert.ok(text.includes('\\\\n'), `Should have escaped backslash in: ${text}`)
+  })
+
+  test("shellExample meta: cmd with apostrophe (Project's README) generates escaped output", () => {
+    const nodes = parse(`shellExample("echo My Project's README", { meta: true })`)
+    const tsNode = nodes.find(n => n.kind === 'code' && n.lang === 'ts')
+    assert.ok(tsNode, 'should generate ts code node')
+    const text = (tsNode as any).text as string
+    // The reconstructed call must have escaped the apostrophe
+    assert.ok(text.includes("\\'"), `Should have escaped apostrophe in: ${text}`)
+    // The text should contain the original content
+    assert.ok(text.includes("Project\\'s README"), `Should preserve content in: ${text}`)
+  })
+
+  test("shellExample meta: cmd with carriage return is escaped", () => {
+    // A cmd containing \r should have it escaped in the output
+    const nodes = parse(`shellExample("echo test\\r", { meta: true })`)
+    const tsNode = nodes.find(n => n.kind === 'code' && n.lang === 'ts')
+    assert.ok(tsNode, 'should generate ts code node')
+    const text = (tsNode as any).text as string
+    // \r should be escaped as \\r in the output (not literal carriage return)
+    assert.ok(!text.includes('\r'), `Should not contain literal carriage return in: ${JSON.stringify(text)}`)
   })
 
 })

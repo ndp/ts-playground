@@ -265,10 +265,20 @@ function readFlag(prop: ts.PropertyAssignment | undefined): boolean {
   return prop.initializer.kind !== ts.SyntaxKind.FalseKeyword
 }
 
+/** Escapes a string value for safe embedding in a TypeScript single-quoted string literal. */
+function escapeForSingleQuotedString(s: string): string {
+  return s
+    .replace(/\\/g, '\\\\')  // backslashes must be escaped first
+    .replace(/'/g, "\\'")     // then single quotes
+    .replace(/\n/g, '\\n')   // newlines
+    .replace(/\r/g, '\\r')   // carriage returns
+}
+
 /** Reconstructs shellExample call without the meta option. */
 function reconstructShellExampleWithoutMeta(src: string, expr: ts.CallExpression, cmd: string, opts: ts.ObjectLiteralExpression | undefined): string {
+  const escapedCmd = escapeForSingleQuotedString(cmd)
   if (!opts) {
-    return `shellExample('${cmd.replace(/'/g, "\\'")}')`
+    return `shellExample('${escapedCmd}')`
   }
 
   // Extract options text and remove meta: true
@@ -280,7 +290,7 @@ function reconstructShellExampleWithoutMeta(src: string, expr: ts.CallExpression
     .replace(/^\{\s*,/, '{')  // Remove leading comma after {
     .replace(/,\s*\}$/, '}')  // Remove trailing comma before }
   
-  return `shellExample('${cmd.replace(/'/g, "\\'")}'${cleanedOpts !== '{}' ? `, ${cleanedOpts}` : ''})`
+  return `shellExample('${escapedCmd}'${cleanedOpts !== '{}' ? `, ${cleanedOpts}` : ''})`
 }
 
 /** Create a CodeNode, omitting the `title` key entirely when undefined. */
