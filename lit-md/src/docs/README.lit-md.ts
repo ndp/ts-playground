@@ -92,8 +92,7 @@ example('multiply example', () => {
 `
   }],
   outputFiles: [{
-    path: "out.md",
-    displayPath: false,
+    path: "out.md"
   }]
 })
 
