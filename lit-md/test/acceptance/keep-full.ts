@@ -7,7 +7,6 @@ describe('Keeping Full Statements', () => {
   // The `// keep` directive includes statements in the output.
   // For multi-line statements like functions and classes, use `// keep:full` to include the entire body.
 
-
   describe('Single-Line Keep', () => {
     shellExample('lit-md input.md',
       {
