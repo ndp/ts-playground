@@ -1,16 +1,100 @@
 // # Shell Commands: `shellExample`
 //
-// lit-md provides two ways to embed executable shell commands in documentation:
-// the `shell` tagged template and the `shellExample` structured function.
-// Both run the command as a test and emit a `sh` code block.
+// lit-md provides the `shellExample` function to embed executable shell commands in documentation.
+// It runs the command as a test and emits a `sh` code block.
 
-import {shellExample} from '../../src/index.ts'
+import { shellExample } from '../../src/index.ts'
 
+// ## Basic Commands
+
+// By default, the command is shown in the output as a `$ command` line.
+shellExample('echo "hello world"', {
+  meta: true
+})
+
+// Set `stdout: { display: true }` to capture and show the actual
+// output without an assertion.
+shellExample('echo "hello stdout"', {
+  meta: true,
+  stdout: { display: true }
+})
+
+// Set `displayCommand: false` to suppress the `$ command` line entirely.
+// The command still runs — only the documentation is affected.
+// Combine with `stdout: { display: true }` to show just the output.
+shellExample('echo "quiet output"', {
+  meta: true,
+  displayCommand: false,
+  stdout: { display: true }
+})
+
+// ## inputFiles
+shellExample('cat input.txt', {
+  meta: true,
+  inputFiles: [{ path: 'input.txt', content: 'hello world' }]
+})
+
+// By default, each input file is introduced with a label with the file name.
+// Set `displayPath: false` to not mention a file name.
+shellExample('cat input.txt', {
+  meta: true,
+  inputFiles: [{ path: 'input.txt', content: 'hello world', displayPath: false }]
+})
+
+// Set `display: false` to suppress the file content entirely.
+shellExample('cat input.txt', {
+  meta: true,
+  inputFiles: [{ path: 'input.txt', content: 'hello world', display: false }]
+})
+
+// ## outputFiles
+
+// By default, output files are captioned with the filename and assertion text.
+// Set `displayPath: false` to show the content under a generic `Output:` label.
+shellExample('echo "result" > out.txt', {
+  meta: true,
+  outputFiles: [{ path: 'out.txt' }]
+})
+
+// Set `displayPath: false` to show the content under a generic `Output:` label.
+shellExample('echo "result" > out.txt', {
+  meta: true,
+  outputFiles: [{ path: 'out.txt', displayPath: false }]
+})
+
+// Set `summary: false` to suppress the prose caption entirely —
+// the file content is shown with no introductory line.
+shellExample('echo "42" > answer.txt', {
+  meta: true,
+  outputFiles: [{ path: 'answer.txt', contains: '42', summary: false }]
+})
+
+
+// ### Asserting stdout
 //
-// ## Basic
+// Use `stdout: { contains: '...' }` to assert that stdout contains a substring.
+
+shellExample('echo "ready"', {
+  stdout: { contains: 'ready' }
+})
+
+// ### Asserting file output
 //
-// Using `shellExample('echo "ok"')` produces:
-shellExample('echo "ok"')
+// Use `outputFiles` to assert that a file created by the command contains expected content.
+
+shellExample('echo "hello" > greeting.txt', {
+  outputFiles: [
+    { path: 'greeting.txt', contains: 'hello' }
+  ]
+})
+
+// ## Multiple Commands
+//
+// Join multiple commands with `&&` to run them in sequence and emit a single `sh` block.
+
+shellExample('echo "first" && echo "second"')
+
+
 
 // ## With stdout Assertion
 //

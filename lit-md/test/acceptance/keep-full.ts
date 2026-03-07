@@ -1,16 +1,41 @@
-import { example, metaExample, describe } from '../../src/index.ts'
+import {example, metaExample, describe, shellExample, stripTypesFlag, alias} from '../../src/index.ts'
 import assert from 'node:assert/strict'
+const _flag = stripTypesFlag()
+alias('lit-md', ['node', _flag, './src/cli.ts'].filter(Boolean).join(' '))
 
 describe('Keeping Full Statements', () => {
   // The `// keep` directive includes statements in the output.
   // For multi-line statements like functions and classes, use `// keep:full` to include the entire body.
 
+
   describe('Single-Line Keep', () => {
+    shellExample('lit-md input.md',
+      {
+        stdout: {
+          display: true,
+          contains: 'timeout: 5000'
+        },
+        inputFiles: [{
+          path: 'input.md',
+          content: `
+  const CONFIG = {timeout: 5000} // keep
+
+  example('use config', () => {
+    const delay = CONFIG.timeout
+    assert.equal(delay, 5000)
+  })
+`
+        }]
+      })
+  })
+
+
+  describe('Single-Line Keep old', () => {
     // Single-line statements use `// keep`:
     // ```
     // const CONFIG = { timeout: 5000 } // keep
     // ```
-    const CONFIG = { timeout: 5000 }
+    const CONFIG = {timeout: 5000}
 
     example('use config', () => {
       const delay = CONFIG.timeout
@@ -33,7 +58,9 @@ describe('Keeping Full Statements', () => {
     function createCounter() {
       let count = 0
       return {
-        increment() { count++ },
+        increment() {
+          count++
+        },
         get: () => count
       }
     }

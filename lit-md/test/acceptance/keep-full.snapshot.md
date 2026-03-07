@@ -5,6 +5,30 @@ For multi-line statements like functions and classes, use `// keep:full` to incl
 
 ### Single-Line Keep
 
+With input file `input.md`:
+```markdown
+
+  const CONFIG = {timeout: 5000} // keep
+
+  example('use config', () => {
+    const delay = CONFIG.timeout
+    assert.equal(delay, 5000)
+  })
+
+```
+
+````sh
+$ lit-md input.md
+```ts
+const CONFIG = {timeout: 5000}
+
+const delay = CONFIG.timeout
+delay // => 5000
+```
+````
+
+### Single-Line Keep old
+
 Single-line statements use `// keep`:
 ````ts
 const CONFIG = { timeout: 5000 } // keep
@@ -25,7 +49,9 @@ describe('Multi-Line Keep with
     function createCounter() {
       let count = 0
       return {
-        increment() { count++ },
+        increment() {
+          count++
+        },
         get: () => count
       }
     }
