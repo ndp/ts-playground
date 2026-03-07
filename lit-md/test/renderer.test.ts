@@ -40,6 +40,14 @@ describe('render: markdown output', () => {
     assert.equal(render(nodes), '```ts\nconst x = 1\n```\n\nAfter code.')
   })
 
+  test('prose with noBlankAfter followed by code has no blank line', () => {
+    const nodes: DocNode[] = [
+      { kind: 'prose', text: 'Some prose.', noBlankAfter: true },
+      { kind: 'code', lang: 'typescript', text: 'const x = 1'}
+    ]
+    assert.equal(render(nodes), 'Some prose.\n```ts\nconst x = 1\n```')
+  })
+
   test('empty node list produces empty string', () => {
     assert.equal(render([]), '')
   })

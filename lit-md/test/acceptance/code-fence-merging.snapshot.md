@@ -25,7 +25,6 @@ md // => '# Hello'
 ### No Merge Without Trailing Fence
 
 A comment that does NOT end with a fence produces separate prose and code blocks.
-
 ```ts
 const x = 1 + 1
 x // => 2

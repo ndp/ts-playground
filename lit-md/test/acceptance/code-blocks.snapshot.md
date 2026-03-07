@@ -6,7 +6,6 @@ The test name becomes the label in the fence info string.
 ### Single Statement
 
 A one-liner body produces a single-line code block.
-
 ```ts
 const greeting = 'Hello, world!'
 greeting.length // => 13
@@ -15,7 +14,6 @@ greeting.length // => 13
 ### Multiple Statements
 
 All statements are included with one level of indentation stripped.
-
 ```ts
 const a = 10
 const b = 20

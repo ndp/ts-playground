@@ -146,7 +146,12 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
                   nodes.splice(proseNodeIdx + 1)
                   const mergedCode = fenceMatch.fenceCode + '\n' + code
                   nodes.push(codeNode(lang, mergedCode, title))
+                } else if (proseNodeIdx === nodes.length - 1) {
+                  // Prose directly precedes this code block (no describe nodes in between), suppress blank line
+                  (proseNode as any).noBlankAfter = true
+                  nodes.push(codeNode(lang, code, title))
                 } else {
+                  // There are describe nodes between prose and code, don't suppress blank line
                   nodes.push(codeNode(lang, code, title))
                 }
               } else {

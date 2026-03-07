@@ -22,14 +22,12 @@ Comments between examples inside `describe()` become interleaved prose blocks.
 #### string utilities
 
 Convert a string to upper case:
-
 ```ts
 const result = 'hello'.toUpperCase()
 result // => 'HELLO'
 ```
 
 And back to lower:
-
 ```ts
 const result = 'WORLD'.toLowerCase()
 result // => 'world'
@@ -52,7 +50,6 @@ x // => 42
 
 Functions (and variables) defined at the top level are invisible — they
 exist to support examples but don't appear in the output.
-
 ```ts
 const result = double(21)
 result // => 42

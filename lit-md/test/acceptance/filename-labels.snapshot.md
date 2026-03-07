@@ -5,14 +5,12 @@ filename label to that code block's fence info string.
 ## Label on a Short Snippet
 
 A single-expression example labeled as a TypeScript config file.
-
 ```ts config.ts
 const port = 3000
 port // => 3000
 ```
 
 ## Label on a Multi-Statement Block
-
 ```ts server.ts
 const host = 'localhost'
 const port = 8080
@@ -23,7 +21,6 @@ url // => 'http://localhost:8080'
 ## Multiple Labels in Sequence
 
 Each `// file:` directive labels only the immediately following block.
-
 ```ts step-1.ts
 const a = 1
 a // => 1

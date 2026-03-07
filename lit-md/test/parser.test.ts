@@ -174,6 +174,20 @@ test('example', () => {
     ])
   })
 
+  test('prose followed by test sets noBlankAfter on prose', () => {
+    const nodes = parse(`
+// This introduces an example:
+import { test } from 'node:test'
+test('example', () => {
+  const x = 1
+})
+`)
+    assert.deepEqual(nodes, [
+      { kind: 'prose', text: 'This introduces an example:', noBlankAfter: true },
+      { kind: 'code', lang: 'typescript', text: 'const x = 1'}
+    ])
+  })
+
 })
 
 describe('parse: describe() transparency', () => {
@@ -219,7 +233,7 @@ describe('group', () => {
 `)
     assert.deepEqual(nodes, [
       { kind: 'describe', name: 'group', depth: 0 },
-      { kind: 'prose', text: 'before second test' },
+      { kind: 'prose', text: 'before second test', noBlankAfter: true },
       { kind: 'code', lang: 'typescript', text: 'const y = 2'}
     ])
   })

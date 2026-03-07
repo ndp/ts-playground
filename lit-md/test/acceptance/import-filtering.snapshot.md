@@ -6,7 +6,6 @@ Add `// keep` at the end of an import to include it in the output.
 
 The two imports above (`example` and `assert`) do not appear in the output.
 Only the example body is shown.
-
 ```ts
 const x = 1
 x // => 1
