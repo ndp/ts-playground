@@ -5,9 +5,6 @@
 
 ## Markdown output
 
-lit-md/test/acceptance/keep-full.ts doesn't actually use the keep:full options, so it should be
-updated to actually use it
-
 ## Acceptance tests
 npm run test:update should be `test:acceptance:update`, as it only applies to acceptance tests
 
@@ -15,9 +12,6 @@ npm run test:update should be `test:acceptance:update`, as it only applies to ac
 ## CLI
 
 - [ ] add a `--wait` to cli that will keep the process alive after generating the MD file. This allows users to inspect the generated file before the process exits, and also allows for easier debugging of the generation process. The process would exit when the user presses a key or sends a signal (e.g., Ctrl+C). WOrks in consort with --test and --typecheck if they were already implemented.
-
-- unknown CLI options should produce an error and not run.
-- outputDir should be renamed outDir.
 
 RENDER
 

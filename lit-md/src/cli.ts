@@ -44,6 +44,13 @@ const outFlag = extractFlagValue('--out')
 const outputDir = extractFlagValue('--outDir')
 const describeFormat = extractFlagValue('--describe') || '##'
 
+// Check for unknown options
+const unknownOptions = args.filter(a => a.startsWith('--') || (a.startsWith('-') && a.length > 1 && a !== '-'))
+if (unknownOptions.length > 0) {
+  console.error(`error: unknown option${unknownOptions.length > 1 ? 's' : ''}: ${unknownOptions.join(', ')}`)
+  process.exit(1)
+}
+
 const inputPaths = args.filter(a => !a.startsWith('--'))
 
 // --- File name rewriting helper ---

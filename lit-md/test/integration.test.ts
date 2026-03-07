@@ -146,5 +146,30 @@ describe('integration: lit-md CLI end-to-end', () => {
     }
   })
 
+  test('unknown option causes error and exits', () => {
+    const input = join(__dir, 'acceptance/basic-prose.lit-md.ts')
+    const { stderr, status } = runCli(['--unknown-option', input], { expectFail: true })
+    assert.equal(status, 1)
+    assert.ok(stderr.includes('error: unknown option'))
+    assert.ok(stderr.includes('--unknown-option'))
+  })
+
+  test('typo in known option (e.g., --typcheck instead of --typecheck) causes error', () => {
+    const input = join(__dir, 'acceptance/basic-prose.lit-md.ts')
+    const { stderr, status } = runCli(['--typcheck', input], { expectFail: true })
+    assert.equal(status, 1)
+    assert.ok(stderr.includes('error: unknown option'))
+    assert.ok(stderr.includes('--typcheck'))
+  })
+
+  test('multiple unknown options shows all of them in error', () => {
+    const input = join(__dir, 'acceptance/basic-prose.lit-md.ts')
+    const { stderr, status } = runCli(['--unknown1', '--unknown2', input], { expectFail: true })
+    assert.equal(status, 1)
+    assert.ok(stderr.includes('error: unknown options'))
+    assert.ok(stderr.includes('--unknown1'))
+    assert.ok(stderr.includes('--unknown2'))
+  })
+
 })
 
