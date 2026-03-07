@@ -1,4 +1,4 @@
-import { shell, alias, describe } from '../../src/index.ts'
+import { shellExample, alias, describe } from '../../src/index.ts'
 
 describe('Aliases', () => {
   // Use `alias` to register a short name for any shell command.
@@ -8,8 +8,9 @@ describe('Aliases', () => {
   describe('Using an Alias', () => {
     // Once registered, the alias name works like any shell command.
 
-    shell`greet "hello world"
-# => hello world`
+    shellExample('greet "hello world"', {
+      stdout: { contains: 'hello world' }
+    })
   })
 
   describe('Custom paths', () => {
@@ -21,7 +22,8 @@ describe('Aliases', () => {
 
     alias('shout', '/usr/bin/tr a-z A-Z')
 
-    shell`echo "quiet" | shout
-# => QUIET`
+    shellExample('echo "quiet" | shout', {
+      stdout: { contains: 'QUIET' }
+    })
   })
 })

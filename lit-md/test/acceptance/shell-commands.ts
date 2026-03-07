@@ -1,35 +1,36 @@
 // # Shell Commands
 //
-// lit-md provides two ways to embed executable shell commands in documentation:
-// the `shell` tagged template and the `shellExample` structured function.
-// Both run the command as a test and emit a `sh` code block.
+// lit-md provides the `shellExample` function to embed executable shell commands in documentation.
+// It runs the command as a test and emits a `sh` code block.
 
-import { shell } from '../../src/index.ts'
+import { shellExample } from '../../src/index.ts'
 
-// ## shell Tagged Template
+// ## Basic Commands
 //
-// Use `` shell`command` `` to run a command and verify it exits successfully.
+// Use `shellExample('command')` to run a command and verify it exits successfully.
 
-shell`echo "hello world"`
+shellExample('echo "hello world"')
 
 // ### Asserting stdout
 //
-// Add `# => text` to assert that stdout contains a substring.
+// Use `stdout: { contains: '...' }` to assert that stdout contains a substring.
 
-shell`echo "ready"
-# => ready`
+shellExample('echo "ready"', {
+  stdout: { contains: 'ready' }
+})
 
 // ### Asserting file output
 //
-// Add `# file: path contains "text"` to assert that a file created by the
-// command contains a given substring.
+// Use `outputFiles` to assert that a file created by the command contains expected content.
 
-shell`echo "hello" > greeting.txt
-# file: greeting.txt contains "hello"`
+shellExample('echo "hello" > greeting.txt', {
+  outputFiles: [
+    { path: 'greeting.txt', contains: 'hello' }
+  ]
+})
 
 // ## Multiple Commands
 //
-// Multiple commands in one template run in sequence and render as a single `sh` block.
+// Join multiple commands with `&&` to run them in sequence and emit a single `sh` block.
 
-shell`echo "first"
-echo "second"`
+shellExample('echo "first" && echo "second"')

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { mkdtempSync, writeFileSync, rmSync, readFileSync } from 'node:fs'
 import { join, isAbsolute } from 'node:path'
 import { tmpdir } from 'node:os'
-import { _runShellExample, _runShell, alias, _clearAliases } from '../src/shell.ts'
+import { _runShellExample, alias, _clearAliases } from '../src/shell.ts'
 
 describe('shellExample: runtime behaviour', () => {
 
@@ -177,46 +177,6 @@ describe('shellExample: inputFiles fixtures', () => {
       inputFiles: [{ path: inFile, content: 'temporary' }]
     })
     assert.throws(() => readFileSync(inFile), /no such file/, 'input file should be deleted after test')
-  })
-
-})
-
-describe('shell tagged template: runtime behaviour', () => {
-  const tmp = mkdtempSync(join(tmpdir(), 'lit-md-shell-'))
-
-  after(() => rmSync(tmp, { recursive: true, force: true }))
-
-  test('shell template passes on exit 0', () => {
-    _runShell('echo "hello"')
-  })
-
-  test('shell template with # => asserts stdout substring', () => {
-    _runShell('echo "hello world"\n# => hello world')
-  })
-
-  test('shell template with # => fails when stdout does not match', () => {
-    assert.throws(
-      () => _runShell('echo "hello"\n# => goodbye'),
-      /stdout did not contain/
-    )
-  })
-
-  test('shell template with # file: asserts output file contains text', () => {
-    const outFile = join(tmp, 'shell-file.txt')
-    _runShell(`echo "content" > "${outFile}"\n# file: ${outFile} contains "content"`)
-  })
-
-  test('shell template with # file: fails when file does not contain text', () => {
-    const outFile = join(tmp, 'shell-file2.txt')
-    writeFileSync(outFile, 'wrong content')
-    assert.throws(
-      () => _runShell(`cat "${outFile}"\n# file: ${outFile} contains "expected"`),
-      /does not contain/
-    )
-  })
-
-  test('multi-command block: both commands run, # => checks combined stdout', () => {
-    _runShell('echo "first"\necho "second"\n# => first')
   })
 
 })

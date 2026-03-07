@@ -1,40 +1,41 @@
 # Shell Commands
 
-lit-md provides two ways to embed executable shell commands in documentation:
-the `shell` tagged template and the `shellExample` structured function.
-Both run the command as a test and emit a `sh` code block.
-## shell Tagged Template
+lit-md provides the `shellExample` function to embed executable shell commands in documentation.
+It runs the command as a test and emits a `sh` code block.
+## Basic Commands
 
-Use `` shell`command` `` to run a command and verify it exits successfully.
+Use `shellExample('command')` to run a command and verify it exits successfully.
 
 ```sh
-echo "hello world"
+$ echo "hello world"
 ```
 
 ### Asserting stdout
 
-Add `# => text` to assert that stdout contains a substring.
+Use `stdout: { contains: '...' }` to assert that stdout contains a substring.
 
 ```sh
-echo "ready"
-# => ready
+$ echo "ready"
+ready
 ```
 
 ### Asserting file output
 
-Add `# file: path contains "text"` to assert that a file created by the
-command contains a given substring.
+Use `outputFiles` to assert that a file created by the command contains expected content.
 
 ```sh
-echo "hello" > greeting.txt
-# file: greeting.txt contains "hello"
+$ echo "hello" > greeting.txt
+```
+
+Output file `greeting.txt` contains `hello`:
+```
+hello
 ```
 
 ## Multiple Commands
 
-Multiple commands in one template run in sequence and render as a single `sh` block.
+Join multiple commands with `&&` to run them in sequence and emit a single `sh` block.
 
 ```sh
-echo "first"
-echo "second"
+$ echo "first" && echo "second"
 ```

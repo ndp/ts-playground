@@ -1,33 +1,26 @@
 ## Support for demonstrating command line usage
 
 ## Engine
-shellCommand returnCode assertions
 
+
+Plan and implement the following features and fixes. Each is separate and should be treated as such. Do the easy ones that do not require any more information first, and then ask me about the other ones. Read DEVELOPMENT.md. Make sure to git commit after each feature or fix is implemented, with a clear commit message describing the change:
+
+1. shellCommand should fail if the command returns a non-zero exit code
+
+2. shellCommand should allow assertions on the exit code. For example:
+```ts
+shellExample('ls /nonexistent', { exitCode: 2 })
+``` 
+
+3 for shellCommand, if the "contains" assertion fails, it should show the actual output that was generated, especially if there is not a good diff. For example, if the output file was empty, it should indicate that the output was empty rather than just showing a diff of an empty string.
+
+3. when `example` is generating markup, in meta mode or not, it should be able to handle `describe` with quotes in the name-- and in fact handle quoting correctly for any case. eg. `describe('My Project's README.', ...`  ie. it should not generate incorrect typescript. Create test cases and fixes if needed.
  
 ## Markdown output
-
-Add a new CLI option --describe=<format>.
-Formats are:
-  --describe=hidden (default): current behavior; describes are omitted from markdown output
-  --describe="#": describes are converted to markdown headers  "#" (h1)
-  --describe="##": describes are converted to markdown headers  "##" (h2)
-  --describe="###": describes are converted to markdown headers  "###" (h3)
-  --describe="####": describes are converted to markdown headers  "####" (h4)
-
-If any of the header formats is chosen, nesting is supported. If a describe is nested
-inside another describe, it should be converted to a header that is one level deeper than its parent. For example, if the top-level describe is converted to "##", then a nested describe would be converted to "###", and a describe nested inside that would be converted to "####", and so on. If the user chooses the "hidden" format, describes will be omitted from the markdown output as they are currently.
-
-Update --help text.
-
-Provide acceptance tests for each format option, including nested describes.
-
-Update docs/README.lit-md.ts to reflect new --describe option and its behavior.
 
 
 ## Acceptance tests
 npm run test:update should be `test:acceptance:update`, as it only applies to acceptance tests
-
-when an acceptance test runs, if there is no snapshot, it should generate one (and not fail)
 
 
 ## CLI
@@ -40,20 +33,6 @@ when an acceptance test runs, if there is no snapshot, it should generate one (a
 RENDER
 
 ### shellExample: add the ability to suppress input file output in the markdown. 
-
-
-Should report error if script returns non-zero exit code.
-
-Should  be able to assert on exit code with something like:
-```ts
-shellExample('ls /nonexistent', { exitCode: 2 })
-``` 
-
-If a "contains" fails, it needs to show you the actual content that was generated if there is not a good diff. For the output file I had, which was empty, it wasn't obvious what happened.
-
-
-Describe should be able to handle quotes better, with escaping. For example:
-describe('My Project's README.', () => {
 
 
 ## PUBLISHING

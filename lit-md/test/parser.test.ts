@@ -515,31 +515,6 @@ test('t', () => {
 
 })
 
-describe('parse: shell`` tagged template → sh code block', () => {
-
-  test('bare shell template → sh CodeNode', () => {
-    const nodes = parse('shell`cat "foo.txt"`')
-    assert.deepEqual(nodes, [
-      { kind: 'code', lang: 'sh', text: 'cat "foo.txt"'}
-    ])
-  })
-
-  test('shell template with # => annotation → preserved in code text', () => {
-    const nodes = parse('shell`\n  sort input.txt\n  # => apple\n`')
-    assert.deepEqual(nodes, [
-      { kind: 'code', lang: 'sh', text: 'sort input.txt\n# => apple'}
-    ])
-  })
-
-  test('shell template with # file: annotation → preserved in code text', () => {
-    const nodes = parse('shell`\n  sort input.txt\n  # file: output.txt contains "line one"\n`')
-    assert.deepEqual(nodes, [
-      { kind: 'code', lang: 'sh', text: 'sort input.txt\n# file: output.txt contains "line one"'}
-    ])
-  })
-
-})
-
 describe('parse: shellExample() → sh code block', () => {
 
   test('shellExample call with empty options → sh CodeNode', () => {

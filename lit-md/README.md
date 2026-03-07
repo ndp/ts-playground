@@ -104,39 +104,37 @@ For more information on the CLI, see [CLI documentation](./docs/cli.md).
 
 ## Shell examples
 
-Use `shell` to include executable shell commands in the README.
-  It's concise and verifies a 0 return code:
+Use `shellExample` to include executable shell commands in the README.
+  It verifies a 0 return code and provides flexible assertion and display options.
 
-### shell template
+### shellExample function
 
 ```ts
 example('basic: verify command succeeds', () => {
-  shell`echo "hello world"`
+  shellExample('echo "hello world"')
 })
 ```
 becomes
 ````md
 ```ts
-shell`echo "hello world"`
+shellExample('echo "hello world"')
 ```
 ````
 
-Multi-line command work, and can include comment lines:
+Multi-line commands can be joined with &&:
 
 ```ts
 example('with stdout assertion', () => {
-  shell`
-      echo "hello"
-      # => hello
-    `
+  shellExample('echo "hello"', {
+    stdout: { contains: 'hello' }
+  })
 })
 ```
 becomes
 ````md
 ```ts
-shell`
-    echo "hello"
-    # => hello
-  `
+shellExample('echo "hello"', {
+  stdout: { contains: 'hello' }
+})
 ```
 ````

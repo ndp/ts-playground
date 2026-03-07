@@ -105,14 +105,7 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
     if (ts.isExpressionStatement(stmt)) {
       const expr = stmt.expression
 
-      // Detect shell`...` tagged template
-      if (ts.isTaggedTemplateExpression(expr) && ts.isIdentifier(expr.tag) && expr.tag.text === 'shell') {
-        const title = pendingFileLabel
-        pendingFileLabel = undefined
-        const text = extractShellTemplateText(src, expr.template)
-        nodes.push(codeNode('sh', text, title))
-        return
-      }
+
 
       if (ts.isCallExpression(expr) && ts.isIdentifier(expr.expression)) {
         const name = expr.expression.text
@@ -581,21 +574,7 @@ function transformNestedAssertOk(code: string): string {
   return code.replace(/assert\.ok\(([^)]+)\)/g, '$1 // OK')
 }
 
-/** Extracts dedented text from a template literal used in shell`...` */
-function extractShellTemplateText(src: string, template: ts.TemplateLiteral): string {
-  const raw = ts.isNoSubstitutionTemplateLiteral(template)
-    ? template.text
-    : template.head.text
-  const lines = raw.split('\n')
-  // Dedent: find minimum indentation of non-empty lines
-  const nonEmpty = lines.filter(l => l.trim().length > 0)
-  if (!nonEmpty.length) return raw.trim()
-  const minInd = Math.min(...nonEmpty.map(l => l.length - l.trimStart().length))
-  return lines
-    .map(l => (minInd > 0 && l.startsWith(' '.repeat(minInd))) ? l.slice(minInd) : l)
-    .join('\n')
-    .trim()
-}
+
 
 /** Helper to detect language from file extension */
 function getLanguageFromExtension(filePath: string): string {

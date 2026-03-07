@@ -8,8 +8,8 @@ In the `.ts` file we have `alias('greet', '/bin/echo')`.
 Once registered, the alias name works like any shell command.
 
 ```sh
-greet "hello world"
-# => hello world
+$ greet "hello world"
+hello world
 ```
 
 ### Custom paths
@@ -21,6 +21,6 @@ Relative paths in the command string are resolved to absolute paths
 at registration time, so the alias works regardless of the shell working directory.
 
 ```sh
-echo "quiet" | shout
-# => QUIET
+$ echo "quiet" | shout
+QUIET
 ```

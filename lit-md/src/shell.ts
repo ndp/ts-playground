@@ -15,7 +15,7 @@ const _aliases = new Map<string, string>()
  * arguments (e.g. `'node --experimental-strip-types ./cli.ts'`). Any token
  * that looks like a file path (contains `/` or starts with `.`) is resolved
  * relative to `process.cwd()` at call time. The resulting alias is prepended
- * to every shell command executed by `shell` or `shellExample`.
+ * to every shell command executed by `shellExample`.
  *
  * Alias calls produce **no markdown output**.
  */
@@ -134,55 +134,7 @@ export function _runShellExample(cmd: string, opts: ShellExampleOpts): void {
   }
 }
 
-/** Parses a shell template string into commands and assertions, then executes them. */
-export function _runShell(templateText: string): void {
-  const lines = templateText.split('\n').map(l => l.trim())
-  const commands: string[] = []
-  const stdoutAssertions: string[] = []
-  const outputFiles: ShellFileAssertion[] = []
 
-  for (const line of lines) {
-    if (line === '') continue
-    if (line.startsWith('# => ')) {
-      stdoutAssertions.push(line.slice(5))
-    } else if (line.startsWith('# file: ')) {
-      const fa = parseFileAnnotation(line.slice(8))
-      if (fa) outputFiles.push(fa)
-    } else if (!line.startsWith('#')) {
-      commands.push(line)
-    }
-  }
-
-  if (!commands.length) return
-  _runShellExample(commands.join('\n'), {
-    stdout: stdoutAssertions.length ? { contains: stdoutAssertions.join('\n') } : undefined,
-    outputFiles: outputFiles.length ? outputFiles : undefined
-  })
-}
-
-function parseFileAnnotation(text: string): ShellFileAssertion | null {
-  // "path contains "text""
-  const containsMatch = text.match(/^(\S+)\s+contains\s+"(.*)"$/)
-  if (containsMatch) return { path: containsMatch[1]!, contains: containsMatch[2]! }
-
-  // "path matches /regex/"
-  const matchesMatch = text.match(/^(\S+)\s+matches\s+(.+)$/)
-  if (matchesMatch) {
-    try {
-      const m = matchesMatch[2]!.match(/^\/(.+)\/([gimsuy]*)$/)
-      if (m) return { path: matchesMatch[1]!, matches: new RegExp(m[1]!, m[2]) }
-    } catch {}
-  }
-  return null
-}
-
-/** Registers a node:test test for a shell`` tagged template. */
-export function shell(strings: TemplateStringsArray): void {
-  const text = strings.raw.join('')
-  // Extract first command as test name
-  const firstCmd = text.split('\n').map(l => l.trim()).find(l => l.length > 0 && !l.startsWith('#')) ?? text.trim()
-  test(firstCmd, () => _runShell(text))
-}
 
 /** Registers a node:test test that executes the shell command and verifies assertions. */
 export function shellExample(cmd: string, opts: ShellExampleOpts = {}): void {

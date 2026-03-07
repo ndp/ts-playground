@@ -1,7 +1,6 @@
 import {
   describe,
   example,
-  shell,
   shellExample,
   metaExample,
   alias,
@@ -103,21 +102,20 @@ example('multiply example', () => {
 
 describe('Shell examples', () => {
   /*
-  Use `shell` to include executable shell commands in the README.
-  It's concise and verifies a 0 return code:
+  Use `shellExample` to include executable shell commands in the README.
+  It verifies a 0 return code and provides flexible assertion and display options.
   */
 
-  describe('shell template', () => {
+  describe('shellExample function', () => {
     metaExample('basic: verify command succeeds', () => {
-      shell`echo "hello world"`
+      shellExample('echo "hello world"')
     })
 
-    // Multi-line command work, and can include comment lines:
+    // Multi-line commands can be joined with &&:
     metaExample('with stdout assertion', () => {
-      shell`
-          echo "hello"
-          # => hello
-        `
+      shellExample('echo "hello"', {
+        stdout: { contains: 'hello' }
+      })
     })
   })
 
