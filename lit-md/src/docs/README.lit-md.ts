@@ -97,8 +97,9 @@ example('multiply example', () => {
   }]
 })
 
-// For more information on the CLI, see [CLI documentation](./docs/cli.md).
-
+/*
+For more information on the CLI, see [CLI documentation](./docs/cli.md).
+*/
 
 describe('Shell examples', () => {
   /*
@@ -120,7 +121,7 @@ describe('Shell examples', () => {
   })
 
   /*
-For more information on the `shellExample`, see [shellCommand documentation](./docs/shell-examples.md).
-   */
+  For more information on the `shellExample`, see [shellCommand documentation](./docs/shell-examples.md).
+  */
 })
 
