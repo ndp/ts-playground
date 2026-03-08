@@ -39,15 +39,13 @@ export function typecheck(files: string[]): TypecheckResult {
 
   if (!diagnostics.length) return { ok: true, messages: [] }
 
-  const messages = diagnostics.map(d => {
-    const msg = ts.flattenDiagnosticMessageText(d.messageText, '\n')
-    if (d.file && d.start !== undefined) {
-      const { line, character } = d.file.getLineAndCharacterOfPosition(d.start)
-      return `${d.file.fileName}(${line + 1},${character + 1}): error TS${d.code}: ${msg}`
-    }
-    return `error TS${d.code}: ${msg}`
+  // Use TypeScript's built-in formatting with colors and context for better readability
+  const formatted = ts.formatDiagnosticsWithColorAndContext(diagnostics, {
+    getCanonicalFileName: fileName => fileName,
+    getCurrentDirectory: () => process.cwd(),
+    getNewLine: () => '\n',
   })
 
-  return { ok: false, messages }
+  return { ok: false, messages: [formatted] }
 }
 
