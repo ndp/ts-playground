@@ -9,7 +9,7 @@ By default, the command is shown in the output as a `$ command` line.
 ```ts
 shellExample('echo "hello world"')
 ```
-
+becomes
 ```sh
 $ echo "hello world"
 ```
@@ -22,7 +22,7 @@ shellExample('echo "hello stdout"', {
   stdout: { display: true }
 })
 ```
-
+becomes
 ```sh
 $ echo "hello stdout"
 hello stdout
@@ -38,7 +38,7 @@ shellExample('echo "quiet output"', {
   stdout: { display: true }
 })
 ```
-
+becomes
 ```sh
 quiet output
 ```
@@ -50,7 +50,7 @@ shellExample('cat input.txt', {
   inputFiles: [{ path: 'input.txt', content: 'hello world' }]
 })
 ```
-
+becomes
 With input file `input.txt`:
 ```
 hello world
@@ -68,7 +68,7 @@ shellExample('cat input.txt', {
   inputFiles: [{ path: 'input.txt', content: 'hello world', displayPath: false }]
 })
 ```
-
+becomes
 ```
 hello world
 ```
@@ -84,7 +84,7 @@ shellExample('cat input.txt', {
   inputFiles: [{ path: 'input.txt', content: 'hello world', display: false }]
 })
 ```
-
+becomes
 ```sh
 $ cat input.txt
 ```
@@ -99,7 +99,7 @@ shellExample('echo "result" > out.txt', {
   outputFiles: [{ path: 'out.txt' }]
 })
 ```
-
+becomes
 ```sh
 $ echo "result" > out.txt
 ```
@@ -116,7 +116,7 @@ shellExample('echo "result" > out.txt', {
   outputFiles: [{ path: 'out.txt', displayPath: false }]
 })
 ```
-
+becomes
 ```sh
 $ echo "result" > out.txt
 ```
@@ -134,7 +134,7 @@ shellExample('echo "42" > answer.txt', {
   outputFiles: [{ path: 'answer.txt', contains: '42', summary: false }]
 })
 ```
-
+becomes
 ```sh
 $ echo "42" > answer.txt
 ```
@@ -333,7 +333,7 @@ shellExample('echo "meta test"', {
   stdout: {}
 })
 ```
-
+becomes
 ```sh
 $ echo "meta test"
 ```
@@ -346,7 +346,7 @@ shellExample('echo "version 1.2.3" > version.txt', {
     {path: 'version.txt', matches: /version \d+\.\d+\.\d+/}
   ]})
 ```
-
+becomes
 ```sh
 $ echo "version 1.2.3" > version.txt
 ```

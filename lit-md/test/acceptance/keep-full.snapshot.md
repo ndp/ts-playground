@@ -17,15 +17,9 @@ With input file `input.md`:
 
 ```
 
-````sh
+```sh
 $ lit-md input.md
-```ts
-const CONFIG = {timeout: 5000}
-
-const delay = CONFIG.timeout
-delay // => 5000
 ```
-````
 
 ### Single-Line Keep old
 

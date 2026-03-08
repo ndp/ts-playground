@@ -49,7 +49,11 @@ function computeDiff(name: string, expected: string, actual: string): string | n
 
 describe('acceptance', () => {
   files.forEach(dirent => {
-    const name = basename(dirent.name, extname(dirent.name))
+    // Strip both .lit-md.ts/.lit-md.js and .ts/.js extensions to get base name
+    let name = basename(dirent.name, extname(dirent.name))
+    if (name.endsWith('.lit-md')) {
+      name = name.slice(0, -'.lit-md'.length)
+    }
     test(name, async () => {
       // Reset the describe format override before each test
       resetDescribeFormat()
