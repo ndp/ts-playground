@@ -93,7 +93,7 @@ shellExample('echo "Hello, World!"', {
     stdout: {}
   })
 ```
-
+becomes
 ```sh
 $ echo "Hello, World!"
 ```

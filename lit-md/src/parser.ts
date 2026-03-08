@@ -213,6 +213,8 @@ export function parse(src: string, lang = 'typescript'): DocNode[] {
             if (hasMeta) {
               const reconstructed = reconstructShellExampleWithoutMeta(src, expr, cmd, opts)
               nodes.push(codeNode('ts', reconstructed))
+              // Add "becomes" separator
+              nodes.push({ kind: 'prose', text: 'becomes', noBlankBefore: true, noBlankAfter: true })
             }
 
             if (opts) processShellExampleInputFiles(opts, nodes)
