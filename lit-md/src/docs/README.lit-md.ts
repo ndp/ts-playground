@@ -107,16 +107,7 @@ describe('Shell examples', () => {
   */
 
   describe('shellExample function', () => {
-    metaExample('basic: verify command succeeds', () => {
-      shellExample('echo "hello world"')
-    })
-
-    // Multi-line commands can be joined with &&:
-    metaExample('with stdout assertion', () => {
-      shellExample('echo "hello"', {
-        stdout: { contains: 'hello' }
-      })
-    })
+    shellExample('echo "hello world"', { meta: true, stdout: { display: true } })
   })
 
   /*

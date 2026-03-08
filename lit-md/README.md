@@ -84,7 +84,6 @@ Output file `out.md`:
 
 This is a really great project! 
 Adding numbers is as simple as using the "+" operator:
-
 ```ts
 const a = 1
 const b = 2
@@ -92,7 +91,6 @@ console.log(a + b) // => 3
 ```
 
 Also supported is multiplication:
-
 ```ts
 const x = 3
 const y = 4
@@ -110,33 +108,12 @@ Use `shellExample` to include executable shell commands in the README.
 ### shellExample function
 
 ```ts
-example('basic: verify command succeeds', () => {
-  shellExample('echo "hello world"')
-})
+shellExample('echo "hello world"', { stdout: { display: true } })
 ```
-becomes
-````md
-```ts
-shellExample('echo "hello world"')
-```
-````
 
-Multi-line commands can be joined with &&:
-
-```ts
-example('with stdout assertion', () => {
-  shellExample('echo "hello"', {
-    stdout: { contains: 'hello' }
-  })
-})
+```sh
+$ echo "hello world"
+hello world
 ```
-becomes
-````md
-```ts
-shellExample('echo "hello"', {
-  stdout: { contains: 'hello' }
-})
-```
-````
 
 For more information on the `shellExample`, see [shellCommand documentation](./docs/shell-examples.md).

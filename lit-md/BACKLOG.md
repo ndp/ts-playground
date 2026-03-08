@@ -2,15 +2,12 @@
 
 ## Engine
 
-
 ## Markdown output
 
 ## Acceptance tests
 npm run test:update should be `test:acceptance:update`, as it only applies to acceptance tests
 
-
 ## CLI
-
 - [ ] add a `--wait` to cli that will keep the process alive after generating the MD file. This allows users to inspect the generated file before the process exits, and also allows for easier debugging of the generation process. The process would exit when the user presses a key or sends a signal (e.g., Ctrl+C). WOrks in consort with --test and --typecheck if they were already implemented.
 
 RENDER
