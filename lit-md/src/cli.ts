@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process'
 import { parse } from './parser.ts'
 import { render } from './renderer.ts'
 import { typecheck } from './typecheck.ts'
-import { stripTypesFlag } from './shell.ts'
+import { stripTypesFlag, watchFilesAndWait } from './shell.ts'
 import { resolveOutputFiles } from './resolver.ts'
 import { resolveDescribeFormat, resetDescribeFormat } from './describe-format.ts'
 
@@ -40,6 +40,7 @@ const dryrun = extractFlag('--dryrun')
 const runTests = extractFlag('--test')
 const runTypecheck = extractFlag('--typecheck')
 const updateSnapshots = extractFlag('--update-snapshots') || extractFlag('-u')
+const wait = extractFlag('--wait')
 const outFlag = extractFlagValue('--out')
 const outputDir = extractFlagValue('--outDir')
 const describeFormat = extractFlagValue('--describe') || '##'
@@ -79,6 +80,9 @@ Options:
   --typecheck               Run type checking before generating markdown
   --dryrun                  Show what would be written without writing files
   -u, --update-snapshots    Update snapshot files instead of generating markdown
+  --wait                    After generating, keep the process alive and watch for file
+                             changes. Press space to manually regenerate, Ctrl+C to exit.
+                             Works with --test and --typecheck (reruns on each change).
   --out <output.md>         Write to a specific output file (requires single input)
   --outDir <dir>           Write generated markdown files to this directory
   --describe <format>       Control describe() block rendering (default: ##)
@@ -96,6 +100,7 @@ By default, output is written to stdout. Use --out or --outDir to write to files
 Examples:
   lit-md README.md.test.ts                                  # outputs to stdout
   lit-md --test --typecheck README.md.test.ts               # outputs to stdout after testing
+  lit-md --wait README.md.test.ts                           # outputs to stdout, then waits for changes
   lit-md --out /tmp/docs.md README.md.test.ts               # writes to file
   lit-md --outDir ./docs src/**/*.md.test.ts                # writes to directory
   lit-md --describe="#" README.md.test.ts                   # outputs to stdout with custom format
@@ -156,7 +161,7 @@ if (runTests) {
 
 // --- Generate markdown ---
 
-;(async () => {
+async function generateMarkdown(): Promise<void> {
   for (const inputPath of inputPaths) {
     // Reset the describe format override before processing each file
     resetDescribeFormat()
@@ -228,6 +233,20 @@ if (runTests) {
       console.error(`wrote ${outPath}`)
     }
   }
+}
+
+;(async () => {
+  await generateMarkdown()
+
+  // If --wait flag is set and we're in an interactive terminal, enter the watch loop
+  if (wait && process.stdin.isTTY) {
+    while (true) {
+      const trigger = await watchFilesAndWait(inputPaths)
+      // On spacebar or file change, regenerate
+      await generateMarkdown()
+    }
+  }
 })()
+
 
 

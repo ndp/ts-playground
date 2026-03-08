@@ -169,3 +169,86 @@ export function stripTypesFlag(): string {
   if (major === 23 && minor < 6) return '--experimental-strip-types'
   return ''
 }
+
+/**
+ * Watch input files for changes and listen for keyboard input.
+ * Returns 'spacebar' if user presses spacebar, or 'filechange' if a file changes.
+ * Exit cleanly on Ctrl+C (SIGINT). Gracefully handles non-TTY environments by
+ * resolving immediately.
+ */
+export async function watchFilesAndWait(inputPaths: string[]): Promise<'spacebar' | 'filechange'> {
+  // Check if stdin is a TTY (interactive terminal)
+  if (!process.stdin.isTTY) {
+    // Non-interactive environment: resolve immediately without waiting
+    return 'spacebar'
+  }
+
+  const { watch } = await import('node:fs')
+
+  let lastChangeTime = 0
+  const DEBOUNCE_MS = 300
+  let changeDetected = false
+
+  const watchers = inputPaths.map(inputPath => {
+    return watch(resolve(inputPath), (eventType) => {
+      const now = Date.now()
+      // Debounce: only consider changes if enough time has passed
+      if (now - lastChangeTime >= DEBOUNCE_MS) {
+        lastChangeTime = now
+        changeDetected = true
+      }
+    })
+  })
+
+  // Set up signal handlers for clean exit
+  const exitHandler = () => {
+    watchers.forEach(w => w.close())
+    process.stdin.setRawMode(false)
+    process.exit(0)
+  }
+
+  process.on('SIGINT', exitHandler)
+  process.on('SIGTERM', exitHandler)
+
+  // Display wait message
+  console.error('Press space to regenerate, Ctrl+C to exit...')
+
+  // Set raw mode to detect individual key presses
+  process.stdin.setRawMode(true)
+  process.stdin.resume()
+
+  return new Promise<'spacebar' | 'filechange'>(resolve => {
+    const onData = (data: Buffer) => {
+      const char = data[0]
+      // 0x20 is the spacebar
+      if (char === 0x20) {
+        cleanup()
+        resolve('spacebar')
+      } else if (char === 0x03) {
+        // Ctrl+C (0x03)
+        cleanup()
+        process.exit(0)
+      }
+    }
+
+    const checkForChanges = setInterval(() => {
+      if (changeDetected) {
+        cleanup()
+        console.error('Files changed, regenerating...')
+        resolve('filechange')
+      }
+    }, 50)
+
+    const cleanup = () => {
+      process.stdin.off('data', onData)
+      clearInterval(checkForChanges)
+      process.stdin.setRawMode(false)
+      process.stdin.pause()
+      process.removeListener('SIGINT', exitHandler)
+      process.removeListener('SIGTERM', exitHandler)
+      watchers.forEach(w => w.close())
+    }
+
+    process.stdin.on('data', onData)
+  })
+}

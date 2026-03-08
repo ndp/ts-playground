@@ -10,9 +10,7 @@ describe('shellExample', () => {
   - more detailed stdout assertions.
   */
 
-  example('basic', () => {
-    shellExample('echo "hello world"')
-  })
+    shellExample('echo "hello world"', {meta: true, stdout: {display: true}})
 
   // Can contain assertions on stdout, which appear as comments in the emitted markdown.
   // Assertions can use `contains` or `matches`, with either strings or regex patterns.
