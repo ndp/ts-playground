@@ -1,4 +1,5 @@
 import {alias, example, describe, stripTypesFlag, shellExample} from '../index.ts'
+import assert from 'node:assert/strict'
 
 
 describe('shellExample', () => {
@@ -177,3 +178,11 @@ describe('shellExample', () => {
         }))
   })
 })
+
+// example('shellExample documentation', () => {
+//   console.log('hello world')
+//   assert(true)
+//   assert(7)
+//   let i = 1
+//   i = "lskdjf"
+// })

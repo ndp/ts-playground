@@ -141,23 +141,10 @@ if (runTypecheck) {
 }
 
 // --- Typecheck ---
-
-if (runTypecheck) {
-  const result = typecheck(inputPaths.map(p => resolve(p)))
-  if (!result.ok) {
-    for (const msg of result.messages) console.error(msg)
-    process.exit(1)
-  }
-}
+// NOTE: Moved into executeTasks() to run on each regeneration when --wait is used
 
 // --- Run tests ---
-
-if (runTests) {
-  const stripFlag = stripTypesFlag()
-  const nodeArgs = ['--test', ...(stripFlag ? [stripFlag] : []), ...inputPaths.map(p => resolve(p))]
-  const result = spawnSync(process.execPath, nodeArgs, { stdio: 'inherit', env: process.env })
-  if (result.status !== 0) process.exit(result.status ?? 1)
-}
+// NOTE: Moved into executeTasks() to run on each regeneration when --wait is used
 
 // --- Generate markdown ---
 
@@ -235,15 +222,43 @@ async function generateMarkdown(): Promise<void> {
   }
 }
 
-;(async () => {
+async function executeTasks(): Promise<void> {
+  // Run typecheck before generation (if enabled)
+  if (runTypecheck) {
+    const result = typecheck(inputPaths.map(p => resolve(p)))
+    if (!result.ok) {
+      for (const msg of result.messages) console.error(msg)
+      // In wait mode, report error but continue; in normal mode, exit
+      if (!wait) process.exit(1)
+      // Continue to markdown generation even if typecheck failed
+    }
+  }
+
+  // Run tests before generation (if enabled)
+  if (runTests) {
+    const stripFlag = stripTypesFlag()
+    const nodeArgs = ['--test', ...(stripFlag ? [stripFlag] : []), ...inputPaths.map(p => resolve(p))]
+    const result = spawnSync(process.execPath, nodeArgs, { stdio: 'inherit', env: process.env })
+    if (result.status !== 0) {
+      // In wait mode, report error but continue; in normal mode, exit
+      if (!wait) process.exit(result.status ?? 1)
+      // Continue to markdown generation even if tests failed
+    }
+  }
+
+  // Generate markdown (always do this, even if tests/typecheck failed)
   await generateMarkdown()
+}
+
+;(async () => {
+  await executeTasks()
 
   // If --wait flag is set and we're in an interactive terminal, enter the watch loop
   if (wait && process.stdin.isTTY) {
     while (true) {
       const trigger = await watchFilesAndWait(inputPaths)
       // On spacebar or file change, regenerate
-      await generateMarkdown()
+      await executeTasks()
     }
   }
 })()

@@ -1,6 +1,6 @@
 import { spawnSync } from 'node:child_process'
-import { readFileSync, writeFileSync, unlinkSync, mkdtempSync, rmSync } from 'node:fs'
-import { isAbsolute, resolve, join } from 'node:path'
+import { readFileSync, writeFileSync, unlinkSync, mkdtempSync, rmSync, existsSync } from 'node:fs'
+import { isAbsolute, resolve, join, dirname, extname } from 'node:path'
 import { tmpdir } from 'node:os'
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
@@ -171,6 +171,102 @@ export function stripTypesFlag(): string {
 }
 
 /**
+ * Extract import paths from a TypeScript/JavaScript file using regex.
+ * Returns absolute paths to files that could be imported.
+ */
+function extractImportPaths(filePath: string, baseDir: string): Set<string> {
+  const importedPaths = new Set<string>()
+  try {
+    const content = readFileSync(filePath, 'utf8')
+    
+    // Match import statements: import ... from 'path' or "path"
+    const importRegex = /import\s+(?:(?:{[^}]*})|(?:\*\s+as\s+\w+)|(?:\w+))?(?:\s*,\s*(?:{[^}]*}|\*\s+as\s+\w+|\w+))*\s+from\s+['"]([^'"]+)['"]/g
+    
+    // Match require statements: require('path') or require("path")
+    const requireRegex = /require\s*\(\s*['"]([^'"]+)['"]\s*\)/g
+    
+    let match
+    while ((match = importRegex.exec(content)) !== null) {
+      const importPath = match[1]
+      if (importPath && !importPath.startsWith('.') && !importPath.startsWith('/')) {
+        // Skip node_modules and absolute imports
+        continue
+      }
+      const resolved = resolveImportPath(importPath, baseDir)
+      if (resolved) importedPaths.add(resolved)
+    }
+    
+    while ((match = requireRegex.exec(content)) !== null) {
+      const importPath = match[1]
+      if (importPath && !importPath.startsWith('.') && !importPath.startsWith('/')) {
+        continue
+      }
+      const resolved = resolveImportPath(importPath, baseDir)
+      if (resolved) importedPaths.add(resolved)
+    }
+  } catch {
+    // If we can't read the file, skip it
+  }
+  
+  return importedPaths
+}
+
+/**
+ * Resolve an import path to an actual file path.
+ * Handles .ts, .js, .tsx, .jsx extensions and directory index files.
+ */
+function resolveImportPath(importPath: string, baseDir: string): string | null {
+  const basePath = resolve(baseDir, importPath)
+  
+  // Try the path as-is
+  if (existsSync(basePath)) return basePath
+  
+  // Try with common extensions
+  for (const ext of ['.ts', '.tsx', '.js', '.jsx']) {
+    if (existsSync(basePath + ext)) {
+      return basePath + ext
+    }
+  }
+  
+  // Try as a directory with index file
+  for (const indexFile of ['index.ts', 'index.tsx', 'index.js', 'index.jsx']) {
+    const indexPath = join(basePath, indexFile)
+    if (existsSync(indexPath)) {
+      return indexPath
+    }
+  }
+  
+  return null
+}
+
+/**
+ * Recursively collect all dependencies of input files.
+ * Returns a set of all files that should be watched.
+ */
+function collectAllDependencies(inputPaths: string[], visited = new Set<string>()): Set<string> {
+  const allDeps = new Set<string>(inputPaths.map(p => resolve(p)))
+  const toProcess = [...inputPaths]
+  
+  while (toProcess.length > 0) {
+    const current = toProcess.shift()!
+    const resolvedCurrent = resolve(current)
+    
+    if (visited.has(resolvedCurrent)) continue
+    visited.add(resolvedCurrent)
+    
+    const deps = extractImportPaths(resolvedCurrent, dirname(resolvedCurrent))
+    for (const dep of deps) {
+      allDeps.add(dep)
+      if (!visited.has(dep)) {
+        toProcess.push(dep)
+      }
+    }
+  }
+  
+  return allDeps
+}
+
+/**
  * Watch input files for changes and listen for keyboard input.
  * Returns 'spacebar' if user presses spacebar, or 'filechange' if a file changes.
  * Exit cleanly on Ctrl+C (SIGINT). Gracefully handles non-TTY environments by
@@ -189,8 +285,11 @@ export async function watchFilesAndWait(inputPaths: string[]): Promise<'spacebar
   const DEBOUNCE_MS = 300
   let changeDetected = false
 
-  const watchers = inputPaths.map(inputPath => {
-    return watch(resolve(inputPath), (eventType) => {
+  // Collect all dependencies to watch, not just the input files
+  const filesToWatch = collectAllDependencies(inputPaths)
+
+  const watchers = Array.from(filesToWatch).map(filePath => {
+    return watch(filePath, (eventType) => {
       const now = Date.now()
       // Debounce: only consider changes if enough time has passed
       if (now - lastChangeTime >= DEBOUNCE_MS) {
