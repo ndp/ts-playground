@@ -178,11 +178,3 @@ describe('shellExample', () => {
         }))
   })
 })
-
-// example('shellExample documentation', () => {
-//   console.log('hello world')
-//   assert(true)
-//   assert(7)
-//   let i = 1
-//   i = "lskdjf"
-// })

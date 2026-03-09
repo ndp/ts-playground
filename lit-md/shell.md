@@ -188,9 +188,4 @@ shellExample(
             {path: 'result.log', matches: /Done/, displayPath: true, summary: true}
           ]
         })
-
-console.log('hello world')
-assert(true)
-assert(7)
-let i = 1
 ```

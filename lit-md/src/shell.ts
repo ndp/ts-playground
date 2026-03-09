@@ -310,7 +310,7 @@ export async function watchFilesAndWait(inputPaths: string[]): Promise<'spacebar
   process.on('SIGTERM', exitHandler)
 
   // Display wait message
-  console.error('Press space to regenerate, Ctrl+C to exit...')
+  console.error('Press space to regenerate, q to quit...')
 
   // Set raw mode to detect individual key presses
   process.stdin.setRawMode(true)
@@ -323,8 +323,8 @@ export async function watchFilesAndWait(inputPaths: string[]): Promise<'spacebar
       if (char === 0x20) {
         cleanup()
         resolve('spacebar')
-      } else if (char === 0x03) {
-        // Ctrl+C (0x03)
+      } else if (char === 0x03 || char === 0x71 || char === 0x78 || char === 0x1b) {
+        // Ctrl+C (0x03), q (0x71), x (0x78), or esc (0x1b)
         cleanup()
         process.exit(0)
       }

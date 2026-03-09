@@ -45,6 +45,30 @@ const outFlag = extractFlagValue('--out')
 const outputDir = extractFlagValue('--outDir')
 const describeFormat = extractFlagValue('--describe') || '##'
 
+// Helper to parse test summary from output
+function parseTestSummary(output: string): { passed: number; failed: number; total: number; hasFailed: boolean } {
+  const lines = output.split('\n')
+  let stats = { passed: 0, failed: 0, total: 0, hasFailed: false }
+  
+  for (const line of lines) {
+    if (line.includes('ℹ pass')) {
+      const match = line.match(/pass\s+(\d+)/)
+      if (match) stats.passed = parseInt(match[1])
+    }
+    if (line.includes('ℹ fail')) {
+      const match = line.match(/fail\s+(\d+)/)
+      if (match) stats.failed = parseInt(match[1])
+    }
+    if (line.includes('ℹ tests')) {
+      const match = line.match(/tests\s+(\d+)/)
+      if (match) stats.total = parseInt(match[1])
+    }
+  }
+  
+  stats.hasFailed = stats.failed > 0
+  return stats
+}
+
 // Check for unknown options
 const unknownOptions = args.filter(a => a.startsWith('--') || (a.startsWith('-') && a.length > 1 && a !== '-'))
 if (unknownOptions.length > 0) {
@@ -149,6 +173,8 @@ if (runTypecheck) {
 // --- Generate markdown ---
 
 async function generateMarkdown(): Promise<void> {
+  let filesGenerated = 0
+  
   for (const inputPath of inputPaths) {
     // Reset the describe format override before processing each file
     resetDescribeFormat()
@@ -217,8 +243,14 @@ async function generateMarkdown(): Promise<void> {
       process.stdout.write(md + '\n')
     } else {
       writeFileSync(outPath!, md + '\n', 'utf8')
-      console.error(`wrote ${outPath}`)
+      filesGenerated++
     }
+  }
+  
+  // Show summary if files were written
+  if (!dryrun && filesGenerated > 0) {
+    const fileWord = filesGenerated === 1 ? 'file' : 'files'
+    console.error(`✅ Generated ${filesGenerated} ${fileWord}`)
   }
 }
 
@@ -228,9 +260,12 @@ async function executeTasks(): Promise<void> {
     const result = typecheck(inputPaths.map(p => resolve(p)))
     if (!result.ok) {
       for (const msg of result.messages) console.error(msg)
+      console.error('❌ Typecheck failed')
       // In wait mode, report error but continue; in normal mode, exit
       if (!wait) process.exit(1)
       // Continue to markdown generation even if typecheck failed
+    } else {
+      console.error('✅ Typecheck passed')
     }
   }
 
@@ -238,7 +273,32 @@ async function executeTasks(): Promise<void> {
   if (runTests) {
     const stripFlag = stripTypesFlag()
     const nodeArgs = ['--test', ...(stripFlag ? [stripFlag] : []), ...inputPaths.map(p => resolve(p))]
-    const result = spawnSync(process.execPath, nodeArgs, { stdio: 'inherit', env: process.env })
+    
+    // In wait mode, capture output for summary display; otherwise inherit (show full output)
+    const spawnOptions = wait ? { encoding: 'utf-8' as const } : { stdio: 'inherit' as const, env: process.env }
+    
+    const result = spawnSync(process.execPath, nodeArgs, spawnOptions)
+    
+    // Handle output based on mode
+    if (wait && result.stdout) {
+      // In wait mode: capture output and show condensed summary
+      const output = result.stdout.toString()
+      const stats = parseTestSummary(output)
+      
+      if (stats.hasFailed) {
+        // Extract and show failures section
+        const failureStart = output.indexOf('✖ failing tests')
+        if (failureStart !== -1) {
+          const failureSection = output.substring(failureStart)
+          console.error(failureSection)
+        }
+        console.error(`\n❌ Tests failed: ${stats.failed}/${stats.total} failed`)
+      } else {
+        // All passed: show one-line summary
+        console.log(`✅ Tests passed: ${stats.passed} passed`)
+      }
+    }
+    
     if (result.status !== 0) {
       // In wait mode, report error but continue; in normal mode, exit
       if (!wait) process.exit(result.status ?? 1)
