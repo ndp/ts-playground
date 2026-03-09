@@ -115,3 +115,12 @@ describe('Shell examples', () => {
   */
 })
 
+/*
+## CREDITS
+
+Built by Andrew J. Peterson, although there was some manual code changes,
+most of the code was Github Copilot CLI, using mostly Claude Haiku 4.5
+and some Claude Sonnet 4.6.
+Most tasks used a plan-autopilot loop, but other approaches were used as well.
+ */
+
