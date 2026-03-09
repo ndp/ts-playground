@@ -35,7 +35,7 @@
     "types": "./dist/index.d.ts"
   },
   "scripts": {
-    "prepare": "npm run build",
+    "prepublishOnly": "npm run build",
     "readme": "node ./src/cli.ts --test --typecheck --out ./README.md src/docs/README.lit-md.ts",
     "test": "node --test './test/**/*.test.ts'",
     "test:watch": "node --test --watch './test/**/*.test.ts'",
