@@ -4,6 +4,11 @@
 
 ## Added
 
+
+## [0.3] - 2026-03-08
+
+## Added
+
 - **Engine**: `timeout` option for `shellExample()`: Prevents test hangs from long-running or infinite shell commands with a configurable timeout (default: 3000ms). For example, `shellExample('npm install', { timeout: 30000 })` allows 30 seconds. Timeouts result in clear error messages like "Command timed out after 3000ms: sleep 10", with proper resource cleanup.
 
 - **CLI**: Visual feedback indicators for all operations. Watch mode and normal mode now display `✅ Typecheck passed` or `❌ Typecheck failed` for type checking results, and `✅ Generated N file(s)` for markdown generation, providing consistent visual feedback alongside test results.
