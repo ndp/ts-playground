@@ -110,7 +110,7 @@ Use `shellExample` to include executable shell commands in the README.
 ```ts
 shellExample('echo "hello world"', { stdout: { display: true } })
 ```
-
+becomes
 ```sh
 $ echo "hello world"
 hello world

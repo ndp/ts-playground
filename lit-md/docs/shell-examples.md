@@ -176,6 +176,19 @@ Options Reference
     - Default: false (only shows the command and its output)
     - Useful for showing both the code and its result in documentation
 
+    #### timeout
+
+    - Type: `number`
+    - Timeout in milliseconds for command execution (default: 3000)
+    - Prevents test suite hangs from long-running or infinite shell commands
+    - When a command exceeds the timeout, it fails with a clear error message: "Command timed out after Xms: {command}"
+    - Examples:
+      - `{ timeout: 5000 }` - Allow 5 seconds
+      - `{ timeout: 30000 }` - Allow 30 seconds for long operations like npm install
+      - `{ timeout: 500 }` - Strict timeout for quick commands
+    - Default: 3000ms (3 seconds) - reasonable for most shell examples
+    - Tip: Override per command if you have operations that legitimately take longer
+
     #### Example with All Options
 
 ```ts
@@ -192,6 +205,20 @@ shellExample(
           },
           outputFiles: [
             {path: 'result.log', matches: /Done/, displayPath: true, summary: true}
-          ]
+          ],
+          timeout: 5000  // Allow 5 seconds
         })
+```
+
+    #### Example with Timeout Protection
+
+```ts
+// Default 3-second timeout (fast commands complete normally)
+shellExample('npm list')
+
+// Custom timeout for long-running operations
+shellExample('npm install', { timeout: 30000 })
+
+// Very restrictive timeout to catch hanging commands
+shellExample('curl https://example.com', { timeout: 5000 })
 ```

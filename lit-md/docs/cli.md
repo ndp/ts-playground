@@ -14,6 +14,25 @@ $ lit-md tmp.ts
 # My Document
 ```
 
+### Watch Mode
+
+Use `--wait` to automatically regenerate documentation when source files change.
+
+```sh
+$ lit-md --wait --test --typecheck README.lit-md.ts
+```
+
+In watch mode:
+- Files are monitored for changes and regenerated automatically
+- Test results and typecheck status are shown with visual indicators:
+  - ✅ Typecheck passed
+  - ❌ Typecheck failed
+  - ✅ Generated N file(s)
+- Press **space** to manually regenerate
+- Exit with **q**, **x**, **esc**, or **Ctrl+C**
+
+For more details on how watch mode works internally, see [how-wait-mode-works.md](./how-wait-mode-works.md).
+
 ### Custom output path
 
 Use --out to write to a different location.

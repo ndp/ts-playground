@@ -75,6 +75,7 @@ export interface ShellExampleOpts {
   displayCommand?: boolean | 'hidden'
   meta?: boolean
   exitCode?: number
+  timeout?: number  // Timeout in milliseconds, default 3000
 }
 
 /** Internal: executes a shell command and runs any assertions. Throws on failure.
@@ -88,7 +89,14 @@ export function _runShellExample(cmd: string, opts: ShellExampleOpts): void {
     }
     const prefix = buildAliasPrefix()
     const fullCmd = prefix ? `${prefix}${cmd}` : cmd
-    const result = spawnSync(fullCmd, { shell: true, encoding: 'utf8', cwd: tmpDir })
+    const timeoutMs = opts.timeout ?? 3000
+    const result = spawnSync(fullCmd, { shell: true, encoding: 'utf8', cwd: tmpDir, timeout: timeoutMs })
+    
+    // Check for timeout error
+    if (result.error && (result.error as NodeJS.ErrnoException).code === 'ETIMEDOUT') {
+      throw new Error(`Command timed out after ${timeoutMs}ms: ${cmd}`)
+    }
+    
     const actualExitCode = result.status ?? 1
     if (opts.exitCode !== undefined) {
       if (actualExitCode !== opts.exitCode) {
@@ -154,7 +162,8 @@ export function _runShellExample(cmd: string, opts: ShellExampleOpts): void {
 
 /** Registers a node:test test that executes the shell command and verifies assertions. */
 export function shellExample(cmd: string, opts: ShellExampleOpts = {}): void {
-  test(cmd, () => _runShellExample(cmd, opts))
+  const timeoutMs = opts.timeout ?? 3000
+  test(cmd, { timeout: timeoutMs }, () => _runShellExample(cmd, opts))
 }
 
 /**
