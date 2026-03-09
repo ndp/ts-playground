@@ -7,25 +7,27 @@
   - more detailed stdout assertions.
 
 ```ts
-shellExample('echo "hello world"')
+shellExample('echo "hello world"', { stdout: {display: true}})
+```
+becomes
+```sh
+$ echo "hello world"
+hello world
 ```
 
 Can contain assertions on stdout, which appear as comments in the emitted markdown.
 Assertions can use `contains` or `matches`, with either strings or regex patterns.
-
 ```ts
 shellExample('echo "ok"', {stdout: {contains: 'ok'}})
 ```
 
 stdout.matches provides an alternative assertion method:
-
 ```ts
 shellExample('echo "version 1.0.0"', {stdout: {matches: /version \d+\.\d+\.\d+/}})
 ```
 
 Can provide input files that are created before the command runs,
 and output file assertions that check for files created by the command and their contents.
-
 ```ts
 shellExample('cp input.txt output.txt', {
   inputFiles: [{path: 'input.txt', content: 'hello world'}],
@@ -35,7 +37,6 @@ shellExample('cp input.txt output.txt', {
 
 Output file assertions can check contents with `contains` (substring or regex) or `matches` (regex or string).
 Both properties are optional — you can specify just one, or display file contents without assertions.
-
 ```ts
 shellExample('cp input.txt output.txt', {
   inputFiles: [{path: 'input.txt', content: 'first line\nsecond line'}],
@@ -44,7 +45,6 @@ shellExample('cp input.txt output.txt', {
 ```
 
 File assertions can also use regex in contains or strings in matches:
-
 ```ts
 shellExample('cp input.txt output.txt', {
   inputFiles: [{path: 'input.txt', content: 'data.json'}],
@@ -53,7 +53,6 @@ shellExample('cp input.txt output.txt', {
 ```
 
 You can even output the output file contents, or the stdout:
-
 ```ts
 shellExample('echo "Hello, World!" | tee greeting.txt', {
   stdout: {
@@ -80,7 +79,6 @@ Hello, World!
 ```
 
 You can also display the `shellExample` call itself in the output using the `meta` option:
-
 ```ts
 shellExample('echo "Hello, World!"', {
       meta: true,
@@ -98,6 +96,20 @@ becomes
 $ echo "Hello, World!"
 ```
 
+Input and output files can display their contents:
+```ts
+shellExample('cat input.txt', {
+      inputFiles: [{
+        path: 'input.txt',
+        content: 'File contents to display',
+        display: true,  // Show file contents in output
+        displayPath: true,
+        summary: true
+      }],
+      stdout: {display: true}
+    })
+```
+
 ### Advanced Usage
 
 shellExample provides more control and structured options for shell command examples. Use when you need to:
@@ -107,21 +119,35 @@ shellExample provides more control and structured options for shell command exam
     - Assert output files match patterns
     - Hide/customize what's displayed
     - Show the function call itself with `meta: true`
-
 ```ts
 shellExample('echo "hello world"')
 ```
 
 With Assertions
-
 ```ts
 shellExample('echo "ok"', {
       stdout: {contains: 'ok'}
     })
 ```
 
-Input and Output Files
+Exit Code Assertions
+```ts
+shellExample('echo "success"', {
+      exitCode: 0,
+      stdout: {display: true}
+    })
 
+shellExample('false', {
+      exitCode: 1
+    })
+
+shellExample('true', {
+      exitCode: 0,
+      stdout: {display: true}
+    })
+```
+
+Input and Output Files
 ```ts
 shellExample('cat input.txt > output.txt', {
       inputFiles: [
@@ -130,6 +156,19 @@ shellExample('cat input.txt > output.txt', {
       outputFiles: [
         {path: 'output.txt', matches: /Hello/}
       ]
+    })
+```
+
+Timeout Configuration
+```ts
+shellExample('echo "quick"', {
+      timeout: 3000,
+      stdout: {display: true}
+    })
+
+shellExample('echo "instant"', {
+      timeout: 500,
+      stdout: {display: true}
     })
 ```
 
@@ -166,7 +205,24 @@ Options Reference
     - `path`: File path
     - `content`: File contents
     - `displayPath`: Show the filename (default: true)
+    - `display`: Show the file contents (default: true)
     - `summary`: Show summary line (default: true)
+
+    #### exitCode
+
+    - Type: `number`
+    - Asserts the command exits with this specific code
+    - When not specified, expects exit code 0 (success)
+    - Useful for testing expected failures (e.g., exitCode: 1)
+    - If actual exit code doesn't match, command fails with detailed error message
+
+    #### timeout
+
+    - Type: `number`
+    - Command timeout in milliseconds
+    - Default: 3000 (3 seconds)
+    - If command runs longer than timeout, throws ETIMEDOUT error
+    - Useful for preventing infinite loops or very long-running commands
 
     #### meta
 
@@ -176,27 +232,13 @@ Options Reference
     - Default: false (only shows the command and its output)
     - Useful for showing both the code and its result in documentation
 
-    #### timeout
-
-    - Type: `number`
-    - Timeout in milliseconds for command execution (default: 3000)
-    - Prevents test suite hangs from long-running or infinite shell commands
-    - When a command exceeds the timeout, it fails with a clear error message: "Command timed out after Xms: {command}"
-    - Examples:
-      - `{ timeout: 5000 }` - Allow 5 seconds
-      - `{ timeout: 30000 }` - Allow 30 seconds for long operations like npm install
-      - `{ timeout: 500 }` - Strict timeout for quick commands
-    - Default: 3000ms (3 seconds) - reasonable for most shell examples
-    - Tip: Override per command if you have operations that legitimately take longer
-
     #### Example with All Options
-
 ```ts
 shellExample(
         'cat input.txt && echo "Done" | tee result.log', {
           displayCommand: true,
           inputFiles: [
-            {path: 'input.txt', content: 'Config data', displayPath: true, summary: true}
+            {path: 'input.txt', content: 'Config data', displayPath: true, display: true, summary: true}
           ],
           stdout: {
             contains: 'Done',
@@ -206,19 +248,7 @@ shellExample(
           outputFiles: [
             {path: 'result.log', matches: /Done/, displayPath: true, summary: true}
           ],
-          timeout: 5000  // Allow 5 seconds
+          exitCode: 0,  // Assert successful exit
+          timeout: 5000  // Set 5 second timeout
         })
-```
-
-    #### Example with Timeout Protection
-
-```ts
-// Default 3-second timeout (fast commands complete normally)
-shellExample('npm list')
-
-// Custom timeout for long-running operations
-shellExample('npm install', { timeout: 30000 })
-
-// Very restrictive timeout to catch hanging commands
-shellExample('curl https://example.com', { timeout: 5000 })
 ```

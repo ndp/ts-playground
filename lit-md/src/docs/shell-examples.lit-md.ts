@@ -82,6 +82,20 @@ describe('shellExample', () => {
     stdout: {}
   })
 
+  // Input and output files can display their contents:
+  example('display inputFile contents', () =>
+    shellExample('cat input.txt', {
+      inputFiles: [{
+        path: 'input.txt',
+        content: 'File contents to display',
+        display: true,  // Show file contents in output
+        displayPath: true,
+        summary: true
+      }],
+      stdout: {display: true}
+    })
+  )
+
 
   describe('Advanced Usage', () => {
     /*
@@ -100,6 +114,23 @@ describe('shellExample', () => {
     example('contains', () => shellExample('echo "ok"', {
       stdout: {contains: 'ok'}
     }))
+    
+    /*
+    Exit Code Assertions
+    */
+    example('with exitCode success (0)', () => shellExample('echo "success"', {
+      exitCode: 0,
+      stdout: {display: true}
+    }))
+
+    example('with exitCode for failure', () => shellExample('false', {
+      exitCode: 1
+    }))
+
+    example('with exitCode mismatch detection', () => shellExample('true', {
+      exitCode: 0,
+      stdout: {display: true}
+    }))
     /*
     Input and Output Files
     */
@@ -110,6 +141,19 @@ describe('shellExample', () => {
       outputFiles: [
         {path: 'output.txt', matches: /Hello/}
       ]
+    }))
+
+    /*
+    Timeout Configuration
+    */
+    example('with timeout (default 3000ms)', () => shellExample('echo "quick"', {
+      timeout: 3000,
+      stdout: {display: true}
+    }))
+
+    example('with custom short timeout', () => shellExample('echo "instant"', {
+      timeout: 500,
+      stdout: {display: true}
     }))
 
 
@@ -147,7 +191,24 @@ describe('shellExample', () => {
     - `path`: File path
     - `content`: File contents
     - `displayPath`: Show the filename (default: true)
+    - `display`: Show the file contents (default: true)
     - `summary`: Show summary line (default: true)
+
+    #### exitCode
+
+    - Type: `number`
+    - Asserts the command exits with this specific code
+    - When not specified, expects exit code 0 (success)
+    - Useful for testing expected failures (e.g., exitCode: 1)
+    - If actual exit code doesn't match, command fails with detailed error message
+
+    #### timeout
+
+    - Type: `number`
+    - Command timeout in milliseconds
+    - Default: 3000 (3 seconds)
+    - If command runs longer than timeout, throws ETIMEDOUT error
+    - Useful for preventing infinite loops or very long-running commands
 
     #### meta
 
@@ -165,7 +226,7 @@ describe('shellExample', () => {
         'cat input.txt && echo "Done" | tee result.log', {
           displayCommand: true,
           inputFiles: [
-            {path: 'input.txt', content: 'Config data', displayPath: true, summary: true}
+            {path: 'input.txt', content: 'Config data', displayPath: true, display: true, summary: true}
           ],
           stdout: {
             contains: 'Done',
@@ -174,7 +235,9 @@ describe('shellExample', () => {
           },
           outputFiles: [
             {path: 'result.log', matches: /Done/, displayPath: true, summary: true}
-          ]
+          ],
+          exitCode: 0,  // Assert successful exit
+          timeout: 5000  // Set 5 second timeout
         }))
   })
 })
