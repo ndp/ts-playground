@@ -39,8 +39,8 @@ describe('integration: lit-md CLI end-to-end', () => {
 
   test('multiple input files: generates one .md per input (using --outDir)', () => {
     const outDir = join(__dir, 'fixtures/_multi_file_test')
-    const input1 = join(__dir, 'acceptance/basic-prose.ts')
-    const input2 = join(__dir, 'acceptance/code-blocks.ts')
+    const input1 = join(__dir, 'acceptance/basic-prose.lit-md.ts')
+    const input2 = join(__dir, 'acceptance/code-blocks.lit-md.ts')
     try {
       runCli(['--outDir', outDir, input1, input2])
       assert.ok(existsSync(join(outDir, 'basic-prose.md')), 'first output exists')
@@ -53,8 +53,8 @@ describe('integration: lit-md CLI end-to-end', () => {
   test('--out errors when multiple input files given', () => {
     const { stderr, status } = runCli([
       '--out', '/tmp/x.md',
-      join(__dir, 'acceptance/basic-prose.ts'),
-      join(__dir, 'acceptance/code-blocks.ts'),
+      join(__dir, 'acceptance/basic-prose.lit-md.ts'),
+      join(__dir, 'acceptance/code-blocks.lit-md.ts'),
     ], { expectFail: true })
     assert.equal(status, 1)
     assert.ok(stderr.includes('--out can only be used with a single input file'))
@@ -62,8 +62,8 @@ describe('integration: lit-md CLI end-to-end', () => {
 
   test('--outDir: places all outputs in specified directory', () => {
     const outDir = join(__dir, 'fixtures/_outputdir_test')
-    const input1 = join(__dir, 'acceptance/basic-prose.ts')
-    const input2 = join(__dir, 'acceptance/code-blocks.ts')
+    const input1 = join(__dir, 'acceptance/basic-prose.lit-md.ts')
+    const input2 = join(__dir, 'acceptance/code-blocks.lit-md.ts')
     try {
       runCli(['--outDir', outDir, input1, input2])
       assert.ok(existsSync(join(outDir, 'basic-prose.md')))
@@ -74,7 +74,7 @@ describe('integration: lit-md CLI end-to-end', () => {
 
   test('--outDir creates directory if it does not exist', () => {
     const outDir = join(__dir, 'fixtures/_new_dir_test')
-    const input = join(__dir, 'acceptance/basic-prose.ts')
+    const input = join(__dir, 'acceptance/basic-prose.lit-md.ts')
     try {
       assert.ok(!existsSync(outDir), 'dir should not exist before test')
       runCli(['--outDir', outDir, input])
@@ -85,7 +85,7 @@ describe('integration: lit-md CLI end-to-end', () => {
   })
 
   test('--dryrun: prints "would write" to stderr and does not create file', () => {
-    const input = join(__dir, 'acceptance/basic-prose.ts')
+    const input = join(__dir, 'acceptance/basic-prose.lit-md.ts')
     const expectedOut = input.replace('.ts', '.md')
     try {
       unlinkSync(expectedOut)
@@ -96,11 +96,11 @@ describe('integration: lit-md CLI end-to-end', () => {
   })
 
   test('--test: runs tests and proceeds to generate on success', () => {
-    const input = join(__dir, 'acceptance/basic-prose.ts')
-    const outputFile = input.replace('.ts', '.generated.md')
+    const input = join(__dir, 'acceptance/basic-prose.lit-md.ts')
+    const outputFile = input.replace('.lit-md.ts', '.generated.md')
     try {
       const { stderr } = runCli(['--test', '--out', outputFile, input])
-      assert.ok(stderr.includes('wrote'), 'generated file')
+      assert.ok(stderr.includes('Generated'), 'generated file')
       assert.ok(existsSync(outputFile))
     } finally {
       try { unlinkSync(outputFile) } catch {}
@@ -108,25 +108,25 @@ describe('integration: lit-md CLI end-to-end', () => {
   })
 
   test('--typecheck: succeeds on valid .ts file', () => {
-    const input = join(__dir, 'acceptance/basic-prose.ts')
+    const input = join(__dir, 'acceptance/basic-prose.lit-md.ts')
     const { stderr } = runCli(['--typecheck', '--dryrun', input])
     assert.ok(stderr.includes('dry run: would write'))
   })
 
   test('default (no --out, no --outDir): outputs to stdout', () => {
-    const input = join(__dir, 'acceptance/basic-prose.ts')
+    const input = join(__dir, 'acceptance/basic-prose.lit-md.ts')
     const { stdout, stderr } = runCli([input])
     assert.ok(stdout.includes('Basic Prose'), 'markdown content in stdout')
-    assert.ok(!stderr.includes('wrote'), 'no "wrote" message')
+    assert.ok(!stderr.includes('Generated'), 'no "Generated" message')
   })
 
   test('with --outDir: creates file in directory (not stdout for markdown)', () => {
     const outDir = join(__dir, 'fixtures/_stdout_test')
-    const input = join(__dir, 'acceptance/basic-prose.ts')
+    const input = join(__dir, 'acceptance/basic-prose.lit-md.ts')
     try {
       const { stdout, stderr } = runCli(['--outDir', outDir, input])
       assert.ok(!stdout.includes('Basic Prose'), 'markdown content NOT in stdout')
-      assert.ok(stderr.includes('wrote'), 'writes to file with message')
+      assert.ok(stderr.includes('Generated'), 'writes to file with message')
       assert.ok(existsSync(join(outDir, 'basic-prose.md')))
     } finally {
       try { rmSync(outDir, { recursive: true }) } catch {}
@@ -135,11 +135,11 @@ describe('integration: lit-md CLI end-to-end', () => {
 
   test('with --out: creates file (not stdout for markdown)', () => {
     const outputFile = join(__dir, 'fixtures/_stdout_test.md')
-    const input = join(__dir, 'acceptance/basic-prose.ts')
+    const input = join(__dir, 'acceptance/basic-prose.lit-md.ts')
     try {
       const { stdout, stderr } = runCli(['--out', outputFile, input])
       assert.ok(!stdout.includes('Basic Prose'), 'markdown content NOT in stdout')
-      assert.ok(stderr.includes('wrote'), 'writes to file with message')
+      assert.ok(stderr.includes('Generated'), 'writes to file with message')
       assert.ok(existsSync(outputFile))
     } finally {
       try { unlinkSync(outputFile) } catch {}

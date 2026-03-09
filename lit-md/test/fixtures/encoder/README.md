@@ -16,7 +16,6 @@ result // => 'aGVsbG8='
 ```
 
 You can also encode empty strings:
-
 ```ts
 encode('') // => ''
 ```
