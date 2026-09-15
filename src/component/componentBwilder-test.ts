@@ -1117,6 +1117,62 @@ describe('ComponentBwilder render', () => {
     assert.equal(c.subElements.title?.textContent, 'Direct Element')
   })
 
+  test('required subElements resolve successfully from selectors', async () => {
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('required-subelements-success'))
+      .wElement('title!')
+      .wShadowDOM('none')
+      .wRender(function () {
+        this.root.innerHTML = '<h1 id="title">Required Title</h1>'
+        return {title: '#title'}
+      })
+      .bwild()
+
+    const c = new MyComponentClass()
+    await c.connectedCallback()
+
+    assert.equal(c.subElements.title!.textContent, 'Required Title')
+  })
+
+  test('required subElements reject when a selector is missing', async () => {
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('required-subelements-missing'))
+      .wElement('title!')
+      .wShadowDOM('none')
+      .wRender(function () {
+        this.root.innerHTML = '<div>Missing title</div>'
+        return {title: '#title'}
+      })
+      .bwild()
+
+    const c = new MyComponentClass()
+    await assert.rejects(c.connectedCallback(), /Required sub-element "title".*selector "#title"/)
+  })
+
+  test('required subElements reject when a direct element is null or omitted', async () => {
+    const NullComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('required-subelements-null'))
+      .wElement('title!')
+      .wShadowDOM('none')
+      .wRender(function () {
+        this.root.innerHTML = '<div>Null title</div>'
+        return {title: null}
+      })
+      .bwild()
+
+    const OmittedComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('required-subelements-omitted'))
+      .wElement('title!')
+      .wShadowDOM('none')
+      .wRender(function () {
+        this.root.innerHTML = '<div>Omitted title</div>'
+      })
+      .bwild()
+
+    await assert.rejects(new NullComponentClass().connectedCallback(), /Required sub-element "title".*null/)
+    await assert.rejects(new OmittedComponentClass().connectedCallback(), /Required sub-element "title".*no value was returned/)
+  })
+
   test('subElements are provided to methods following their declaration', () => {
     let postMountContent = ''
 
@@ -1182,6 +1238,83 @@ describe('ComponentBwilder render', () => {
     assert.deepEqual(events, ['assigned:div'])
     c.disconnectedCallback()
     assert.deepEqual(events, ['assigned:div', 'cleanup:div'])
+  })
+
+  test('slotAddedHandler failures reject render after all handlers finish', async () => {
+    const events: string[] = []
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('slot-handler-rejects'))
+      .wShadowDOM('open')
+      .wRender(function ({root}) {
+        root.innerHTML = '<slot />'
+      })
+      .wSlotAddedHandler(async function (_, slottedEl) {
+        const id = slottedEl.getAttribute('data-id') ?? 'unknown'
+        events.push(`start:${id}`)
+        if (id === 'bad') {
+          throw new Error('boom')
+        }
+        return () => events.push(`cleanup:${id}`)
+      })
+      .bwild()
+
+    const c = new MyComponentClass()
+    await c.connectedCallback()
+
+    const slot = c.shadowRoot!.querySelector('slot') as HTMLSlotElement
+    const good = document.createElement('div')
+    good.setAttribute('data-id', 'good')
+    const bad = document.createElement('div')
+    bad.setAttribute('data-id', 'bad')
+    ;(slot as any).assignedElements = () => [good, bad]
+
+    await assert.rejects(
+      () => c.render(),
+      /slotAddedHandler failed for 1 assigned element\(s\)/
+    )
+    assert.deepEqual(events, ['start:good', 'start:bad'])
+  })
+
+  test('slotAddedHandler async cleanup failures continue remaining cleanup', async () => {
+    const events: string[] = []
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('slot-handler-cleanup-errors'))
+      .wShadowDOM('open')
+      .wRender(function ({root}) {
+        root.innerHTML = '<slot />'
+      })
+      .wSlotAddedHandler(function (_, slottedEl) {
+        const id = slottedEl.getAttribute('data-id') ?? 'unknown'
+        events.push(`add:${id}`)
+        if (id === 'bad') {
+          return async () => {
+            events.push(`cleanup:${id}`)
+            throw new Error('cleanup boom')
+          }
+        }
+        return async () => {
+          events.push(`cleanup:${id}`)
+        }
+      })
+      .bwild()
+
+    const c = new MyComponentClass()
+    await c.connectedCallback()
+
+    const slot = c.shadowRoot!.querySelector('slot') as HTMLSlotElement
+    const good = document.createElement('div')
+    good.setAttribute('data-id', 'good')
+    const bad = document.createElement('div')
+    bad.setAttribute('data-id', 'bad')
+    ;(slot as any).assignedElements = () => [good, bad]
+
+    await c.render()
+    c.disconnectedCallback()
+    await Promise.resolve()
+
+    assert.deepEqual(events, ['add:good', 'add:bad', 'cleanup:good', 'cleanup:bad'])
   })
 
   test('slotAddedHandler is a no-op when render produces no slots', () => {

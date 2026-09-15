@@ -142,6 +142,9 @@ const FormTyped = new ComponentBwilder()
 ```
 
 The type parameter is optional and TypeScript-only (zero runtime cost). The bang suffix applies to all field types: `.wElement()`, `.wAttr()`, `.wObservedAttr()`, and `.wState()`.
+
+Required sub-elements are also validated at runtime after each render. If a required field is omitted, resolves to a missing selector, or is returned as `null`, the render promise rejects with an error naming the field. Optional fields continue to resolve to `null` when they are absent.
+
 ### 3. CSS modes and sharing
 
 ```ts

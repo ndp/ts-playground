@@ -3,12 +3,14 @@ import {isIterableNonString} from './typescript.ts'
 /**
  * Generic Tracker - tracks items, lets add listeners return cleanups, and runs those cleanups on removal.
  */
-export type TrackerAddListener<T> = (item: T) => void | (() => void)
+export type TrackerCleanup<T> = () => void | Promise<void>
+export type TrackerAddListener<T> = (item: T) => void | (() => void) | Promise<void | (() => void)>
 
 export class Tracker<T> {
   private readonly items: Set<T>
   private readonly addListeners: Set<TrackerAddListener<T>> = new Set()
-  private readonly cleanups: Map<T, Set<() => void>> = new Map()
+  private readonly cleanups: Map<T, Set<TrackerCleanup<T>>> = new Map()
+  private pendingAsyncResults: Promise<unknown>[] = []
 
   constructor(initial?: Iterable<T>) {
     this.items = new Set(initial || [])
@@ -91,20 +93,48 @@ export class Tracker<T> {
     return { removed, added }
   }
 
+  async flushPendingAsyncResults(): Promise<unknown[]> {
+    const pending = this.pendingAsyncResults
+    this.pendingAsyncResults = []
+
+    const settled = await Promise.allSettled(pending)
+    return settled.flatMap((result) => result.status === 'rejected' ? [result.reason] : [])
+  }
+
   private notifyAdd(item: T) {
     for (const fn of Array.from(this.addListeners)) {
       try {
-        const cleanup = fn(item)
-        if (typeof cleanup === 'function')
-          this.recordCleanup(item, cleanup)
-      } catch {
-        // swallow listener errors
+        const result = fn(item)
+        if (result && typeof (result as Promise<unknown>).then === 'function') {
+          this.pendingAsyncResults.push(
+            Promise.resolve(result)
+              .then((cleanup) => {
+                if (typeof cleanup === 'function')
+                  this.recordCleanup(item, cleanup as TrackerCleanup<T>)
+              })
+              .catch((error) => {
+                console.error('[Tracker] add listener failed', error)
+                throw error
+              })
+          )
+          continue
+        }
+
+        if (typeof result === 'function')
+          this.recordCleanup(item, result as TrackerCleanup<T>)
+      } catch (error) {
+        console.error('[Tracker] add listener failed', error)
+        this.pendingAsyncResults.push(Promise.reject(error))
       }
     }
   }
 
-  private recordCleanup(item: T, cleanup: () => void) {
-    const set = this.cleanups.get(item) ?? new Set<() => void>()
+  track(item: T, cleanup: TrackerCleanup<T>) {
+    this.recordCleanup(item, cleanup)
+  }
+
+  private recordCleanup(item: T, cleanup: TrackerCleanup<T>) {
+    const set = this.cleanups.get(item) ?? new Set<TrackerCleanup<T>>()
     set.add(cleanup)
     this.cleanups.set(item, set)
   }
@@ -119,7 +149,16 @@ export class Tracker<T> {
     const cleanups = this.cleanups.get(item)
     if (!cleanups) return
     for (const fn of Array.from(cleanups)) {
-      try { fn() } catch { /* swallow cleanup errors */ }
+      try {
+        const result = fn()
+        if (result && typeof (result as Promise<unknown>).then === 'function') {
+          Promise.resolve(result).catch((error) => {
+            console.error('[Tracker] cleanup failed', error)
+          })
+        }
+      } catch (error) {
+        console.error('[Tracker] cleanup failed', error)
+      }
     }
   }
 }

@@ -32,7 +32,7 @@ export class ComponentBwilder<
     oldValue: unknown
   }) => void) | null> = {}
   private unobservedAttrs: Record<string, string | null> = {}
-  private subElementNames: string[] = []
+  private subElementDefinitions: Array<{name: string, required: boolean}> = []
   private stateDefinitions: Record<string, unknown | (() => unknown)> = {}
   private renderFn: ComponentBwilderRenderer<ComponentType, SubElements> | undefined
   private postMountFn?: (this: ComponentType, context: ComponentType) => void | (() => void) | Promise<void> | Promise<() => void>
@@ -100,7 +100,7 @@ export class ComponentBwilder<
     elementType?: new (...args: any[]) => T
   ) {
     const parsed = parseFieldName(elementName)
-    this.subElementNames.push(parsed.name);
+    this.subElementDefinitions.push({name: parsed.name, required: parsed.required})
     return this as unknown as ComponentBwilder<
       {[k in keyof SubElements]: SubElements[k]} & Record<ExtractFieldName<A>, OptionalIfNeeded<T, A>>,
       StateRecord,
@@ -166,7 +166,7 @@ export class ComponentBwilder<
     const elementClass = class extends HTMLElement {
 
       readonly root: ShadowRoot | HTMLElement;
-      subElements: SubElements = makeDefaultSubElements(builder.subElementNames) as SubElements
+      subElements: SubElements = makeDefaultSubElements(builder.subElementDefinitions) as SubElements
       state: StateRecord = {} as StateRecord
       private slotTracker = new Tracker<HTMLSlotElement>()
       private assignedTracker = new Tracker<HTMLElement>()
@@ -211,11 +211,11 @@ export class ComponentBwilder<
         const context = this as unknown as ComponentType
         return this.render()
           .then(() => builder.postMountFn?.call(context, context))
-          .then((cleanup) => {
+          .then(async (cleanup) => {
             if (typeof cleanup === 'function')
               this.postMountCleanup = cleanup
             this._isConnected = true
-            this.refreshAssignedElements(context)
+            await this.refreshAssignedElements(context)
           })
       }
 
@@ -237,11 +237,11 @@ export class ComponentBwilder<
         const renderResult = renderFn.call(context, context)
 
         return Promise.resolve(renderResult)
-          .then((returnedSubElements) => {
-            this.subElements = normalizeSubElements(this.root, returnedSubElements, builder.subElementNames) as SubElements
+          .then(async (returnedSubElements) => {
+            this.subElements = normalizeSubElements(this.root, returnedSubElements, builder.subElementDefinitions) as SubElements
 
             if (builder.slotAddedHandler)
-              this.refreshSlotHandlers(context as unknown as ComponentType)
+              await this.refreshSlotHandlers(context as unknown as ComponentType)
 
             if (builder.css) {
               const actualMode = resolveCSSMode(this.root, builder.css.requestedMode)
@@ -266,40 +266,61 @@ export class ComponentBwilder<
             }
 
             if (builder.postRenderFn)
-              return builder.postRenderFn.call(context as any, context as any)
+              await builder.postRenderFn.call(context as any, context as any)
           })
       }
 
-      private refreshSlotHandlers(context: ComponentType) {
+      private async refreshSlotHandlers(context: ComponentType) {
         const handler = builder.slotAddedHandler
         if (!handler)
           return
 
         if (!this.slotAddUnsub)
           this.slotAddUnsub = this.slotTracker.onAdd((slotEl) => {
-            const listener = () => this.refreshAssignedElements(context)
+            const listener = () => void this.refreshAssignedElements(context)
             slotEl.addEventListener('slotchange', listener)
             return () => slotEl.removeEventListener('slotchange', listener)
           })
 
         if (!this.assignedAddUnsub)
           this.assignedAddUnsub = this.assignedTracker.onAdd((assignedEl) => {
-            try { return handler.call(context, context, assignedEl) } catch { /* swallow handler errors */ }
+            try {
+              return handler.call(context, context, assignedEl)
+            } catch (error) {
+              console.error(`[ComponentBwilder:${this.tagName ?? 'unnamed'}] slotAddedHandler failed for assigned element`, error)
+              throw error
+            }
           })
 
         const slots = Array.from(this.root.querySelectorAll('slot')) as HTMLSlotElement[]
-        this.slotTracker.setAll(slots)
+        const trackedSlots = this._isConnected && this.slotTracker.size > 0 && slots.length === this.slotTracker.size
+          ? Array.from(this.slotTracker)
+          : slots
+
+        this.slotTracker.setAll(trackedSlots)
         if (this._isConnected)
-          this.refreshAssignedElements(context, slots)
+          await this.refreshAssignedElements(context, trackedSlots)
       }
 
-      private refreshAssignedElements(context: ComponentType, slots?: HTMLSlotElement[]) {
+      private async refreshAssignedElements(context: ComponentType, slots?: HTMLSlotElement[]) {
+        const handler = builder.slotAddedHandler
+        if (!handler)
+          return
+
         const slotList = slots ?? Array.from(this.root.querySelectorAll('slot')) as HTMLSlotElement[]
         const assigned = slotList.flatMap((slot) => {
           const els = slot.assignedElements({flatten: true})
           return els.filter((n): n is HTMLElement => n instanceof HTMLElement)
         })
+
         this.assignedTracker.setAll(assigned)
+        const errors = await this.assignedTracker.flushPendingAsyncResults()
+        if (errors.length > 0) {
+          throw new AggregateError(
+            errors,
+            `[ComponentBwilder:${this.tagName ?? 'unnamed'}] slotAddedHandler failed for ${errors.length} assigned element(s)`
+          )
+        }
       }
 
       private teardownSlotHandlers() {
@@ -393,36 +414,65 @@ function resolveCSSMode(root: ShadowRoot | HTMLElement, requestedMode: CSSMode):
   return supportsAdoptedStyleSheets(root) ? 'adopted' : 'inline'
 }
 
-function makeDefaultSubElements(names: string[]) {
+type SubElementDefinition = {name: string, required: boolean}
+
+function makeDefaultSubElements(definitions: SubElementDefinition[]) {
   const subElements: Record<string, HTMLElement | null> = {}
-  for (const name of names)
+  for (const {name} of definitions)
     subElements[name] = null
   return subElements
 }
 
 function normalizeSubElements(root: ShadowRoot | HTMLElement,
                               rawSubElements: unknown,
-                              declaredNames: string[]): SubElementsMap<string> {
-  const normalized = makeDefaultSubElements(declaredNames)
+                              definitions: SubElementDefinition[]): SubElementsMap<string> {
+  const normalized = makeDefaultSubElements(definitions)
+  const requiredByName = new Map(definitions.map(({name, required}) => [name, required]))
+  const returned = rawSubElements && typeof rawSubElements === 'object'
+    ? rawSubElements as Record<string, unknown>
+    : {}
 
-  if (!rawSubElements || typeof rawSubElements !== 'object')
-    return normalized
+  for (const {name, required} of definitions) {
+    const value = returned[name]
+    let element: HTMLElement | null = null
 
-  for (const [key, value] of Object.entries(rawSubElements as Record<string, unknown>)) {
-    if (typeof value === 'string') {
+    if (typeof value === 'string')
+      element = root.querySelector(value)
+    else if (value === null || value instanceof HTMLElement)
+      element = value
+
+    if (required && !element) {
+      const detail = name in returned
+        ? `returned value ${describeSubElementValue(value)}`
+        : 'no value was returned'
+      throw new Error(`Required sub-element "${name}" was not found: ${detail}.`)
+    }
+
+    normalized[name] = element
+  }
+
+  for (const [key, value] of Object.entries(returned)) {
+    if (requiredByName.has(key))
+      continue
+    if (typeof value === 'string')
       normalized[key] = root.querySelector(value)
-      continue
-    }
-
-    if (value === null || value instanceof HTMLElement) {
-      normalized[key] = value as HTMLElement | null
-      continue
-    }
-
-    normalized[key] = null
+    else if (value === null || value instanceof HTMLElement)
+      normalized[key] = value
+    else
+      normalized[key] = null
   }
 
   return normalized
+}
+
+function describeSubElementValue(value: unknown): string {
+  if (typeof value === 'string')
+    return `selector "${value}"`
+  if (value === null)
+    return 'null'
+  if (value === undefined)
+    return 'undefined'
+  return `value of type ${typeof value}`
 }
 
 
