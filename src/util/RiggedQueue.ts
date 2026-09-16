@@ -21,6 +21,7 @@ export class RiggedQueue<T> {
   private readonly maxSize: number
   private winners: Set<T>
   private items: Array<T> = []
+  private view: Array<T> = []
   private usages: Array<T> = []
   private readonly listeners: Set<RiggedQueueChangeListener<T>> = new Set()
   private dirty: boolean = true
@@ -30,8 +31,9 @@ export class RiggedQueue<T> {
     winners: Iterable<T>,
     nonWinners: Iterable<T> = []) {
     this.maxSize = maxSize
-    this.winners = new Set(winners)
-    this.items = [...winners, ...[...nonWinners].filter(item => !this.winners.has(item))]
+    const winnerItems = [...winners]
+    this.winners = new Set(winnerItems)
+    this.items = [...this.winners, ...[...nonWinners].filter(item => !this.winners.has(item))]
   }
 
   // Register a listener that fires after each add() batch when peek() actually changes.
@@ -94,17 +96,16 @@ export class RiggedQueue<T> {
   peek(): T[] {
     if (this.dirty)
       this.calculateItems()
-    return this.items!
+    return this.view
   }
 
   private calculateItems(): void {
-    console.log(`calculateItems: ${this.items.join(',')} ${this.maxSize}`)
-    // if (this.winners.size >= this.maxSize)
-
     const numberOfItemsToRemove = Math.max(0, this.items.length - Math.max(this.maxSize, this.winners.size))
-
-    console.log(`numberOfItemsToRemove`, numberOfItemsToRemove)
-    if (numberOfItemsToRemove == 0) return
+    if (numberOfItemsToRemove == 0) {
+      this.dirty = false
+      this.view = Object.freeze(this.items.slice()) as T[]
+      return
+    }
 
 
     const removing = this.items
@@ -125,13 +126,11 @@ export class RiggedQueue<T> {
       .reverse()
       .slice(0, numberOfItemsToRemove)
 
-    console.log(' -> removing ' + removing.join('|'))
     for (let i of removing)
       this.items.splice(this.items.indexOf(i), 1)
 
     this.dirty = false
-
-    return
+    this.view = Object.freeze(this.items.slice()) as T[]
   }
 
   private notifyChange(before: T[]): void {

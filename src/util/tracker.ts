@@ -10,10 +10,13 @@ export class Tracker<T> {
   private readonly items: Set<T>
   private readonly addListeners: Set<TrackerAddListener<T>> = new Set()
   private readonly cleanups: Map<T, Set<TrackerCleanup<T>>> = new Map()
+  private readonly activeTokens = new Map<T, object>()
   private pendingAsyncResults: Promise<{ok: boolean, error?: unknown}>[] = []
 
   constructor(initial?: Iterable<T>) {
     this.items = new Set(initial || [])
+    for (const item of this.items)
+      this.activeTokens.set(item, {})
   }
 
   // Subscribe to adds; returns an unsubscribe function
@@ -38,7 +41,9 @@ export class Tracker<T> {
       const item = itemOrItems as T
       if (this.items.has(item)) return false
       this.items.add(item)
-      this.notifyAdd(item)
+      const token = {}
+      this.activeTokens.set(item, token)
+      this.notifyAdd(item, token)
       return true
     }
 
@@ -50,7 +55,11 @@ export class Tracker<T> {
         added.push(it)
       }
     }
-    for (const it of added) this.notifyAdd(it)
+    for (const it of added) {
+      const token = {}
+      this.activeTokens.set(it, token)
+      this.notifyAdd(it, token)
+    }
     return added
   }
 
@@ -91,7 +100,9 @@ export class Tracker<T> {
 
     for (const it of added) {
       this.items.add(it)
-      this.notifyAdd(it)
+      const token = {}
+      this.activeTokens.set(it, token)
+      this.notifyAdd(it, token)
     }
 
     return { removed, added }
@@ -105,7 +116,7 @@ export class Tracker<T> {
     return results.flatMap((result) => result.ok ? [] : [result.error])
   }
 
-  private notifyAdd(item: T) {
+  private notifyAdd(item: T, token: object) {
     for (const fn of Array.from(this.addListeners)) {
       try {
         const result = fn(item)
@@ -113,8 +124,8 @@ export class Tracker<T> {
           this.pendingAsyncResults.push(
             Promise.resolve(result)
               .then((cleanup) => {
-                if (typeof cleanup === 'function')
-                  this.recordCleanup(item, cleanup as TrackerCleanup<T>)
+                if (typeof cleanup === 'function' && this.activeTokens.get(item) === token)
+                  this.recordCleanup(item, cleanup as TrackerCleanup<T>, token)
                 return {ok: true}
               })
               .catch((error) => {
@@ -126,7 +137,7 @@ export class Tracker<T> {
         }
 
         if (typeof result === 'function')
-          this.recordCleanup(item, result as TrackerCleanup<T>)
+          this.recordCleanup(item, result as TrackerCleanup<T>, token)
       } catch (error) {
         console.error('[Tracker] add listener failed', error)
         this.pendingAsyncResults.push(Promise.resolve({ok: false, error}))
@@ -138,7 +149,8 @@ export class Tracker<T> {
     this.recordCleanup(item, cleanup)
   }
 
-  private recordCleanup(item: T, cleanup: TrackerCleanup<T>) {
+  private recordCleanup(item: T, cleanup: TrackerCleanup<T>, token?: object) {
+    if (token && this.activeTokens.get(item) !== token) return
     const set = this.cleanups.get(item) ?? new Set<TrackerCleanup<T>>()
     set.add(cleanup)
     this.cleanups.set(item, set)
@@ -147,6 +159,7 @@ export class Tracker<T> {
   private _remove(item: T) {
     this.runCleanups(item)
     this.cleanups.delete(item)
+    this.activeTokens.delete(item)
     this.items.delete(item)
   }
 

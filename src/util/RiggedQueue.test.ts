@@ -151,6 +151,27 @@ describe('RiggedQueue', () => {
     assert.equal(q.peek(), ref)
   })
 
+  test('peek() cannot be mutated by callers', () => {
+    const q = new RiggedQueue(5, [], ['a', 'b'])
+    const snapshot = q.peek()
+    assert.throws(() => snapshot.push('c'), TypeError)
+    assert.deepEqual(q.peek(), ['a', 'b'])
+  })
+
+  test('peek() does not log during normal use', () => {
+    const originalLog = console.log
+    let calls = 0
+    console.log = () => { calls++ }
+    try {
+      const q = new RiggedQueue(5, [], ['a'])
+      q.peek()
+      q.peek()
+      assert.equal(calls, 0)
+    } finally {
+      console.log = originalLog
+    }
+  })
+
   // --- constructor nonWinners ---
 
   test('constructor nonWinners pre-populates queue', () => {
@@ -161,6 +182,15 @@ describe('RiggedQueue', () => {
   test('constructor with no third arg defaults to empty nonWinners', () => {
     const q = new RiggedQueue(5, ['w1'])
     assert.deepEqual(q.peek(), ['w1'])
+  })
+
+  test('supports one-shot winner iterables', () => {
+    function* winners() {
+      yield 'w1'
+      yield 'w2'
+    }
+    const q = new RiggedQueue(5, winners(), ['a'])
+    assert.deepEqual(q.peek(), ['w1', 'w2', 'a'])
   })
 
   // --- onChange() listeners ---

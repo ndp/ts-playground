@@ -136,6 +136,22 @@ describe('Tracker', () => {
     }
   })
 
+  test('does not register async cleanup after an item is removed', async () => {
+    const t = new Tracker<number>()
+    let resolveListener!: (cleanup: () => void) => void
+    let cleaned = 0
+    t.onAdd(() => new Promise<() => void>(resolve => { resolveListener = resolve }))
+
+    t.add(1)
+    t.remove(1)
+    resolveListener(() => { cleaned++ })
+    await t.flushPendingAsyncResults()
+    t.add(1)
+    t.remove(1)
+
+    assert.equal(cleaned, 0)
+  })
+
   test('removeAll plus unsubscribe prevents future listener calls but keeps existing cleanups', () => {
     const t = new Tracker<string>()
     let seen = 0

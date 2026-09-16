@@ -8,6 +8,6 @@ export function buildQueryString<Params extends URLParams>(
   return Object
     .keys(params)
     .sort()
-    .map(k => `${k}${params[k] === true ? '' : `=${encodeURIComponent(params[k])}`}`)
+    .map(k => `${encodeURIComponent(k)}${params[k] === true ? '' : `=${encodeURIComponent(params[k])}`}`)
     .join('&')
 }
