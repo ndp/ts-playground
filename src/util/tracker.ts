@@ -10,7 +10,7 @@ export class Tracker<T> {
   private readonly items: Set<T>
   private readonly addListeners: Set<TrackerAddListener<T>> = new Set()
   private readonly cleanups: Map<T, Set<TrackerCleanup<T>>> = new Map()
-  private pendingAsyncResults: Promise<unknown>[] = []
+  private pendingAsyncResults: Promise<{ok: boolean, error?: unknown}>[] = []
 
   constructor(initial?: Iterable<T>) {
     this.items = new Set(initial || [])
@@ -101,8 +101,8 @@ export class Tracker<T> {
     const pending = this.pendingAsyncResults
     this.pendingAsyncResults = []
 
-    const settled = await Promise.allSettled(pending)
-    return settled.flatMap((result) => result.status === 'rejected' ? [result.reason] : [])
+    const results = await Promise.all(pending)
+    return results.flatMap((result) => result.ok ? [] : [result.error])
   }
 
   private notifyAdd(item: T) {
@@ -115,10 +115,11 @@ export class Tracker<T> {
               .then((cleanup) => {
                 if (typeof cleanup === 'function')
                   this.recordCleanup(item, cleanup as TrackerCleanup<T>)
+                return {ok: true}
               })
               .catch((error) => {
                 console.error('[Tracker] add listener failed', error)
-                throw error
+                return {ok: false, error}
               })
           )
           continue
@@ -128,7 +129,7 @@ export class Tracker<T> {
           this.recordCleanup(item, result as TrackerCleanup<T>)
       } catch (error) {
         console.error('[Tracker] add listener failed', error)
-        this.pendingAsyncResults.push(Promise.reject(error))
+        this.pendingAsyncResults.push(Promise.resolve({ok: false, error}))
       }
     }
   }

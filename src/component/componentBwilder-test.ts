@@ -103,6 +103,28 @@ describe('ComponentBwilder observed attributes', () => {
     }, /Attr "data-id" is already defined\./)
   })
 
+  test('internally triggered attribute render failures are logged', async () => {
+    const errors: unknown[][] = []
+    const originalError = console.error
+    console.error = (...args: unknown[]) => errors.push(args)
+    try {
+      const MyComponentClass = new ComponentBwilder()
+        .wTagName(nextTag('attribute-render-error'))
+        .wAttrRender('data-value')
+        .wRender(function () {
+          throw new Error('attribute render failed')
+        })
+        .bwild()
+      const c = new MyComponentClass()
+      c.setAttribute('data-value', 'x')
+      await Promise.resolve()
+      assert.match(String(errors[0]?.[0]), /ComponentBwilder:.*attributeChangedCallback render failed/)
+      assert.match(String(errors[0]?.[1]), /attribute render failed/)
+    } finally {
+      console.error = originalError
+    }
+  })
+
   test('callback receives null when observed attribute is removed', () => {
     const transitions: Array<{ oldValue: unknown, newValue: unknown }> = []
 
@@ -573,24 +595,33 @@ describe('ComponentBwilder render', () => {
     assert.equal(postRenderDone, true)
   })
 
-  test('connectedCallback rejects when async render rejects', async () => {
+  test('connectedCallback logs and resolves when async render rejects', async () => {
     let postMountCalled = false
+    const errors: unknown[][] = []
+    const originalError = console.error
+    console.error = (...args: unknown[]) => errors.push(args)
 
-    const MyComponentClass = new ComponentBwilder()
-      .wTagName(nextTag('async-render-reject'))
-      .wShadowDOM('none')
-      .wRender(async function () {
-        await Promise.resolve()
-        throw new Error('render failed')
-      })
-      .wConnectedFn(function () {
-        postMountCalled = true
-      })
-      .bwild()
+    try {
+      const MyComponentClass = new ComponentBwilder()
+        .wTagName(nextTag('async-render-reject'))
+        .wShadowDOM('none')
+        .wRender(async function () {
+          await Promise.resolve()
+          throw new Error('render failed')
+        })
+        .wConnectedFn(function () {
+          postMountCalled = true
+        })
+        .bwild()
 
-    const c = new MyComponentClass()
-    await assert.rejects(() => Promise.resolve(c.connectedCallback()), /render failed/)
-    assert.equal(postMountCalled, false)
+      const c = new MyComponentClass()
+      await c.connectedCallback()
+      assert.equal(postMountCalled, false)
+      assert.match(String(errors[0]?.[0]), /ComponentBwilder:.*connectedCallback failed/)
+      assert.match(String(errors[0]?.[1]), /render failed/)
+    } finally {
+      console.error = originalError
+    }
   })
 
   test('render rejects when postRenderFn rejects', async () => {
@@ -610,25 +641,34 @@ describe('ComponentBwilder render', () => {
     await assert.rejects(() => Promise.resolve(c.render()), /postRender failed/)
   })
 
-  test('connectedCallback rejects when postMountFn rejects', async () => {
+  test('connectedCallback logs and resolves when postMountFn rejects', async () => {
     let renderCompleted = false
+    const errors: unknown[][] = []
+    const originalError = console.error
+    console.error = (...args: unknown[]) => errors.push(args)
 
-    const MyComponentClass = new ComponentBwilder()
-      .wTagName(nextTag('async-post-mount-reject'))
-      .wShadowDOM('none')
-      .wRender(function () {
-        renderCompleted = true
-        this.root.innerHTML = '<div>ready</div>'
-      })
-      .wConnectedFn(async function () {
-        await Promise.resolve()
-        throw new Error('postMount failed')
-      })
-      .bwild()
+    try {
+      const MyComponentClass = new ComponentBwilder()
+        .wTagName(nextTag('async-post-mount-reject'))
+        .wShadowDOM('none')
+        .wRender(function () {
+          renderCompleted = true
+          this.root.innerHTML = '<div>ready</div>'
+        })
+        .wConnectedFn(async function () {
+          await Promise.resolve()
+          throw new Error('postMount failed')
+        })
+        .bwild()
 
-    const c = new MyComponentClass()
-    await assert.rejects(() => Promise.resolve(c.connectedCallback()), /postMount failed/)
-    assert.equal(renderCompleted, true)
+      const c = new MyComponentClass()
+      await c.connectedCallback()
+      assert.equal(renderCompleted, true)
+      assert.match(String(errors[0]?.[0]), /ComponentBwilder:.*connectedCallback failed/)
+      assert.match(String(errors[0]?.[1]), /postMount failed/)
+    } finally {
+      console.error = originalError
+    }
   })
 
   test('connectedCallback returns a Promise when async render + sync postMountFn', async () => {
@@ -713,7 +753,7 @@ describe('ComponentBwilder render', () => {
     assert.deepEqual(events, ['render', 'postMount-start', 'postMount-end'])
   })
 
-  test('sync throws in render and post hooks propagate synchronously', async () => {
+  test('sync render and post-hook failures follow the error policy', async () => {
     const RenderThrowsClass = new ComponentBwilder()
       .wTagName(nextTag('sync-render-throw'))
       .wShadowDOM('none')
@@ -723,9 +763,13 @@ describe('ComponentBwilder render', () => {
       .bwild()
 
     const c1 = new RenderThrowsClass()
-    assert.throws(() => {
-      c1.connectedCallback()
-    }, /render sync failed/)
+    const renderErrors: unknown[][] = []
+    const originalError = console.error
+    console.error = (...args: unknown[]) => renderErrors.push(args)
+    await c1.connectedCallback()
+    console.error = originalError
+    assert.match(String(renderErrors[0]?.[0]), /ComponentBwilder:.*connectedCallback failed/)
+    assert.match(String(renderErrors[0]?.[1]), /render sync failed/)
 
     const PostRenderThrowsClass = new ComponentBwilder()
       .wTagName(nextTag('sync-post-render-throw'))
@@ -756,10 +800,12 @@ describe('ComponentBwilder render', () => {
       .bwild()
 
     const c3 = new PostMountThrowsClass()
-    await assert.rejects(
-      () => c3.connectedCallback(),
-      /postMount sync failed/
-    )
+    const postMountErrors: unknown[][] = []
+    console.error = (...args: unknown[]) => postMountErrors.push(args)
+    await c3.connectedCallback()
+    console.error = originalError
+    assert.match(String(postMountErrors[0]?.[0]), /ComponentBwilder:.*connectedCallback failed/)
+    assert.match(String(postMountErrors[0]?.[1]), /postMount sync failed/)
   })
 
   test('postMountFn cleanup is called on disconnect', async () => {
@@ -822,6 +868,36 @@ describe('ComponentBwilder render', () => {
     c.disconnectedCallback()
     await c.connectedCallback()
     assert.deepEqual(events, ['mount', 'cleanup', 'mount'])
+  })
+
+  test('disconnect logs cleanup failures and continues', async () => {
+    const events: string[] = []
+    const errors: unknown[][] = []
+    const originalError = console.error
+    console.error = (...args: unknown[]) => errors.push(args)
+
+    try {
+      const MyComponentClass = new ComponentBwilder()
+        .wTagName(nextTag('cleanup-error'))
+        .wShadowDOM('none')
+        .wRender(stubRender)
+        .wConnectedFn(function () {
+          return () => {
+            events.push('bad-cleanup')
+            throw new Error('cleanup failed')
+          }
+        })
+        .bwild()
+
+      const c = new MyComponentClass()
+      await c.connectedCallback()
+      c.disconnectedCallback()
+      assert.deepEqual(events, ['bad-cleanup'])
+      assert.match(String(errors[0]?.[0]), /ComponentBwilder:.*disconnectedCallback cleanup failed/)
+      assert.match(String(errors[0]?.[1]), /cleanup failed/)
+    } finally {
+      console.error = originalError
+    }
   })
 
   test('async postMountFn returning a cleanup function calls cleanup on disconnect', async () => {
@@ -1176,7 +1252,7 @@ describe('ComponentBwilder render', () => {
     assert.equal(c.subElements.title!.textContent, 'Required Title')
   })
 
-  test('required subElements reject when a selector is missing', async () => {
+  test('required subElements log when a selector is missing', async () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('required-subelements-missing'))
       .wElement('title!')
@@ -1188,10 +1264,19 @@ describe('ComponentBwilder render', () => {
       .bwild()
 
     const c = new MyComponentClass()
-    await assert.rejects(c.connectedCallback(), /Required sub-element "title".*selector "#title"/)
+    const errors: unknown[][] = []
+    const originalError = console.error
+    console.error = (...args: unknown[]) => errors.push(args)
+    try {
+      await c.connectedCallback()
+    } finally {
+      console.error = originalError
+    }
+    assert.match(String(errors[0]?.[0]), /ComponentBwilder:.*connectedCallback failed/)
+    assert.match(String(errors[0]?.[1]), /Required sub-element "title".*selector "#title"/)
   })
 
-  test('required subElements reject when a direct element is null or omitted', async () => {
+  test('required subElements log when a direct element is null or omitted', async () => {
     const NullComponentClass = new ComponentBwilder()
       .wTagName(nextTag('required-subelements-null'))
       .wElement('title!')
@@ -1211,8 +1296,19 @@ describe('ComponentBwilder render', () => {
       })
       .bwild()
 
-    await assert.rejects(new NullComponentClass().connectedCallback(), /Required sub-element "title".*null/)
-    await assert.rejects(new OmittedComponentClass().connectedCallback(), /Required sub-element "title".*no value was returned/)
+    const errors: unknown[][] = []
+    const originalError = console.error
+    console.error = (...args: unknown[]) => errors.push(args)
+    try {
+      await new NullComponentClass().connectedCallback()
+      await new OmittedComponentClass().connectedCallback()
+    } finally {
+      console.error = originalError
+    }
+    assert.match(String(errors[0]?.[0]), /ComponentBwilder:.*connectedCallback failed/)
+    assert.match(String(errors[0]?.[1]), /Required sub-element "title".*null/)
+    assert.match(String(errors[1]?.[0]), /ComponentBwilder:.*connectedCallback failed/)
+    assert.match(String(errors[1]?.[1]), /Required sub-element "title".*no value was returned/)
   })
 
   test('subElements are provided to methods following their declaration', () => {
@@ -1282,6 +1378,38 @@ describe('ComponentBwilder render', () => {
     assert.deepEqual(events, ['assigned:div', 'cleanup:div'])
   })
 
+  test('slotchange handler failures are logged', async () => {
+    let assigned: HTMLElement[] = []
+    const errors: unknown[][] = []
+    const originalError = console.error
+    console.error = (...args: unknown[]) => errors.push(args)
+    try {
+      const MyComponentClass = new ComponentBwilder()
+        .wTagName(nextTag('slotchange-error'))
+        .wShadowDOM('open')
+        .wRender(function ({root}) {
+          root.innerHTML = '<slot />'
+          const slot = root.querySelector('slot') as HTMLSlotElement
+          ;(slot as any).assignedElements = () => assigned
+        })
+        .wSlotAddedHandler(() => { throw new Error('slotchange failed') })
+        .bwild()
+      const c = new MyComponentClass()
+      await c.connectedCallback()
+      const slot = c.shadowRoot!.querySelector('slot') as HTMLSlotElement
+      const element = document.createElement('div')
+      assigned = [element]
+      ;(slot as any).assignedElements = () => assigned
+      slot.dispatchEvent(new (slot.ownerDocument.defaultView as any).Event('slotchange'))
+      await new Promise((resolve) => setImmediate(resolve))
+      assert.ok(errors.some(([message]) => /slotchange failed/i.test(String(message))))
+      assert.ok(errors.some(([message]) => /ComponentBwilder:/i.test(String(message))))
+      assert.ok(errors.some(([, error]) => /slotAddedHandler failed/.test(String(error))))
+    } finally {
+      console.error = originalError
+    }
+  })
+
   test('slotAddedHandler failures reject render after all handlers finish', async () => {
     const events: string[] = []
     let assigned: HTMLElement[] = []
@@ -1290,7 +1418,8 @@ describe('ComponentBwilder render', () => {
       .wTagName(nextTag('slot-handler-rejects'))
       .wShadowDOM('open')
       .wRender(function ({root}) {
-        root.innerHTML = '<slot />'
+        if (!root.querySelector('slot'))
+          root.innerHTML = '<slot />'
         const slot = root.querySelector('slot') as HTMLSlotElement
         const assignedForThisRender = assigned
         ;(slot as any).assignedElements = () => assignedForThisRender

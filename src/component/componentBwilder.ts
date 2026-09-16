@@ -24,6 +24,8 @@ type AttrBindOptions = {
 
 type AttrChangeHandler<TContext> = (this: TContext, args: AttrChangeArgs) => void
 
+type Cleanup = () => unknown | Promise<unknown>
+
 type SlotAddedHandler<TContext> = <TEl extends HTMLElement>(
   this: TContext,
   context: TContext,
@@ -49,7 +51,7 @@ export class ComponentBwilder<
   private stateDefinitions: Record<string, unknown | (() => unknown)> = {}
   private definedStates = new Set<string>()
   private renderFn: ComponentBwilderRenderer<ComponentType, SubElements> | undefined
-  private postMountFn?: (this: ComponentType, context: ComponentType) => void | (() => void) | Promise<void> | Promise<() => void>
+  private postMountFn?: (this: ComponentType, context: ComponentType) => void | Cleanup | Promise<void | Cleanup>
   private postRenderFn?: (this: ComponentType, context: ComponentType) => void | Promise<void>
   private slotAddedHandler: SlotAddedHandler<ComponentType> | undefined
 
@@ -200,7 +202,7 @@ export class ComponentBwilder<
   /**
    * Run after the first render; may return a cleanup function or a Promise of one.
    */
-  wConnectedFn(postMountFn: (this: ComponentType, context: ComponentType) => void | (() => void) | Promise<void> | Promise<() => void>) {
+  wConnectedFn(postMountFn: (this: ComponentType, context: ComponentType) => void | Cleanup | Promise<void | Cleanup>) {
     this.postMountFn = postMountFn as any
     return this as this & { wConnectedFn: never }
   }
@@ -243,7 +245,19 @@ export class ComponentBwilder<
       private slotAddUnsub?: () => void
       private assignedAddUnsub?: () => void
       private _isConnected = false
-      private postMountCleanup?: () => void
+      private postMountCleanup?: Cleanup
+
+      private reportError(phase: string, error: unknown) {
+        console.error(`[ComponentBwilder:${builder.tagName ?? 'unnamed'}] ${phase} failed`, error)
+      }
+
+      private runInternal(phase: string, operation: () => unknown) {
+        try {
+          Promise.resolve(operation()).catch((error) => this.reportError(phase, error))
+        } catch (error) {
+          this.reportError(phase, error)
+        }
+      }
 
       constructor() {
         super()
@@ -275,9 +289,9 @@ export class ComponentBwilder<
           const binding = builder.attrBindings[name]
           if (!this._isConnected && binding?.initial)
             return
-          action.call(this as unknown as ComponentType, {name, oldValue, newValue, initial: false});
+          this.runInternal('attributeChangedCallback', () => action.call(this as unknown as ComponentType, {name, oldValue, newValue, initial: false}))
         } else
-          this.render()
+          this.runInternal('attributeChangedCallback render', () => this.render())
       }
 
       connectedCallback(): Promise<void> {
@@ -291,12 +305,17 @@ export class ComponentBwilder<
             this._isConnected = true
             await this.refreshAssignedElements(context)
           })
+          .catch((error) => {
+            this.reportError('connectedCallback', error)
+          })
       }
 
       disconnectedCallback() {
         this._isConnected = false
-        this.postMountCleanup?.()
+        const cleanup = this.postMountCleanup
         this.postMountCleanup = undefined
+        if (cleanup)
+          this.runInternal('disconnectedCallback cleanup', cleanup)
         if (builder.slotAddedHandler)
           this.teardownSlotHandlers()
       }
@@ -308,7 +327,12 @@ export class ComponentBwilder<
       render(): Promise<void> {
 
         const context = this as unknown as ComponentType
-        const renderResult = renderFn.call(context, context)
+        let renderResult: BwilderRendererReturn<SubElements> | Promise<BwilderRendererReturn<SubElements>>
+        try {
+          renderResult = renderFn.call(context, context)
+        } catch (error) {
+          return Promise.reject(error)
+        }
 
         return Promise.resolve(renderResult)
           .then(async (returnedSubElements) => {
@@ -351,7 +375,7 @@ export class ComponentBwilder<
 
         if (!this.slotAddUnsub)
           this.slotAddUnsub = this.slotTracker.onAdd((slotEl) => {
-            const listener = () => void this.refreshAssignedElements(context)
+            const listener = () => this.runInternal('slotchange', () => this.refreshAssignedElements(context))
             slotEl.addEventListener('slotchange', listener)
             return () => slotEl.removeEventListener('slotchange', listener)
           })

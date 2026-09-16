@@ -80,6 +80,62 @@ describe('Tracker', () => {
     assert.ok(firstCleanupIndex > -1 && addIndex > -1 && firstCleanupIndex < addIndex)
   })
 
+  test('logs listener failures without preventing other listeners', () => {
+    const t = new Tracker<number>()
+    const errors: unknown[][] = []
+    const originalError = console.error
+    console.error = (...args: unknown[]) => errors.push(args)
+    try {
+      const seen: number[] = []
+      t.onAdd(() => { throw new Error('listener failed') })
+      t.onAdd((n) => { seen.push(n) })
+      t.add(1)
+      assert.deepEqual(seen, [1])
+      assert.match(String(errors[0]?.[0]), /\[Tracker\] add listener failed/)
+      assert.match(String(errors[0]?.[1]), /listener failed/)
+    } finally {
+      console.error = originalError
+    }
+  })
+
+  test('logs cleanup failures and continues remaining cleanups', () => {
+    const t = new Tracker<number>()
+    const errors: unknown[][] = []
+    const originalError = console.error
+    console.error = (...args: unknown[]) => errors.push(args)
+    try {
+      const events: string[] = []
+      t.onAdd(() => {
+        return () => { events.push('bad'); throw new Error('cleanup failed') }
+      })
+      t.onAdd(() => () => { events.push('good') })
+      t.add(1)
+      t.remove(1)
+      assert.deepEqual(events, ['bad', 'good'])
+      assert.match(String(errors[0]?.[0]), /\[Tracker\] cleanup failed/)
+      assert.match(String(errors[0]?.[1]), /cleanup failed/)
+    } finally {
+      console.error = originalError
+    }
+  })
+
+  test('logs async cleanup failures', async () => {
+    const t = new Tracker<number>()
+    const errors: unknown[][] = []
+    const originalError = console.error
+    console.error = (...args: unknown[]) => errors.push(args)
+    try {
+      t.onAdd(() => async () => { throw new Error('async cleanup failed') })
+      t.add(1)
+      t.remove(1)
+      await Promise.resolve()
+      assert.match(String(errors[0]?.[0]), /\[Tracker\] cleanup failed/)
+      assert.match(String(errors[0]?.[1]), /async cleanup failed/)
+    } finally {
+      console.error = originalError
+    }
+  })
+
   test('removeAll plus unsubscribe prevents future listener calls but keeps existing cleanups', () => {
     const t = new Tracker<string>()
     let seen = 0
