@@ -31,6 +31,7 @@ type SlotAddedHandler<TContext> = <TEl extends HTMLElement>(
 ) => any
 
 let gWarnedCSSFallback = false
+let gGeneratedTagCounter = 0
 
 export class ComponentBwilder<
   SubElements extends SubElementsMap = {},
@@ -51,6 +52,25 @@ export class ComponentBwilder<
   private postMountFn?: (this: ComponentType, context: ComponentType) => void | (() => void) | Promise<void> | Promise<() => void>
   private postRenderFn?: (this: ComponentType, context: ComponentType) => void | Promise<void>
   private slotAddedHandler: SlotAddedHandler<ComponentType> | undefined
+
+  /**
+   * Generate a valid custom-element tag name that is currently unused.
+   */
+  static generateUniqueTagName(prefix = 'bwilder'): TagName {
+    if (!/^[a-z][a-z0-9._-]*$/.test(prefix))
+      throw new Error(`Invalid custom element tag prefix: "${prefix}"`)
+    if (typeof customElements === 'undefined')
+      throw new Error('Cannot generate a unique custom element tag name without customElements')
+
+    let tagName: string
+    do {
+      gGeneratedTagCounter += 1
+      const randomPart = Math.random().toString(36).slice(2, 10)
+      tagName = `${prefix}-${Date.now().toString(36)}-${gGeneratedTagCounter.toString(36)}-${randomPart}`
+    } while (customElements.get(tagName))
+
+    return tagName as TagName
+  }
 
   constructor() {
   }

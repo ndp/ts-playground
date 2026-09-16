@@ -1,18 +1,13 @@
 import {
   ComponentBwilder, resetTest
 } from './componentBwilder.ts'
-import {assertValidTagName, type TagName} from './TagName.ts'
+import {type TagName} from './TagName.ts'
 import {describe, test} from 'node:test'
 import {strict as assert} from 'node:assert'
 import {type RenderContext} from './render.ts'
 
-let tagCounter = 0
-
 function nextTag(prefix: string): TagName {
-  tagCounter += 1
-  const tagName = `${prefix}-${Date.now().toString(36)}-${tagCounter.toString(36)}`
-  assertValidTagName(tagName)
-  return tagName
+  return ComponentBwilder.generateUniqueTagName(prefix)
 }
 
 // Typescript tests: prevent duplicate calls
@@ -49,11 +44,34 @@ describe('ComponentBwilder basic tests', () => {
 })
 
 
+describe('ComponentBwilder tag names', () => {
+  test('generates valid unused tag names', () => {
+    const first = ComponentBwilder.generateUniqueTagName('test-widget')
+    const second = ComponentBwilder.generateUniqueTagName('test-widget')
+
+    assert.notEqual(first, second)
+    assert.match(first, /^test-widget-[a-z0-9-]+$/)
+    assert.equal(customElements.get(first), undefined)
+
+    const Component = new ComponentBwilder()
+      .wTagName(first)
+      .wRender(stubRender)
+      .bwild()
+
+    assert.equal(customElements.get(first), Component)
+    assert.notEqual(ComponentBwilder.generateUniqueTagName('test-widget'), first)
+  })
+
+  test('rejects invalid tag-name prefixes', () => {
+    assert.throws(() => ComponentBwilder.generateUniqueTagName('Invalid Prefix'), /Invalid custom element tag prefix/)
+  })
+})
+
 describe('ComponentBwilder observed attributes', () => {
   test('basic definition', () => {
     const MyBuilder =
       new ComponentBwilder()
-        .wTagName('observed-attrs-component' as TagName)
+        .wTagName(nextTag('observed-attrs-component'))
         .wAttrBind('data-id', ({newValue, oldValue}) => {
           console.log(`data-id changed from ${oldValue} to ${newValue}`)
         })
@@ -111,7 +129,7 @@ describe('ComponentBwilder observed attributes', () => {
 describe('ComponentBwilder render', () => {
   test('with render function', () => {
     const MyComponentClass = new ComponentBwilder()
-      .wTagName('rendered-component-with-render-fn' as TagName)
+      .wTagName(nextTag('rendered-component-with-render-fn'))
       .wShadowDOM('none')
       .wRender(function (this: RenderContext) {
         this.root.innerHTML = '<div class="content">Hello, world!</div>'
@@ -128,7 +146,7 @@ describe('ComponentBwilder render', () => {
   test('without render function', () => {
     assert.throws(() => {
       new ComponentBwilder()
-        .wTagName('rendered-component-without-render-fn' as TagName)
+        .wTagName(nextTag('rendered-component-without-render-fn'))
         .wShadowDOM('none')
         .bwild()
     }, /No render function provided to component/)
@@ -138,7 +156,7 @@ describe('ComponentBwilder render', () => {
     let unobservedValue: string | null = null;
 
     const MyComponentClass = new ComponentBwilder()
-      .wTagName('rendered-component-with-unobs-attr' as TagName)
+      .wTagName(nextTag('rendered-component-with-unobs-attr'))
       .wShadowDOM('none')
       .wAttr('data-info')
       .wRender(function () {
@@ -172,7 +190,7 @@ describe('ComponentBwilder render', () => {
     let unobservedValue: string | null = 'initial';
 
     const MyComponentClass = new ComponentBwilder()
-      .wTagName('rendered-component-with-unobs-attr-null' as TagName)
+      .wTagName(nextTag('rendered-component-with-unobs-attr-null'))
       .wShadowDOM('none')
       .wAttr('data-info')
       .wRender(function () {
@@ -192,7 +210,7 @@ describe('ComponentBwilder render', () => {
 
   test('unobserved attribute can have default value', () => {
     const MyComponentClass = new ComponentBwilder()
-      .wTagName('rendered-component-with-unobs-attr-default' as TagName)
+      .wTagName(nextTag('rendered-component-with-unobs-attr-default'))
       .wShadowDOM('none')
       .wAttr('data-info', 'a default value')
       .wRender(function () {
@@ -235,7 +253,7 @@ describe('ComponentBwilder render', () => {
     let observedValue: string | null = null;
 
     const MyComponentClass = new ComponentBwilder()
-      .wTagName('rendered-component-with-attr' as TagName)
+      .wTagName(nextTag('rendered-component-with-attr'))
       .wShadowDOM('none')
       .wAttrRender('data-name')
       .wRender(function () {
@@ -260,7 +278,7 @@ describe('ComponentBwilder render', () => {
   test('defaults to adopted CSS mode in open shadow DOM', async () => {
     const css = `.test-class { color: red; }`;
     const MyComponentClass = new ComponentBwilder()
-      .wTagName('styled-component' as TagName)
+      .wTagName(nextTag('styled-component'))
       .wShadowDOM('open')
       .wCSS(css)
       .wRender(function (this: RenderContext) {
@@ -1241,7 +1259,7 @@ describe('ComponentBwilder render', () => {
     const events: string[] = []
     const assignedEl = document.createElement('div')
     const MyComponentClass = new ComponentBwilder()
-      .wTagName('slot-aware')
+      .wTagName(nextTag('slot-aware'))
       .wShadowDOM('open')
       .wRender(function ({root}) {
         root.innerHTML = '<slot />'

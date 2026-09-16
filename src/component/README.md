@@ -272,9 +272,30 @@ The handler fires immediately when elements are dynamically assigned to slots af
 - Elements are unassigned from the slot.
 - The component is disconnected.
 
+## Generated tag names
+
+Use `ComponentBwilder.generateUniqueTagName(prefix?)` when a component needs a registered tag name but a fixed name would risk collisions:
+
+```ts
+const tagName = ComponentBwilder.generateUniqueTagName('dashboard-widget')
+const DashboardWidget = new ComponentBwilder()
+  .wTagName(tagName)
+  .wRender(function () {
+    this.root.innerHTML = '<p>Dashboard</p>'
+  })
+  .bwild()
+
+document.body.append(document.createElement(tagName))
+```
+
+This is useful for plugin-provided components, embedded widgets, dynamically loaded component variants, demos, and tests that need isolated registrations. The generated name is checked against the current `customElements` registry, so it avoids collisions with components already registered in the page.
+
+Generated names are only unique within the current runtime. Do not use them for server-rendered or persisted markup, CSS selectors that must remain stable, URLs, or APIs shared across page loads. Use an explicit `.wTagName('my-widget')` in those cases. Use `.wTagName(null)` when registration is not needed.
+
 ## API quick reference
 
 ### Builder methods (chainable)
+- `ComponentBwilder.generateUniqueTagName(prefix?)` — generate a valid, currently unused custom-element tag name
 - `wTagName(tag: string | null)` — custom element tag name (or null to skip registration)
 - `wShadowDOM(mode: 'open' | 'closed' | 'none')` — shadow DOM mode
 - `wCSS(cssText: string, mode?: 'adopted' | 'inline')` — inject CSS
@@ -305,6 +326,7 @@ The handler fires immediately when elements are dynamically assigned to slots af
 - **Cleanup on disconnect**: `connectedFn` can return a cleanup function that runs when the component disconnects, allowing cleanup of subscriptions, listeners, or timers. `slotAddedHandler` cleanup also runs at this time.
 - **Reconnection resets state**: Disconnecting and reconnecting a component resets `connectedComplete` flag and reruns the full lifecycle (render → afterUpdate → connected).
 - `.wTagName(null)` returns the class without calling `customElements.define`, useful in test harnesses or subclassing scenarios.
+- Use `ComponentBwilder.generateUniqueTagName('test-widget')` when a runtime-generated tag should be registered without colliding with existing components. Generated names are not stable across page loads.
 - Adopted stylesheets require browser support ( `CSSStyleSheet`, `replaceSync()`); the builder logs a fallback warning and injects inline CSS otherwise.
 - Attempting to define the same custom element tag twice throws (see tests).
 
