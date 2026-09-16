@@ -69,6 +69,22 @@ describe('ComponentBwilder observed attributes', () => {
     c.setAttribute('role', 'admin')
   })
 
+  test('throws when the same attribute is defined more than once', () => {
+    assert.throws(() => {
+      new ComponentBwilder()
+        .wTagName(nextTag('duplicate-attr'))
+        .wAttr('data-id')
+        .wAttrBind('data-id', () => {})
+    }, /Attr "data-id" is already defined\./)
+
+    assert.throws(() => {
+      new ComponentBwilder()
+        .wTagName(nextTag('duplicate-observed-attr'))
+        .wAttrRender('data-id')
+        .wAttr('data-id')
+    }, /Attr "data-id" is already defined\./)
+  })
+
   test('callback receives null when observed attribute is removed', () => {
     const transitions: Array<{ oldValue: unknown, newValue: unknown }> = []
 
@@ -1734,6 +1750,14 @@ describe('ComponentBwilder render', () => {
 
 describe('wState', () => {
 
+  test('throws when the same state name is defined more than once', () => {
+    assert.throws(() => {
+      new ComponentBwilder()
+        .wState('count', 0)
+        .wState('count', 1)
+    }, /State "count" is already defined\./)
+  })
+
   test('initial value is accessible in render via this.state', () => {
     let stateVal: unknown = undefined
 
@@ -2148,7 +2172,7 @@ describe('attribute declaration APIs', () => {
       new ComponentBwilder()
         .wAttrRender('data-id')
         .wAttrRender('data-id')
-    }, /Attr "data-id" is already observed/)
+    }, /Attr "data-id" is already defined\./)
   })
 
   test('attribute declaration attr appears in observedAttributes, unobserved attr does not', () => {

@@ -44,8 +44,10 @@ export class ComponentBwilder<
   private observedAttrs: Record<string, AttrChangeHandler<ComponentType> | null> = {}
   private attrBindings: Record<string, {handler: AttrChangeHandler<ComponentType>, initial: boolean}> = {}
   private unobservedAttrs: Record<string, string | null> = {}
+  private definedAttrs = new Set<string>()
   private subElementDefinitions: Array<{name: string, required: boolean}> = []
   private stateDefinitions: Record<string, unknown | (() => unknown)> = {}
+  private definedStates = new Set<string>()
   private renderFn: ComponentBwilderRenderer<ComponentType, SubElements> | undefined
   private postMountFn?: (this: ComponentType, context: ComponentType) => void | (() => void) | Promise<void> | Promise<() => void>
   private postRenderFn?: (this: ComponentType, context: ComponentType) => void | Promise<void>
@@ -85,6 +87,7 @@ export class ComponentBwilder<
    */
   wAttr<A extends string>(attr: A, ifMissing?: string) {
     const parsed = parseFieldName(attr)
+    this.assertAttrNotDefined(parsed.name)
     this.unobservedAttrs[parsed.name] = ifMissing ?? null
     return this as unknown as ComponentBwilder<
       SubElements,
@@ -98,7 +101,7 @@ export class ComponentBwilder<
    */
   wAttrRender<A extends string>(attr: A, ifMissing?: string) {
     const parsed = parseFieldName(attr)
-    this.assertAttrNotObserved(parsed.name)
+    this.assertAttrNotDefined(parsed.name)
     this.observedAttrs[parsed.name] = null
     if (ifMissing !== undefined)
       this.unobservedAttrs[parsed.name] = ifMissing
@@ -119,7 +122,7 @@ export class ComponentBwilder<
     options: AttrBindOptions = {}
   ) {
     const parsed = parseFieldName(attr)
-    this.assertAttrNotObserved(parsed.name)
+    this.assertAttrNotDefined(parsed.name)
     this.observedAttrs[parsed.name] = handler
     this.attrBindings[parsed.name] = {handler, initial: options.initial === true}
     if (options.ifMissing !== undefined)
@@ -131,9 +134,10 @@ export class ComponentBwilder<
     >;
   }
 
-  private assertAttrNotObserved(name: string) {
-    if (name in this.observedAttrs)
-      throw new Error(`Attr "${name}" is already observed.`)
+  private assertAttrNotDefined(name: string) {
+    if (this.definedAttrs.has(name))
+      throw new Error(`Attr "${name}" is already defined.`)
+    this.definedAttrs.add(name)
   }
 
   /**
@@ -158,6 +162,9 @@ export class ComponentBwilder<
    */
   wState<N extends string, T>(name: N, initial: T | (() => T)) {
     const parsed = parseFieldName(name)
+    if (this.definedStates.has(parsed.name))
+      throw new Error(`State "${parsed.name}" is already defined.`)
+    this.definedStates.add(parsed.name)
     this.stateDefinitions[parsed.name] = initial
     return this as unknown as ComponentBwilder<SubElements, StateRecord & Record<ExtractFieldName<N>, T>, AttrsRecord>
   }
