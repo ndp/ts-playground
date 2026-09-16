@@ -1,3 +1,4 @@
+import '../../../test/setup-jsdom.js'
 import { example } from '@ndp-software/lit-md'
 import assert from 'assert'
 import { ComponentBwilder } from '../componentBwilder.ts'
@@ -9,7 +10,7 @@ import { type ElementDescriptor } from '../render.ts'
 //
 // This package exposes a small, TypeScript-first fluent API for defining custom elements with:
 // - an explicit, always-async render lifecycle (`render()`, `afterUpdate()`, `connected()`),
-// - observed vs unobserved attributes,
+// - observed vs. unobserved attributes,
 // - simple typed sub-element wiring,
 // - optional adopted (`CSSStyleSheet`) or inline CSS injection,
 // - slot / assigned-element wiring helpers with cleanup on disconnect.
@@ -17,7 +18,8 @@ import { type ElementDescriptor } from '../render.ts'
 // ## Overview
 // - **Purpose**: provide a lightweight, predictable, TypeScript-friendly workflow for declaring custom elements without a large framework.
 // - **Philosophy**: explicit, lifecycle hooks (`connectedFn`, `render()`, and `afterUpdate()`), minimal runtime, strong typing for attributes/sub-elements, and a fluent builder syntax.
-// - **Primary class**: `ComponentBwilder` — use its chained helpers (tag name, shadow DOM, CSS, attributes, sub-elements, render/lifecycle hooks) and call `.bwild()` to return (and register) the strongly-typed component class.
+// - **Primary class**: `ComponentBwilder` — use its chained helpers (tag name, shadow DOM, CSS, attributes, sub-elements, render/lifecycle hooks) and call `.bwild()`
+//                       to return (and register) the strongly typed component class.
 
 // ## Quick example
 
@@ -56,7 +58,7 @@ example('quick example', () => {
 // ### 1. Observed vs unobserved attributes
 
 example('attribute-triggered rerendering', () => {
-  const Observed = new ComponentBwilder()
+  new ComponentBwilder()
     .wTagName('c-observed')
     .wAttrRender('data-count')
     .wShadowDOM('none')
@@ -69,7 +71,7 @@ example('attribute-triggered rerendering', () => {
 })
 
 example('unobserved attributes', () => {
-  const Unobserved = new ComponentBwilder()
+  new ComponentBwilder()
     .wTagName('c-unobserved')
     .wAttr('info', 'default')
     .wShadowDOM('none')
@@ -83,7 +85,7 @@ example('unobserved attributes', () => {
 })
 
 example('manual attribute binding', () => {
-  const Bound = new ComponentBwilder()
+  new ComponentBwilder()
     .wTagName('c-bound')
     .wShadowDOM('none')
     .wElement('count')
@@ -102,7 +104,7 @@ example('manual attribute binding', () => {
 // ### 2. Sub-element wiring
 
 example('sub-element wiring', () => {
-  const SubElems = new ComponentBwilder()
+  new ComponentBwilder()
     .wTagName('c-subelems')
     .wElement('title')
     .wElement('content')
@@ -123,7 +125,7 @@ example('sub-element wiring', () => {
 // **Marking elements as required vs. optional** — Append `!` to a field name to mark it as required (non-null):
 
 example('required vs optional sub-elements', () => {
-  const Form = new ComponentBwilder()
+  new ComponentBwilder()
     .wTagName('c-form')
     .wElement('email!')                    // Required: HTMLElement (no null check needed)
     .wElement('submit!', HTMLButtonElement) // Required & typed: HTMLButtonElement (no null)
@@ -155,7 +157,7 @@ example('required vs optional sub-elements', () => {
 // **Sub-element type hints** — pass a type parameter to `.wElement()` for type-safe property access:
 
 example('typed sub-elements', () => {
-  const FormTyped = new ComponentBwilder()
+  new ComponentBwilder()
     .wTagName('c-form-typed')
     .wElement('email', HTMLInputElement)     // Typed as HTMLInputElement | null
     .wElement('submit', HTMLButtonElement)   // Typed as HTMLButtonElement | null
@@ -185,14 +187,14 @@ example('typed sub-elements', () => {
 // ### 3. CSS modes and sharing
 
 example('CSS modes', () => {
-  const CSSAdopted = new ComponentBwilder()
+  new ComponentBwilder()
     .wTagName('c-css-adopted')
-    .wCSS('.foo { color: red }')      // requests adopted, falls back to inline if unsupported
+    .wCSS('.foo { color: red }')      // requests 'adopted', but falls back to inline if unsupported
     .wShadowDOM('none')
     .wRender(() => {})
     .bwild()
 
-  const CSSInline = new ComponentBwilder()
+  new ComponentBwilder()
     .wTagName('c-css-inline')
     .wCSS('.foo { color: red }', 'inline') // force inline <style> tags
     .wShadowDOM('none')
@@ -237,7 +239,7 @@ example('async lifecycle hooks', async () => {
 // ### 5. State management
 
 example('state management', () => {
-  const Counter = new ComponentBwilder()
+  new ComponentBwilder()
     .wTagName('c-counter')
     .wShadowDOM('none')
     .wState('count', 0)
@@ -265,7 +267,7 @@ example('state management', () => {
 
 // ### 6. Type-preserved sub-elements with `ElementDescriptor`
 //
-// When using render factories (`makeComponentRendererFromString`, `makeComponentRendererFromFn`) outside of ComponentBwilder, you can also use `ElementDescriptor` to preserve specific element types:
+// When using render factories (`makeComponentRendererFromString`, `makeComponentRendererFromFn`) outside ComponentBwilder, you can also use `ElementDescriptor` to preserve specific element types:
 
 example('ElementDescriptor for type-safe sub-elements', () => {
   // This test demonstrates the ElementDescriptor pattern
@@ -296,7 +298,7 @@ example('mixed ElementDescriptor selectors', () => {
 // ### 7. Slot assigned-element handling
 
 example('slot assigned-element handling', () => {
-  const SlotComponent = new ComponentBwilder()
+  new ComponentBwilder()
     .wTagName('c-slot-demo')
     .wShadowDOM('open')
     .wRender(function ({ root }) {
@@ -378,4 +380,4 @@ example('slot assigned-element handling', () => {
 // - Use the language. React subverts normal patterns: functions get called repeatedly,
 //   and perhaps mysteriously; variables don't work like variables, and you must use specific
 //   patterns to save state or plug into the lifecycle. This library attempts to stick to
-//   normal Javascript and Web Component patterns as much as possible.
+//   normal JavaScript and Web Component patterns as much as possible.

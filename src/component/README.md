@@ -4,7 +4,7 @@ Typed, minimal helpers for building compact Web Components used in this reposito
 
 This package exposes a small, TypeScript-first fluent API for defining custom elements with:
 - an explicit, always-async render lifecycle (`render()`, `afterUpdate()`, `connected()`),
-- observed vs unobserved attributes,
+- observed vs. unobserved attributes,
 - simple typed sub-element wiring,
 - optional adopted (`CSSStyleSheet`) or inline CSS injection,
 - slot / assigned-element wiring helpers with cleanup on disconnect.
@@ -12,7 +12,8 @@ This package exposes a small, TypeScript-first fluent API for defining custom el
 ## Overview
 - **Purpose**: provide a lightweight, predictable, TypeScript-friendly workflow for declaring custom elements without a large framework.
 - **Philosophy**: explicit, lifecycle hooks (`connectedFn`, `render()`, and `afterUpdate()`), minimal runtime, strong typing for attributes/sub-elements, and a fluent builder syntax.
-- **Primary class**: `ComponentBwilder` — use its chained helpers (tag name, shadow DOM, CSS, attributes, sub-elements, render/lifecycle hooks) and call `.bwild()` to return (and register) the strongly-typed component class.
+- **Primary class**: `ComponentBwilder` — use its chained helpers (tag name, shadow DOM, CSS, attributes, sub-elements, render/lifecycle hooks) and call `.bwild()`
+                      to return (and register) the strongly typed component class.
 
 ## Quick example
 ```ts
@@ -47,7 +48,7 @@ const Greeting = new ComponentBwilder()
 
 ### 1. Observed vs unobserved attributes
 ```ts
-const Observed = new ComponentBwilder()
+new ComponentBwilder()
   .wTagName('c-observed')
   .wAttrRender('data-count')
   .wShadowDOM('none')
@@ -56,7 +57,7 @@ const Observed = new ComponentBwilder()
   })
   .bwild()
 
-const Unobserved = new ComponentBwilder()
+new ComponentBwilder()
   .wTagName('c-unobserved')
   .wAttr('info', 'default')
   .wShadowDOM('none')
@@ -67,7 +68,7 @@ const Unobserved = new ComponentBwilder()
 
 // Manually call `instance.render()` after attribute changes to refresh output.
 
-const Bound = new ComponentBwilder()
+new ComponentBwilder()
   .wTagName('c-bound')
   .wShadowDOM('none')
   .wElement('count')
@@ -83,7 +84,7 @@ const Bound = new ComponentBwilder()
 
 ### 2. Sub-element wiring
 ```ts
-const SubElems = new ComponentBwilder()
+new ComponentBwilder()
   .wTagName('c-subelems')
   .wElement('title')
   .wElement('content')
@@ -101,7 +102,7 @@ const SubElems = new ComponentBwilder()
 
 **Marking elements as required vs. optional** — Append `!` to a field name to mark it as required (non-null):
 ```ts
-const Form = new ComponentBwilder()
+new ComponentBwilder()
   .wTagName('c-form')
   .wElement('email!')                    // Required: HTMLElement (no null check needed)
   .wElement('submit!', HTMLButtonElement) // Required & typed: HTMLButtonElement (no null)
@@ -130,7 +131,7 @@ const Form = new ComponentBwilder()
 
 **Sub-element type hints** — pass a type parameter to `.wElement()` for type-safe property access:
 ```ts
-const FormTyped = new ComponentBwilder()
+new ComponentBwilder()
   .wTagName('c-form-typed')
   .wElement('email', HTMLInputElement)     // Typed as HTMLInputElement | null
   .wElement('submit', HTMLButtonElement)   // Typed as HTMLButtonElement | null
@@ -157,14 +158,14 @@ The type parameter is optional and TypeScript-only (zero runtime cost). The bang
 
 ### 3. CSS modes and sharing
 ```ts
-const CSSAdopted = new ComponentBwilder()
+new ComponentBwilder()
   .wTagName('c-css-adopted')
-  .wCSS('.foo { color: red }')      // requests adopted, falls back to inline if unsupported
+  .wCSS('.foo { color: red }')      // requests 'adopted', but falls back to inline if unsupported
   .wShadowDOM('none')
   .wRender(() => {})
   .bwild()
 
-const CSSInline = new ComponentBwilder()
+new ComponentBwilder()
   .wTagName('c-css-inline')
   .wCSS('.foo { color: red }', 'inline') // force inline <style> tags
   .wShadowDOM('none')
@@ -203,7 +204,7 @@ if (typeof el.connectedCallback === 'function') {
 
 ### 5. State management
 ```ts
-const Counter = new ComponentBwilder()
+new ComponentBwilder()
   .wTagName('c-counter')
   .wShadowDOM('none')
   .wState('count', 0)
@@ -229,7 +230,7 @@ State properties are reactive: assigning to `this.state.propName` automatically 
 
 ### 6. Type-preserved sub-elements with `ElementDescriptor`
 
-When using render factories (`makeComponentRendererFromString`, `makeComponentRendererFromFn`) outside of ComponentBwilder, you can also use `ElementDescriptor` to preserve specific element types:
+When using render factories (`makeComponentRendererFromString`, `makeComponentRendererFromFn`) outside ComponentBwilder, you can also use `ElementDescriptor` to preserve specific element types:
 ```ts
 // This test demonstrates the ElementDescriptor pattern
 // In real code, you would use: makeComponentRendererFromString()
@@ -251,7 +252,7 @@ The `type` property in `ElementDescriptor` is optional and TypeScript-only (zero
 
 ### 7. Slot assigned-element handling
 ```ts
-const SlotComponent = new ComponentBwilder()
+new ComponentBwilder()
   .wTagName('c-slot-demo')
   .wShadowDOM('open')
   .wRender(function ({ root }) {
@@ -331,4 +332,4 @@ This would provide an additional layer of safety beyond TypeScript's compile-tim
 - Use the language. React subverts normal patterns: functions get called repeatedly,
   and perhaps mysteriously; variables don't work like variables, and you must use specific
   patterns to save state or plug into the lifecycle. This library attempts to stick to
-  normal Javascript and Web Component patterns as much as possible.
+  normal JavaScript and Web Component patterns as much as possible.
