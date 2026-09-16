@@ -149,6 +149,8 @@ export class ComponentBwilder<
     elementType?: new (...args: any[]) => T
   ) {
     const parsed = parseFieldName(elementName)
+    if (this.subElementDefinitions.some((definition) => definition.name === parsed.name))
+      throw new Error(`Sub-element "${parsed.name}" is already defined.`)
     this.subElementDefinitions.push({name: parsed.name, required: parsed.required})
     return this as unknown as ComponentBwilder<
       {[k in keyof SubElements]: SubElements[k]} & Record<ExtractFieldName<A>, OptionalIfNeeded<T, A>>,

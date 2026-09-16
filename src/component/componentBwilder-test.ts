@@ -1064,6 +1064,14 @@ describe('ComponentBwilder render', () => {
     }, /valid custom element name|NotSupportedError|hyphen/i)
   })
 
+  test('duplicate sub-element declarations throw', () => {
+    assert.throws(() => {
+      new ComponentBwilder()
+        .wElement('title')
+        .wElement('title!')
+    }, /Sub-element "title" is already defined\./)
+  })
+
   test('wElement can be chained without runtime side effects', () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('with-element-chain'))
