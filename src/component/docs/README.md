@@ -15,8 +15,9 @@ This package exposes a small, TypeScript-first fluent API for defining custom el
 - **Primary class**: `ComponentBwilder` — use its chained helpers (tag name, shadow DOM, CSS, attributes, sub-elements, render/lifecycle hooks) and call `.bwild()` to return (and register) the strongly-typed component class.
 ## Quick example
 ## Feature highlights
-- **Observed attributes** (`.wObservedAttr`): automatic rerendering unless you provide an `onChange` callback (call `this.render()` manually inside the callback if you still need a DOM update).
-- **Unobserved attributes** (`.wAttr`): expose attribute values on the instance without triggering renders.
+- **Attribute access** (`.wAttr`): expose attribute values on the instance without observing changes.
+- **Attribute rerendering** (`.wAttrRender`): rerender the component whenever the attribute changes.
+- **Manual attribute binding** (`.wAttrBind`): update stable sub-elements without replacing the rendered DOM.
 - **Sub-elements** (`.wElement` + selectors/elements returned from `render`): `this.subElements` holds strongly typed references after render completes.
 - **CSS modes** (`.wCSS(cssText, mode?)`): defaults to `adopted` (shared `CSSStyleSheet`) with inline fallback, logging a single transition warning per component class when necessary.
 - **Shadow DOM modes**: `.wShadowDOM('open'|'closed'|'none')` — when `'none'` rendering happens on the host element itself.
@@ -31,7 +32,7 @@ This package exposes a small, TypeScript-first fluent API for defining custom el
 ### 2. Sub-element wiring
 **Marking elements as required vs. optional** — Append `!` to a field name to mark it as required (non-null):
 **Sub-element type hints** — pass a type parameter to `.wElement()` for type-safe property access:
-The type parameter is optional and TypeScript-only (zero runtime cost). The bang suffix applies to all field types: `.wElement()`, `.wAttr()`, `.wObservedAttr()`, and `.wState()`.
+The type parameter is optional and TypeScript-only (zero runtime cost). The bang suffix applies to all field types: `.wElement()`, `.wAttr()`, `.wAttrRender()`, and `.wState()`.
 ### 3. CSS modes and sharing
 ### 4. Async render / lifecycle hooks
 ### 5. State management
@@ -51,7 +52,8 @@ The handler fires immediately when elements are dynamically assigned to slots af
 - `wShadowDOM(mode: 'open' | 'closed' | 'none')` — shadow DOM mode
 - `wCSS(cssText: string, mode?: 'adopted' | 'inline')` — inject CSS
 - `wAttr(name: string, defaultValue?: string)` — unobserved attribute. Append `!` to name to mark as required (e.g., `'role!'` → always a string, never undefined).
-- `wObservedAttr(name: string, onChange?: callback)` — observed attribute (auto-rerender unless onChange provided). Append `!` to mark as required.
+- `wAttrRender(name: string, defaultValue?: string)` — rerender when the attribute changes. Append `!` to name to mark as required.
+- `wAttrBind(name: string, callback, options?)` — invoke a manual binding callback when the attribute changes. Use `{initial: true}` to invoke it after the initial render as well.
 - `wElement(name: string, elementType?: ElementConstructor)` — declare a sub-element. Append `!` to name to mark required (e.g., `'email!'` → non-null, no null-check needed). Pass an HTMLElement constructor as second parameter for type-safe property access.
 - `wState(name: string, initial: value | factory)` — reactive state. Append `!` to name if the value can never be null/undefined.
 - `wRender(fn)` — render function
@@ -70,7 +72,7 @@ The handler fires immediately when elements are dynamically assigned to slots af
 ## Notes & gotchas
 - **Always-async lifecycle**: `connectedCallback()`, `render()`, and `rerender()` always return `Promise<void>`. Test code and production code that needs post-render DOM state must `await` these calls.
 - **Slot handlers fire after connected**: Handlers registered with `.wSlotAddedHandler` do not fire for pre-assigned elements (elements slotted at connection time) until after `connectedFn` completes, preventing race conditions during mount.
-- **Providing an `onChange` callback** replaces the default rerender for observed attributes; call `this.render()` inside the callback when you still need to refresh DOM.
+- Use `wAttrRender()` when an attribute change should replace the rendered structure. Use `wAttrBind()` when the structure is stable and only named sub-elements need updating.
 - **Cleanup on disconnect**: `connectedFn` can return a cleanup function that runs when the component disconnects, allowing cleanup of subscriptions, listeners, or timers. `slotAddedHandler` cleanup also runs at this time.
 - **Reconnection resets state**: Disconnecting and reconnecting a component resets `connectedComplete` flag and reruns the full lifecycle (render → afterUpdate → connected).
 - `.wTagName(null)` returns the class without calling `customElements.define`, useful in test harnesses or subclassing scenarios.

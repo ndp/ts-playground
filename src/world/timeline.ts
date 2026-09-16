@@ -7,7 +7,7 @@ export default new ComponentBwilder()
   .wTagName('locale-timeline' as TagName)
   .wShadowDOM('open')
   .wCSS(css)
-  .wAttr('locale', { onChange: true, ifMissing: navigator.language || 'en-US' })
+  .wAttrRender('locale', navigator.language || 'en-US')
   .wConnectedFn(function () {
     const timerId = setInterval(() => this.requestUpdate(), 1000)
     return () => clearInterval(timerId)

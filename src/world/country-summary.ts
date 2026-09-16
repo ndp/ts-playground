@@ -13,8 +13,8 @@ function panel(name: string) {
   return new ComponentBwilder()
     .wTagName(panelTag)
     .wShadowDOM('none')
-    .wAttr('data-iso2', { onChange: true })
-    .wAttr('locale', { onChange: true })
+    .wAttrRender('data-iso2')
+    .wAttrRender('locale')
 }
 
 panel('name')
@@ -152,9 +152,9 @@ const stylesheetPromise = maybeFetchText(new URL('../country-summary.css', impor
 export default new ComponentBwilder()
   .wTagName('country-summary')
   .wShadowDOM('open')
-  .wAttr('data-iso2', { onChange: true })
-  .wAttr('mode', { onChange: true })
-  .wAttr('locale', { onChange: true })
+  .wAttrRender('data-iso2')
+  .wAttrRender('mode')
+  .wAttrRender('locale')
   .wCSS(await stylesheetPromise)
   .wRender(function (context: MainContext) {
     const iso2 = context['data-iso2'] as ISO2CountryCode;

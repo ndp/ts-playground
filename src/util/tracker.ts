@@ -26,6 +26,10 @@ export class Tracker<T> {
     return this.items.size
   }
 
+  [Symbol.iterator](): Iterator<T> {
+    return this.items[Symbol.iterator]()
+  }
+
   // Add a single item or many items. Overloads below provide typings.
   add(item: T): boolean
   add(items: Iterable<T>): T[]

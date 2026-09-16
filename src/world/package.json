@@ -18,6 +18,7 @@
     "clean": "rimraf ./build"
   },
   "dependencies": {
+    "@ndp-software/lit-md": "^0.5.4",
     "@ndp-software/component-bwilder": "*"
   },
   "sideEffects": [

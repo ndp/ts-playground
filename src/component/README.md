@@ -13,8 +13,8 @@ This package exposes a small, TypeScript-first fluent API for defining custom el
 - **Purpose**: provide a lightweight, predictable, TypeScript-friendly workflow for declaring custom elements without a large framework.
 - **Philosophy**: explicit, lifecycle hooks (`connectedFn`, `render()`, and `afterUpdate()`), minimal runtime, strong typing for attributes/sub-elements, and a fluent builder syntax.
 - **Primary class**: `ComponentBwilder` — use its chained helpers (tag name, shadow DOM, CSS, attributes, sub-elements, render/lifecycle hooks) and call `.bwild()` to return (and register) the strongly-typed component class.
-## Quick example
 
+## Quick example
 ```ts
 const Greeting = new ComponentBwilder()
   .wTagName('x-greeting')
@@ -30,8 +30,9 @@ const Greeting = new ComponentBwilder()
 ```
 
 ## Feature highlights
-- **Observed attributes** (`.wObservedAttr`): automatic rerendering unless you provide an `onChange` callback (call `this.render()` manually inside the callback if you still need a DOM update).
-- **Unobserved attributes** (`.wAttr`): expose attribute values on the instance without triggering renders.
+- **Attribute access** (`.wAttr`): expose attribute values on the instance without observing changes.
+- **Attribute rerendering** (`.wAttrRender`): rerender the component whenever the attribute changes.
+- **Manual attribute binding** (`.wAttrBind`): update stable sub-elements without replacing the rendered DOM.
 - **Sub-elements** (`.wElement` + selectors/elements returned from `render`): `this.subElements` holds strongly typed references after render completes.
 - **CSS modes** (`.wCSS(cssText, mode?)`): defaults to `adopted` (shared `CSSStyleSheet`) with inline fallback, logging a single transition warning per component class when necessary.
 - **Shadow DOM modes**: `.wShadowDOM('open'|'closed'|'none')` — when `'none'` rendering happens on the host element itself.
@@ -41,21 +42,20 @@ const Greeting = new ComponentBwilder()
   - `.wAfterUpdateFn(fn)` — runs as a microtask after each render completes; supports `async` functions.
   - `.wConnectedFn(fn)` — runs once after the initial `connectedCallback` render + afterUpdate; supports async. Can return a cleanup function (sync or `Promise<() => void>`) that runs on disconnect.
 - **Slot handling**: `.wSlotAddedHandler` gives you per-assigned-element callbacks that can return cleanup functions, called when elements are assigned or removed.
-## Usage recipes
-### 1. Observed vs unobserved attributes
 
+## Usage recipes
+
+### 1. Observed vs unobserved attributes
 ```ts
 const Observed = new ComponentBwilder()
   .wTagName('c-observed')
-  .wAttr('data-count')
+  .wAttrRender('data-count')
   .wShadowDOM('none')
   .wRender(function () {
     this.root.innerHTML = `<div>Count: ${this['data-count'] ?? '0'}</div>`
   })
   .bwild()
-```
 
-```ts
 const Unobserved = new ComponentBwilder()
   .wTagName('c-unobserved')
   .wAttr('info', 'default')
@@ -64,11 +64,24 @@ const Unobserved = new ComponentBwilder()
     this.root.innerHTML = `<div>Info: ${this['info']}</div>`
   })
   .bwild()
+
 // Manually call `instance.render()` after attribute changes to refresh output.
+
+const Bound = new ComponentBwilder()
+  .wTagName('c-bound')
+  .wShadowDOM('none')
+  .wElement('count')
+  .wAttrBind('data-count', function ({newValue}) {
+    this.subElements.count!.textContent = String(newValue ?? '0')
+  }, {initial: true})
+  .wRender(function () {
+    this.root.innerHTML = '<span data-count></span>'
+    return {count: '[data-count]'}
+  })
+  .bwild()
 ```
 
 ### 2. Sub-element wiring
-
 ```ts
 const SubElems = new ComponentBwilder()
   .wTagName('c-subelems')
@@ -87,7 +100,6 @@ const SubElems = new ComponentBwilder()
 ```
 
 **Marking elements as required vs. optional** — Append `!` to a field name to mark it as required (non-null):
-
 ```ts
 const Form = new ComponentBwilder()
   .wTagName('c-form')
@@ -107,6 +119,7 @@ const Form = new ComponentBwilder()
     // Required fields don't need null checks:
     this.subElements.email.innerHTML = ''    // ✓ no ?. needed
     this.subElements.submit.disabled = false  // ✓ no ?. needed
+
     // Optional field needs null check:
     if (this.subElements.status) {
       this.subElements.status.textContent = 'Ready'
@@ -116,7 +129,6 @@ const Form = new ComponentBwilder()
 ```
 
 **Sub-element type hints** — pass a type parameter to `.wElement()` for type-safe property access:
-
 ```ts
 const FormTyped = new ComponentBwilder()
   .wTagName('c-form-typed')
@@ -141,12 +153,9 @@ const FormTyped = new ComponentBwilder()
   .bwild()
 ```
 
-The type parameter is optional and TypeScript-only (zero runtime cost). The bang suffix applies to all field types: `.wElement()`, `.wAttr()`, `.wObservedAttr()`, and `.wState()`.
-
-Required sub-elements are also validated at runtime after each render. If a required field is omitted, resolves to a missing selector, or is returned as `null`, the render promise rejects with an error naming the field. Optional fields continue to resolve to `null` when they are absent.
+The type parameter is optional and TypeScript-only (zero runtime cost). The bang suffix applies to all field types: `.wElement()`, `.wAttr()`, and `.wState()`.
 
 ### 3. CSS modes and sharing
-
 ```ts
 const CSSAdopted = new ComponentBwilder()
   .wTagName('c-css-adopted')
@@ -154,6 +163,7 @@ const CSSAdopted = new ComponentBwilder()
   .wShadowDOM('none')
   .wRender(() => {})
   .bwild()
+
 const CSSInline = new ComponentBwilder()
   .wTagName('c-css-inline')
   .wCSS('.foo { color: red }', 'inline') // force inline <style> tags
@@ -163,7 +173,6 @@ const CSSInline = new ComponentBwilder()
 ```
 
 ### 4. Async render / lifecycle hooks
-
 ```ts
 const AsyncComponent = new ComponentBwilder()
   .wTagName('c-async')
@@ -183,6 +192,7 @@ const AsyncComponent = new ComponentBwilder()
     return () => { /* teardown */ }
   })
   .bwild()
+
 // connectedCallback() always returns Promise<void>, must await before reading DOM
 const el = new AsyncComponent()
 if (typeof el.connectedCallback === 'function') {
@@ -192,7 +202,6 @@ if (typeof el.connectedCallback === 'function') {
 ```
 
 ### 5. State management
-
 ```ts
 const Counter = new ComponentBwilder()
   .wTagName('c-counter')
@@ -217,10 +226,10 @@ const Counter = new ComponentBwilder()
 ```
 
 State properties are reactive: assigning to `this.state.propName` automatically triggers a `render()` and `afterUpdateFn()` cycle. Initial values can be static primitives, objects, or factory functions (called once per instance to avoid sharing mutable defaults).
+
 ### 6. Type-preserved sub-elements with `ElementDescriptor`
 
 When using render factories (`makeComponentRendererFromString`, `makeComponentRendererFromFn`) outside of ComponentBwilder, you can also use `ElementDescriptor` to preserve specific element types:
-
 ```ts
 // This test demonstrates the ElementDescriptor pattern
 // In real code, you would use: makeComponentRendererFromString()
@@ -231,7 +240,6 @@ const descriptor: Record<string, string | ElementDescriptor> = {
 ```
 
 Or mix string selectors (generic HTMLElement) with typed descriptors:
-
 ```ts
 const descriptor: Record<string, string | ElementDescriptor> = {
   email: { selector: '#email', type: HTMLInputElement },  // Typed
@@ -240,8 +248,8 @@ const descriptor: Record<string, string | ElementDescriptor> = {
 ```
 
 The `type` property in `ElementDescriptor` is optional and TypeScript-only (zero runtime cost).
-### 7. Slot assigned-element handling
 
+### 7. Slot assigned-element handling
 ```ts
 const SlotComponent = new ComponentBwilder()
   .wTagName('c-slot-demo')
@@ -262,13 +270,16 @@ const SlotComponent = new ComponentBwilder()
 The handler fires immediately when elements are dynamically assigned to slots after mount, and the returned cleanup function is called when:
 - Elements are unassigned from the slot.
 - The component is disconnected.
+
 ## API quick reference
+
 ### Builder methods (chainable)
 - `wTagName(tag: string | null)` — custom element tag name (or null to skip registration)
 - `wShadowDOM(mode: 'open' | 'closed' | 'none')` — shadow DOM mode
 - `wCSS(cssText: string, mode?: 'adopted' | 'inline')` — inject CSS
-- `wAttr(name: string, defaultValue?: string)` — unobserved attribute. Append `!` to name to mark as required (e.g., `'role!'` → always a string, never undefined).
-- `wObservedAttr(name: string, onChange?: callback)` — observed attribute (auto-rerender unless onChange provided). Append `!` to mark as required.
+- `wAttr(name: string, defaultValue?: string)` — expose an attribute value without observing changes. Append `!` to name to mark as required.
+- `wAttrRender(name: string, defaultValue?: string)` — rerender when the attribute changes. Append `!` to name to mark as required.
+- `wAttrBind(name: string, callback, options?)` — invoke a manual binding callback when the attribute changes. Use `{initial: true}` to invoke it after the initial render as well.
 - `wElement(name: string, elementType?: ElementConstructor)` — declare a sub-element. Append `!` to name to mark required (e.g., `'email!'` → non-null, no null-check needed). Pass an HTMLElement constructor as second parameter for type-safe property access.
 - `wState(name: string, initial: value | factory)` — reactive state. Append `!` to name if the value can never be null/undefined.
 - `wRender(fn)` — render function
@@ -276,6 +287,7 @@ The handler fires immediately when elements are dynamically assigned to slots af
 - `wConnectedFn(fn)` — runs once after initial connection; can return cleanup
 - `wSlotAddedHandler(fn)` — callback for assigned elements; can return cleanup
 - `bwild()` — finalize and return the component class
+
 ### Instance properties & methods
 - `this.root` — `ShadowRoot` (or `HTMLElement` if shadowDOM='none')
 - `this.subElements` — typed map of sub-elements
@@ -284,16 +296,19 @@ The handler fires immediately when elements are dynamically assigned to slots af
 - `disconnectedCallback(): void` — lifecycle hook (runs cleanup)
 - `render(): Promise<void>` — manual rerender (always returns Promise)
 - `rerender(): Promise<void>` — alias for `render()`
+
 ## Notes & gotchas
 - **Always-async lifecycle**: `connectedCallback()`, `render()`, and `rerender()` always return `Promise<void>`. Test code and production code that needs post-render DOM state must `await` these calls.
 - **Slot handlers fire after connected**: Handlers registered with `.wSlotAddedHandler` do not fire for pre-assigned elements (elements slotted at connection time) until after `connectedFn` completes, preventing race conditions during mount.
-- **Providing an `onChange` callback** replaces the default rerender for observed attributes; call `this.render()` inside the callback when you still need to refresh DOM.
+- Use `.wAttrRender()` when an attribute change should replace the rendered structure. Use `.wAttrBind()` when the structure is stable and only named sub-elements need updating.
 - **Cleanup on disconnect**: `connectedFn` can return a cleanup function that runs when the component disconnects, allowing cleanup of subscriptions, listeners, or timers. `slotAddedHandler` cleanup also runs at this time.
 - **Reconnection resets state**: Disconnecting and reconnecting a component resets `connectedComplete` flag and reruns the full lifecycle (render → afterUpdate → connected).
 - `.wTagName(null)` returns the class without calling `customElements.define`, useful in test harnesses or subclassing scenarios.
 - Adopted stylesheets require browser support ( `CSSStyleSheet`, `replaceSync()`); the builder logs a fallback warning and injects inline CSS otherwise.
 - Attempting to define the same custom element tag twice throws (see tests).
+
 ## Future ideas
+
 ### Strict mode validation
 
 Once you declare a field as required with `!` (e.g., `wElement('email!')`), it becomes part of your component's contract. The builder currently enforces this only at the TypeScript level. A future "strict mode" could add **runtime validation on component mount** to catch missing required fields early.
@@ -305,6 +320,7 @@ Example idea:
 - Applies to required elements (`.wElement('x!')`), attributes (`.wAttr('role!')`), and state (`.wState('count!')`).
 
 This would provide an additional layer of safety beyond TypeScript's compile-time guarantees, especially useful for complex or dynamically rendered components.
+
 ## Guiding principles:
 - Explicit is better than implicit: no magic lifecycle methods or auto-wiring.
 - Type safety: strong typing for attributes, sub-elements, and render context.

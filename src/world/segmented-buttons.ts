@@ -11,24 +11,24 @@ const SegmentedButtons = new ComponentBwilder()
   .wShadowDOM('open')
   .wCSS(css)
   .wElement('slotEl!', HTMLSlotElement)
-  .wAttr('data-value', { onChange: function () {
+  .wAttrBind('data-value', function () {
     applySelectedClasses(this)
-  }})
-  .wAttr('required', { onChange: function () {
+  })
+  .wAttrBind('required', function () {
     enforceRequired(this)
-  }})
-  .wAttr('multi', { onChange: function () {
+  })
+  .wAttrBind('multi', function () {
     normalizeSelectionForMode(this)
-  }})
-  .wAttr('suggested', { onChange: function () {
+  })
+  .wAttrBind('suggested', function () {
     applySuggestedClasses(this)
-  }})
-  .wAttr('lockable', { onChange: function () {
+  })
+  .wAttrBind('lockable', function () {
     applyLockedAttrs(this)
-  }})
-  .wAttr('data-locked', { onChange: function () {
+  })
+  .wAttrBind('data-locked', function () {
     applyLockedAttrs(this)
-  }})
+  })
   .wRender(function () {
     const slotEl = document.createElement('slot')
     slotEl.setAttribute('name', 'option')

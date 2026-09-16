@@ -10,10 +10,25 @@ type ComponentBwilderRenderer<TContext extends RenderContext, TSubElements exten
   = (this: TContext, context: TContext) => BwilderRendererReturn<TSubElements> | Promise<BwilderRendererReturn<TSubElements>>
 type CSSMode = 'adopted' | 'inline'
 
-type AttrOptions<TContext> = {
-  ifMissing?: string
-  onChange?: true | ((this: TContext, args: { name: string, newValue: unknown, oldValue: unknown }) => void)
+type AttrChangeArgs = {
+  name: string
+  newValue: unknown
+  oldValue: unknown
+  initial: boolean
 }
+
+type AttrBindOptions = {
+  ifMissing?: string
+  initial?: boolean
+}
+
+type AttrChangeHandler<TContext> = (this: TContext, args: AttrChangeArgs) => void
+
+type SlotAddedHandler<TContext> = <TEl extends HTMLElement>(
+  this: TContext,
+  context: TContext,
+  slottedEl: TEl
+) => any
 
 let gWarnedCSSFallback = false
 
@@ -26,18 +41,15 @@ export class ComponentBwilder<
   private tagName?: string | null
   private css: { text: string, requestedMode: CSSMode } | undefined
   private shadowDOM: 'open' | 'closed' | 'none' = 'open'
-  private observedAttrs: Record<string, ((args: {
-    name: string,
-    newValue: unknown,
-    oldValue: unknown
-  }) => void) | null> = {}
+  private observedAttrs: Record<string, AttrChangeHandler<ComponentType> | null> = {}
+  private attrBindings: Record<string, {handler: AttrChangeHandler<ComponentType>, initial: boolean}> = {}
   private unobservedAttrs: Record<string, string | null> = {}
   private subElementDefinitions: Array<{name: string, required: boolean}> = []
   private stateDefinitions: Record<string, unknown | (() => unknown)> = {}
   private renderFn: ComponentBwilderRenderer<ComponentType, SubElements> | undefined
   private postMountFn?: (this: ComponentType, context: ComponentType) => void | (() => void) | Promise<void> | Promise<() => void>
   private postRenderFn?: (this: ComponentType, context: ComponentType) => void | Promise<void>
-  private slotAddedHandler: (<TEl extends HTMLElement>(this: ComponentType, context: ComponentType, slottedEl: TEl) => () => void) | undefined
+  private slotAddedHandler: SlotAddedHandler<ComponentType> | undefined
 
   constructor() {
   }
@@ -68,27 +80,60 @@ export class ComponentBwilder<
   }
 
   /**
-   * Declare an attribute for the component.
-   * `options` may be a fallback string or an AttrOptions object ({onChange, ifMissing}).
+   * Expose an attribute value on the component without observing changes.
+   * `ifMissing` is returned when the attribute is absent.
    */
-  wAttr<A extends string>(attr: A, options?: string | AttrOptions<ComponentType>) {
+  wAttr<A extends string>(attr: A, ifMissing?: string) {
     const parsed = parseFieldName(attr)
-    const onChange = typeof options === 'string' ? undefined : options?.onChange
-    const ifMissing = typeof options === 'string' ? options : options?.ifMissing
-    if (onChange !== undefined) {
-      if (parsed.name in this.observedAttrs)
-        throw new Error(`Attr "${parsed.name}" is already observed.`)
-      this.observedAttrs[parsed.name] = onChange === true ? null : onChange
-      if (ifMissing !== undefined)
-        this.unobservedAttrs[parsed.name] = ifMissing
-    } else {
-      this.unobservedAttrs[parsed.name] = ifMissing ?? null
-    }
+    this.unobservedAttrs[parsed.name] = ifMissing ?? null
     return this as unknown as ComponentBwilder<
       SubElements,
       StateRecord,
       AttrsRecord & Record<ExtractFieldName<A>, string>
     >;
+  }
+
+  /**
+   * Observe an attribute and rerender the component whenever it changes.
+   */
+  wAttrRender<A extends string>(attr: A, ifMissing?: string) {
+    const parsed = parseFieldName(attr)
+    this.assertAttrNotObserved(parsed.name)
+    this.observedAttrs[parsed.name] = null
+    if (ifMissing !== undefined)
+      this.unobservedAttrs[parsed.name] = ifMissing
+    return this as unknown as ComponentBwilder<
+      SubElements,
+      StateRecord,
+      AttrsRecord & Record<ExtractFieldName<A>, string>
+    >;
+  }
+
+  /**
+   * Observe an attribute and invoke a manual binding callback when it changes.
+   * With `initial: true`, the callback also runs after the initial render on mount.
+   */
+  wAttrBind<A extends string>(
+    attr: A,
+    handler: AttrChangeHandler<ComponentType>,
+    options: AttrBindOptions = {}
+  ) {
+    const parsed = parseFieldName(attr)
+    this.assertAttrNotObserved(parsed.name)
+    this.observedAttrs[parsed.name] = handler
+    this.attrBindings[parsed.name] = {handler, initial: options.initial === true}
+    if (options.ifMissing !== undefined)
+      this.unobservedAttrs[parsed.name] = options.ifMissing
+    return this as unknown as ComponentBwilder<
+      SubElements,
+      StateRecord,
+      AttrsRecord & Record<ExtractFieldName<A>, string>
+    >;
+  }
+
+  private assertAttrNotObserved(name: string) {
+    if (name in this.observedAttrs)
+      throw new Error(`Attr "${name}" is already observed.`)
   }
 
   /**
@@ -144,9 +189,7 @@ export class ComponentBwilder<
   /**
    * Register a handler invoked when slotted elements are added. Handler receives the component context and slotted element and may return a cleanup function.
    */
-  wSlotAddedHandler(handler: <TEl extends HTMLElement>(this: ComponentType,
-                                                       context: ComponentType,
-                                                       slottedEl: TEl) => () => void) {
+  wSlotAddedHandler(handler: SlotAddedHandler<ComponentType>) {
     this.slotAddedHandler = handler
     return this as this & { wSlotAddedHandler: never }
 
@@ -202,7 +245,10 @@ export class ComponentBwilder<
       attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown) {
         const action = builder.observedAttrs[name];
         if (action) {
-          action.call(this, {name, oldValue, newValue});
+          const binding = builder.attrBindings[name]
+          if (!this._isConnected && binding?.initial)
+            return
+          action.call(this as unknown as ComponentType, {name, oldValue, newValue, initial: false});
         } else
           this.render()
       }
@@ -210,6 +256,7 @@ export class ComponentBwilder<
       connectedCallback(): Promise<void> {
         const context = this as unknown as ComponentType
         return this.render()
+          .then(() => this.runInitialAttrBindings(context))
           .then(() => builder.postMountFn?.call(context, context))
           .then(async (cleanup) => {
             if (typeof cleanup === 'function')
@@ -320,6 +367,19 @@ export class ComponentBwilder<
             errors,
             `[ComponentBwilder:${this.tagName ?? 'unnamed'}] slotAddedHandler failed for ${errors.length} assigned element(s)`
           )
+        }
+      }
+
+      private runInitialAttrBindings(context: ComponentType) {
+        for (const [name, binding] of Object.entries(builder.attrBindings)) {
+          if (!binding.initial)
+            continue
+          binding.handler.call(context, {
+            name,
+            newValue: this.getAttribute(name) ?? builder.unobservedAttrs[name] ?? null,
+            oldValue: null,
+            initial: true
+          })
         }
       }
 

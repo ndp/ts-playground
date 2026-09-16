@@ -35,6 +35,7 @@
   "author": "Andrew Peterson",
   "license": "ISC",
   "devDependencies": {
+    "@ndp-software/lit-md": "^0.5.4",
     "@type-challenges/utils": "^0.1.1",
     "@types/jsdom": "^27",
     "@types/node": "^25",
