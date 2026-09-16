@@ -44,7 +44,6 @@ export class ComponentBwilder<
   private observedAttrs: Record<string, AttrChangeHandler<ComponentType> | null> = {}
   private attrBindings: Record<string, {handler: AttrChangeHandler<ComponentType>, initial: boolean}> = {}
   private unobservedAttrs: Record<string, string | null> = {}
-  private definedAttrs = new Set<string>()
   private subElementDefinitions: Array<{name: string, required: boolean}> = []
   private stateDefinitions: Record<string, unknown | (() => unknown)> = {}
   private definedStates = new Set<string>()
@@ -135,9 +134,8 @@ export class ComponentBwilder<
   }
 
   private assertAttrNotDefined(name: string) {
-    if (this.definedAttrs.has(name))
+    if (name in this.observedAttrs || name in this.unobservedAttrs)
       throw new Error(`Attr "${name}" is already defined.`)
-    this.definedAttrs.add(name)
   }
 
   /**
