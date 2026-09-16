@@ -46,7 +46,7 @@ example('quick example', () => {
 // - **Sub-elements** (`.wElement` + selectors/elements returned from `render`): `this.subElements` holds strongly typed references after render completes.
 // - **CSS modes** (`.wCSS(cssText, mode?)`): defaults to `adopted` (shared `CSSStyleSheet`) with inline fallback, logging a single transition warning per component class when necessary.
 // - **Shadow DOM modes**: `.wShadowDOM('open'|'closed'|'none')` — when `'none'` rendering happens on the host element itself.
-// - **State management** (`.wState`): declare reactive properties with `.wState(name, initialValue)`. State values are accessible via `this.state[name]`. Assigning to state properties automatically triggers a rerender. Initial values can be static or factory functions (called once per instance).
+// - **State management** (`.wState`): declare per-instance state with `.wState(name, initialValue)`. State values are accessible via `this.state[name]`. Assignments update the state object but do not automatically rerender; call `requestUpdate()` when the DOM should be refreshed. Initial values can be static or factory functions (called once per instance).
 // - **Lifecycle hooks**:
 //   - `.wRender(fn)` — called each time the component needs to update; always returns `Promise<void>`.
 //   - `.wAfterUpdateFn(fn)` — runs as a microtask after each render completes; supports `async` functions.
@@ -254,7 +254,8 @@ example('state management', () => {
       const btn = this.root.querySelector('button')
       if (btn) {
         btn.onclick = () => {
-          this.state.count++  // triggers rerender
+          this.state.count++
+          void this.requestUpdate() // explicitly refreshes the DOM
         }
       }
     })
@@ -263,7 +264,7 @@ example('state management', () => {
   assert.ok(customElements.get('c-counter'))
 })
 
-// State properties are reactive: assigning to `this.state.propName` automatically triggers a `render()` and `afterUpdateFn()` cycle. Initial values can be static primitives, objects, or factory functions (called once per instance to avoid sharing mutable defaults).
+// State properties are plain, per-instance values: assigning to `this.state.propName` changes the state but does not automatically trigger rendering. Call `requestUpdate()` (or `render()`) to apply state changes to the DOM and run the normal update lifecycle. Initial values can be static primitives, objects, or factory functions (called once per instance to avoid sharing mutable defaults).
 
 // ### 6. Type-preserved sub-elements with `ElementDescriptor`
 //
@@ -351,7 +352,7 @@ example('slot assigned-element handling', () => {
 // - `wAttrRender(name: string, defaultValue?: string)` — rerender when the attribute changes. Append `!` to name to mark as required.
 // - `wAttrBind(name: string, callback, options?)` — invoke a manual binding callback when the attribute changes. Use `{initial: true}` to invoke it after the initial render as well.
 // - `wElement(name: string, elementType?: ElementConstructor)` — declare a sub-element. Append `!` to name to mark required (e.g., `'email!'` → non-null, no null-check needed). Pass an HTMLElement constructor as second parameter for type-safe property access.
-// - `wState(name: string, initial: value | factory)` — reactive state. Append `!` to name if the value can never be null/undefined.
+// - `wState(name: string, initial: value | factory)` — declare per-instance state; assignments do not automatically render. Append `!` to name if the value can never be null/undefined.
 // - `wRender(fn)` — render function
 // - `wAfterUpdateFn(fn)` — runs after each render
 // - `wConnectedFn(fn)` — runs once after initial connection; can return cleanup
@@ -361,7 +362,7 @@ example('slot assigned-element handling', () => {
 // ### Instance properties & methods
 // - `this.root` — `ShadowRoot` (or `HTMLElement` if shadowDOM='none')
 // - `this.subElements` — typed map of sub-elements
-// - `this.state` — reactive state object (properties accessible and settable)
+// - `this.state` — plain per-instance state object (properties accessible and settable; call `requestUpdate()` to render changes)
 // - `connectedCallback(): Promise<void>` — lifecycle hook (always returns Promise)
 // - `disconnectedCallback(): void` — lifecycle hook (runs cleanup)
 // - `render(): Promise<void>` — manual rerender (always returns Promise)
