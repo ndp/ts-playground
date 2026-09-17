@@ -1,9 +1,9 @@
 # RiggedQueue
 
-A bounded queue with two priorities:
+A bounded queue with two groups:
 
 - **Winners** stay at the front and are never evicted.
-- **Non-winners** are added near the front and evicted by least-recent usage when the queue exceeds `maxSize`.
+- The **pool** holds evictable items. New items are added at its front; when the queue exceeds `maxSize`, least-recently-used pool items are evicted.
 
 ## Usage
 
@@ -56,7 +56,7 @@ stop()
 
 ## Winners exceeding the cap
 
-Winners are retained even when their count exceeds `maxSize`; non-winners are then evicted first.
+Winners are retained even when their count exceeds `maxSize`; pool items are evicted first.
 
 ```ts
 const queue = new RiggedQueue(1, ['a', 'b'], ['c'])

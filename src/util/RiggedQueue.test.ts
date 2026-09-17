@@ -6,7 +6,7 @@ describe('RiggedQueue', () => {
 
   // --- peek() ordering ---
 
-  test('peek() returns winners first, then nonWinners', () => {
+  test('peek() returns winners first, then pool items', () => {
     const q = new RiggedQueue(5, ['w1', 'w2'], ['a', 'b', 'c'])
     assert.deepEqual(q.peek(), ['w1', 'w2', 'a', 'b', 'c'])
   })
@@ -16,29 +16,29 @@ describe('RiggedQueue', () => {
     assert.deepEqual(q.peek(), ['z', 'a', 'm'])
   })
 
-  test('peek() result is capped at maxSize (nonWinners truncated)', () => {
+  test('peek() result is capped at maxSize (pool truncated)', () => {
     const q = new RiggedQueue(3, ['w1'], ['a', 'b', 'c', 'd'])
     assert.deepEqual(q.peek(), ['w1', 'a', 'b'])
   })
 
   test('peek() cap: winners always included even when count exceeds maxSize', () => {
     const q = new RiggedQueue(2, ['w1', 'w2', 'w3'], ['a', 'b'])
-    // all 3 winners included despite maxSize=2; no nonWinners fit
+    // all 3 winners included despite maxSize=2; no pool items fit
     assert.deepEqual(q.peek(), ['w1', 'w2', 'w3'])
   })
 
-  test('peek() with no nonWinners returns only winners', () => {
+  test('peek() with an empty pool returns only winners', () => {
     const q = new RiggedQueue(5, ['w1', 'w2'])
     assert.deepEqual(q.peek(), ['w1', 'w2'])
   })
 
-  test('peek() with no winners returns only nonWinners up to cap', () => {
+  test('peek() with no winners returns pool items up to cap', () => {
     const q = new RiggedQueue(2, [], ['a', 'b', 'c'])
     assert.deepEqual(q.peek(), ['a', 'b'])
   })
 
-  test('peek() skips nonWinner items already in winners list', () => {
-    // 'w1' appears in both winners and nonWinners; calculateItems guards with includes()
+  test('peek() skips pool items already in winners list', () => {
+    // 'w1' appears in both winners and the pool; calculateItems guards with includes()
     const q = new RiggedQueue(5, ['w1'], ['w1', 'a', 'b'])
     assert.deepEqual(q.peek(), ['w1', 'a', 'b'])
   })
@@ -50,7 +50,7 @@ describe('RiggedQueue', () => {
 
   // --- add() ---
 
-  test('add() inserts new item at front of nonWinners', () => {
+  test('add() inserts a new item at the front of the pool', () => {
     const q = new RiggedQueue(5, [], ['b', 'c'])
     q.add('a')
     assert.deepEqual(q.peek(), ['a', 'b', 'c'])
@@ -62,7 +62,7 @@ describe('RiggedQueue', () => {
     assert.deepEqual(q.peek(), ['a', 'b', 'c', 'x'])
   })
 
-  test('add() does not move an existing nonWinner to front', () => {
+  test('add() does not move an existing pool item to the front', () => {
     const q = new RiggedQueue(5, [], ['a', 'b', 'c'])
     q.add('b') // 'b' already present
     assert.deepEqual(q.peek(), ['a', 'b', 'c'])
@@ -113,9 +113,9 @@ describe('RiggedQueue', () => {
     const q = new RiggedQueue(5, ['w1', 'w2'], ['a', 'b'])
     q.removeWinners('w1')
     assert.deepEqual(q.peek(), ['w1', 'w2', 'a', 'b'])
-    q.add('c') // add nonWinner to fill cap
+    q.add('c') // add a pool item to fill cap
     assert.deepEqual(q.peek(), ['c', 'w1', 'w2', 'a', 'b']) // w1 still fits, so still in list
-    q.add('d') // add another nonWinner to exceed cap
+    q.add('d') // add another pool item to exceed cap
     assert.deepEqual(q.peek(),  [ 'd', 'c', 'w1', 'w2', 'a' ])
     q.add('e')
     assert.deepEqual(q.peek(),  [ 'e', 'd', 'c', 'w1', 'w2' ])
@@ -130,7 +130,7 @@ describe('RiggedQueue', () => {
     const q = new RiggedQueue(3, ['w1'], ['a', 'b'])
     // already at cap: w1 + a + b = 3
     q.add('c')
-    // 'c' is at front of nonWinners but 'b' is now beyond cap
+    // 'c' is at the front of the pool but 'b' is now beyond the cap
     assert.deepEqual(q.peek(), ['w1', 'c', 'a'])
   })
 
@@ -172,14 +172,14 @@ describe('RiggedQueue', () => {
     }
   })
 
-  // --- constructor nonWinners ---
+  // --- constructor pool ---
 
-  test('constructor nonWinners pre-populates queue', () => {
+  test('constructor pool pre-populates queue', () => {
     const q = new RiggedQueue(10, [], ['x', 'y', 'z'])
     assert.deepEqual(q.peek(), ['x', 'y', 'z'])
   })
 
-  test('constructor with no third arg defaults to empty nonWinners', () => {
+  test('constructor with no third arg defaults to an empty pool', () => {
     const q = new RiggedQueue(5, ['w1'])
     assert.deepEqual(q.peek(), ['w1'])
   })
@@ -229,7 +229,7 @@ describe('RiggedQueue', () => {
     const q = new RiggedQueue(5, [], ['a', 'b', 'c'])
     let callCount = 0
     q.onChange(() => { callCount++ })
-    q.add('a') // 'a' already in nonWinners, peek() unchanged
+    q.add('a') // 'a' is already in the pool, so peek() is unchanged
     assert.equal(callCount, 0)
   })
 

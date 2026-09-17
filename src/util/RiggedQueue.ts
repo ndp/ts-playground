@@ -13,9 +13,8 @@ export type RiggedQueueChangeListener<T> = (event: RiggedQueueChangeEvent<T>) =>
     recently used items are dropped off the end of the list
   - rigging of certain "winner" items. These always sit at the
     front of the list and never drop off the list.
-  - keep track of usage. If an item is used, but goes the front
-    of the queue to not be dropped off the list (but does NOT move in
-    the list)
+  - track usage. Used pool items are protected from eviction but do
+    not move within the queue.
  */
 export class RiggedQueue<T> {
   private readonly maxSize: number
@@ -29,11 +28,11 @@ export class RiggedQueue<T> {
   constructor(
     maxSize: number,
     winners: Iterable<T>,
-    nonWinners: Iterable<T> = []) {
+    pool: Iterable<T> = []) {
     this.maxSize = maxSize
     const winnerItems = [...winners]
     this.winners = new Set(winnerItems)
-    this.items = [...this.winners, ...[...nonWinners].filter(item => !this.winners.has(item))]
+    this.items = [...this.winners, ...[...pool].filter(item => !this.winners.has(item))]
   }
 
   // Register a listener that fires after each add() batch when peek() actually changes.
@@ -43,7 +42,7 @@ export class RiggedQueue<T> {
     return () => this.listeners.delete(listener)
   }
 
-  // Add some items at the front of the list, which will prioritize them over other non-winner items
+  // Add items at the front of the pool, prioritizing them over existing pool items.
   add(...moreItems: T[]) {
     const before = this.peek().slice()
     for (let i = moreItems.length - 1; i >= 0; --i)
@@ -64,7 +63,7 @@ export class RiggedQueue<T> {
   removeWinners(...winners: T[]) {
     winners.forEach(winner => {
       this.winners.delete(winner)
-      this.addOne(winner) // add the removed winner back as a non-winner, which will prioritize it over other non-winners but not over existing winners
+      this.addOne(winner) // Return the removed winner to the pool ahead of existing pool items.
     })
   }
 
@@ -88,7 +87,7 @@ export class RiggedQueue<T> {
     this.items.unshift(item)
   }
 
-  // Record usage of an item, which will prioritize it over other non-winner items
+  // Record usage of a pool item, protecting it from eviction.
   use(item: T) {
     this.usages.unshift(item)
   }
