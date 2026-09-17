@@ -17,7 +17,7 @@ describe('locale-selector component', () => {
   });
 
   it('renders "en-US" as a default language option', () => {
-    // 'en' is a RiggedQueue winner and is always present in gLanguages
+    // The default locale is a pinned RiggedQueue item and is always present in gLanguages
     const inner = host.querySelector('segmented-buttons') as HTMLElement;
     const enOption = inner.querySelector('[data-value="en-US"]');
     assert.ok(enOption, '"en-US" option should be rendered by default');

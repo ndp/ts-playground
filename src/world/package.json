@@ -19,7 +19,8 @@
   },
   "dependencies": {
     "@ndp-software/lit-md": "^0.5.4",
-    "@ndp-software/component-bwilder": "*"
+    "@ndp-software/component-bwilder": "*",
+    "ts-rigged-queue": "*"
   },
   "sideEffects": [
     "./country-summary.ts",

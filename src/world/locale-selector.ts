@@ -1,5 +1,5 @@
 import {type ISO2CountryCode, teenyDb} from './teeny-db.ts';
-import {RiggedQueue} from '@ndp-software/util';
+import {RiggedQueue} from 'ts-rigged-queue';
 import {ComponentBwilder, type TagName} from '@ndp-software/component-bwilder';
 
 const LocaleSelector = (new ComponentBwilder())
