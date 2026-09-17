@@ -35,7 +35,7 @@ const LocaleSelector = (new ComponentBwilder())
       segmentedButtons.setAttribute('required', '')
       this.root.appendChild(segmentedButtons)
     }
-    segmentedButtons.innerHTML = this.state.languages.peek().map(lang =>
+    segmentedButtons.innerHTML = this.state.languages.snapshot().map(lang =>
       `<div slot='option' data-value="${lang}">${lang}</div>`
     ).join('')
     return {segmentedButtons}

@@ -1,3 +1,4 @@
+/** Describes the visible queue after a mutation. */
 export type RiggedQueueChangeEvent<T> = {
   added: T[]
   removed: T[]
@@ -6,19 +7,15 @@ export type RiggedQueueChangeEvent<T> = {
 
 export type RiggedQueueChangeListener<T> = (event: RiggedQueueChangeEvent<T>) => void
 
-/*
-  A special form of priority queue that allows:
-  - user can add items to the front of the list
-  - there is a hard cap, and when that cap is exceeded, the least
-    recently used items are dropped off the end of the list
-  - rigging of certain "winner" items. These always sit at the
-    front of the list and never drop off the list.
-  - track usage. Used pool items are protected from eviction but do
-    not move within the queue.
+/**
+ * A bounded queue with pinned items and an evictable pool.
+ *
+ * Pinned items always remain ahead of pool entries. Pool entries are evicted
+ * when the visible queue exceeds maxSize, with recently used entries protected.
  */
 export class RiggedQueue<T> {
   private readonly maxSize: number
-  private winners: Set<T>
+  private pinnedItems: Set<T>
   private items: Array<T> = []
   private view: Array<T> = []
   private usages: Array<T> = []
@@ -27,15 +24,16 @@ export class RiggedQueue<T> {
 
   constructor(
     maxSize: number,
-    winners: Iterable<T>,
+    pinnedItems: Iterable<T>,
     pool: Iterable<T> = []) {
     this.maxSize = maxSize
-    const winnerItems = [...winners]
-    this.winners = new Set(winnerItems)
-    this.items = [...this.winners, ...[...pool].filter(item => !this.winners.has(item))]
+    const initialPinned = [...pinnedItems]
+    this.pinnedItems = new Set(initialPinned)
+    this.items = [...this.pinnedItems, ...[...pool].filter(item => !this.pinnedItems.has(item))]
   }
 
-  // Register a listener that fires after each add() batch when peek() actually changes.
+  // Register a listener that fires after each effective mutation. Pinning and
+  // unpinning can emit an event even when the visible order is unchanged.
   // Returns an unsubscribe function.
   onChange(listener: RiggedQueueChangeListener<T>): () => void {
     this.listeners.add(listener)
@@ -44,43 +42,73 @@ export class RiggedQueue<T> {
 
   // Add items at the front of the pool, prioritizing them over existing pool items.
   add(...moreItems: T[]) {
-    const before = this.peek().slice()
+    const before = this.snapshot().slice()
+    let changed = false
     for (let i = moreItems.length - 1; i >= 0; --i)
-      this.addOne(moreItems[i])
-    this.notifyChange(before)
+      changed = this.addOne(moreItems[i]) || changed
+    this.notifyChange(before, changed)
   }
 
-  addWinners(...winners: T[]) {
-    const before = this.peek().slice()
-    winners.forEach(winner => this.winners.add(winner))
-    winners
-      .filter(winner => !this.items.includes(winner))
-      .forEach(winner => this.addAfterWinners(winner))
+  remove(item: T): boolean {
+    const before = this.snapshot().slice()
+    const index = this.items.indexOf(item)
+    if (index === -1) return false
+
+    this.pinnedItems.delete(item)
+    this.items.splice(index, 1)
+    this.usages = this.usages.filter(used => used !== item)
     this.dirty = true
     this.notifyChange(before)
+    return true
   }
 
-  removeWinners(...winners: T[]) {
-    winners.forEach(winner => {
-      this.winners.delete(winner)
-      this.addOne(winner) // Return the removed winner to the pool ahead of existing pool items.
-    })
+  /** Promote one or more items to pinned status. */
+  pin(...items: T[]) {
+    const before = this.snapshot().slice()
+    let changed = false
+    for (const item of items) {
+      if (!this.pinnedItems.has(item)) {
+        this.pinnedItems.add(item)
+        changed = true
+      }
+      if (!this.items.includes(item)) {
+        this.addAfterPinned(item)
+        changed = true
+      }
+    }
+    if (changed) this.dirty = true
+    this.notifyChange(before, changed)
   }
 
-  private addOne(item: T) {
-    if (this.winners.has(item)) return; // Winners are already at the front of the list, so we don't need to add them again
+  /** Demote one or more pinned items back to the pool without removing them. */
+  unpin(...items: T[]) {
+    const before = this.snapshot().slice()
+    let changed = false
+    for (const item of items) {
+      if (!this.pinnedItems.delete(item)) continue
+      changed = true
+      this.use(item)
+      if (!this.items.includes(item))
+        this.addAfterPinned(item)
+      this.dirty = true
+    }
+    this.notifyChange(before, changed)
+  }
+
+  private addOne(item: T): boolean {
+    if (this.pinnedItems.has(item)) return false // Pinned items are already at the front of the list.
 
     this.use(item)
-    if (this.items.includes(item)) return
+    if (this.items.includes(item)) return false
 
     this.dirty = true
-
-    this.addAfterWinners(item)
+    this.addAfterPinned(item)
+    return true
   }
 
-  private addAfterWinners(item: T) {
-    for (let i = Math.max(0, this.winners.size - 1); i < this.items.length; ++i)
-      if (!this.winners.has(this.items[i])) {
+  private addAfterPinned(item: T) {
+    for (let i = Math.max(0, this.pinnedItems.size - 1); i < this.items.length; ++i)
+      if (!this.pinnedItems.has(this.items[i])) {
         this.items.splice(i, 0, item)
         return
       }
@@ -92,14 +120,33 @@ export class RiggedQueue<T> {
     this.usages.unshift(item)
   }
 
-  peek(): T[] {
+  /** Number of visible pinned items and pool entries. */
+  get size(): number {
+    return this.snapshot().length
+  }
+
+  /** Whether an item is currently visible in the queue. */
+  has(item: T): boolean {
+    return this.snapshot().includes(item)
+  }
+
+  /** Iterate over the current visible order without exposing mutable state. */
+  values(): IterableIterator<T> {
+    return this.snapshot()[Symbol.iterator]()
+  }
+
+  [Symbol.iterator](): IterableIterator<T> {
+    return this.values()
+  }
+
+  snapshot(): T[] {
     if (this.dirty)
       this.calculateItems()
     return this.view
   }
 
   private calculateItems(): void {
-    const numberOfItemsToRemove = Math.max(0, this.items.length - Math.max(this.maxSize, this.winners.size))
+    const numberOfItemsToRemove = Math.max(0, this.items.length - Math.max(this.maxSize, this.pinnedItems.size))
     if (numberOfItemsToRemove == 0) {
       this.dirty = false
       this.view = Object.freeze(this.items.slice()) as T[]
@@ -108,7 +155,7 @@ export class RiggedQueue<T> {
 
 
     const removing = this.items
-      .filter(item => !this.winners.has(item))
+      .filter(item => !this.pinnedItems.has(item))
       .sort((a, b) => {
         const aUsageIndex = this.usages.indexOf(a)
         const bUsageIndex = this.usages.indexOf(b)
@@ -127,20 +174,25 @@ export class RiggedQueue<T> {
 
     for (let i of removing)
       this.items.splice(this.items.indexOf(i), 1)
+    this.usages = this.usages.filter(item => this.items.includes(item))
 
     this.dirty = false
     this.view = Object.freeze(this.items.slice()) as T[]
   }
 
-  private notifyChange(before: T[]): void {
+  private notifyChange(before: T[], force = false): void {
     if (this.listeners.size === 0) return
-    const after = this.peek()
+    const after = this.snapshot()
     const beforeSet = new Set(before)
     const afterSet = new Set(after)
     const added = after.filter(x => !beforeSet.has(x))
     const removed = before.filter(x => !afterSet.has(x))
-    if (added.length === 0 && removed.length === 0) return
-    const event: RiggedQueueChangeEvent<T> = {added, removed, items: after}
+    if (!force && added.length === 0 && removed.length === 0) return
+    const event: RiggedQueueChangeEvent<T> = {
+      added: Object.freeze(added) as T[],
+      removed: Object.freeze(removed) as T[],
+      items: after
+    }
     for (const listener of Array.from(this.listeners)) {
       try {
         listener(event)
