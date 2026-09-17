@@ -5,7 +5,7 @@ import {ComponentBwilder, type TagName} from '@ndp-software/component-bwilder';
 const LocaleSelector = (new ComponentBwilder())
   .wTagName('locale-selector' as TagName)
   .wShadowDOM('none')
-  .wElement('segmentedButtons')
+  .wSubElement('segmentedButtons')
   .wState('languages', () => new RiggedQueue<string>(10, [navigator.language]))
   .wAttrBind('data-country', function ({newValue}) {
     if (!newValue) return // Don't change if they don't send any value

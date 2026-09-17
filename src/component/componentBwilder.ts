@@ -164,7 +164,7 @@ export class ComponentBwilder<
    * Declare a named sub-element returned by the render function.
    * Adds a typed key to `subElements` accessible in `this.subElements`.
    */
-  wElement<A extends string, T extends HTMLElement = HTMLElement>(
+  wSubElement<A extends string, T extends HTMLElement = HTMLElement>(
     elementName: A,
     elementType?: new (...args: any[]) => T
   ) {

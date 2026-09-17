@@ -22,7 +22,7 @@ const Greeting = new ComponentBwilder()
   .wShadowDOM('open')
   .wCSS(':host{display:block;padding:4px;}')
   .wAttr('name')
-  .wElement('label')
+  .wSubElement('label')
   .wRender(function () {
     this.root.innerHTML = `<div><span>${this['name'] ?? 'world'}</span></div>`
     return { label: 'span' }
@@ -34,7 +34,7 @@ const Greeting = new ComponentBwilder()
 - **Attribute access** (`.wAttr`): expose attribute values on the instance without observing changes.
 - **Attribute rerendering** (`.wAttrRender`): rerender the component whenever the attribute changes.
 - **Manual attribute binding** (`.wAttrBind`): update stable sub-elements without replacing the rendered DOM.
-- **Sub-elements** (`.wElement` + selectors/elements returned from `render`): `this.subElements` holds strongly typed references after render completes.
+- **Sub-elements** (`.wSubElement` + selectors/elements returned from `render`): `this.subElements` holds strongly typed references after render completes.
 - **CSS modes** (`.wCSS(cssText, mode?)`): defaults to `adopted` (shared `CSSStyleSheet`) with inline fallback, logging a single transition warning per component class when necessary.
 - **Shadow DOM modes**: `.wShadowDOM('open'|'closed'|'none')` — when `'none'` rendering happens on the host element itself.
 - **State management** (`.wState`): declare per-instance state with `.wState(name, initialValue)`. State values are accessible via `this.state[name]`. Assignments update the state object but do not automatically rerender; call `requestUpdate()` when the DOM should be refreshed. Initial values can be static or factory functions (called once per instance).
@@ -71,7 +71,7 @@ new ComponentBwilder()
 new ComponentBwilder()
   .wTagName('c-bound')
   .wShadowDOM('none')
-  .wElement('count')
+  .wSubElement('count')
   .wAttrBind('data-count', function ({newValue}) {
     this.subElements.count!.textContent = String(newValue ?? '0')
   }, {initial: true})
@@ -86,8 +86,8 @@ new ComponentBwilder()
 ```ts
 new ComponentBwilder()
   .wTagName('c-subelems')
-  .wElement('title')
-  .wElement('content')
+  .wSubElement('title')
+  .wSubElement('content')
   .wShadowDOM('none')
   .wRender(function () {
     this.root.innerHTML = '<h1 id="title">Title</h1><div id="content">Body</div>'
@@ -104,9 +104,9 @@ new ComponentBwilder()
 ```ts
 new ComponentBwilder()
   .wTagName('c-form')
-  .wElement('email!')                    // Required: HTMLElement (no null check needed)
-  .wElement('submit!', HTMLButtonElement) // Required & typed: HTMLButtonElement (no null)
-  .wElement('status')                    // Optional: HTMLElement | null (needs null check)
+  .wSubElement('email!')                    // Required: HTMLElement (no null check needed)
+  .wSubElement('submit!', HTMLButtonElement) // Required & typed: HTMLButtonElement (no null)
+  .wSubElement('status')                    // Optional: HTMLElement | null (needs null check)
   .wShadowDOM('none')
   .wRender(function () {
     this.root.innerHTML = `
@@ -129,13 +129,13 @@ new ComponentBwilder()
   .bwild()
 ```
 
-**Sub-element type hints** — pass a type parameter to `.wElement()` for type-safe property access:
+**Sub-element type hints** — pass a type parameter to `.wSubElement()` for type-safe property access:
 ```ts
 new ComponentBwilder()
   .wTagName('c-form-typed')
-  .wElement('email', HTMLInputElement)     // Typed as HTMLInputElement | null
-  .wElement('submit', HTMLButtonElement)   // Typed as HTMLButtonElement | null
-  .wElement('status')                      // Generic HTMLElement | null
+  .wSubElement('email', HTMLInputElement)     // Typed as HTMLInputElement | null
+  .wSubElement('submit', HTMLButtonElement)   // Typed as HTMLButtonElement | null
+  .wSubElement('status')                      // Generic HTMLElement | null
   .wShadowDOM('none')
   .wRender(function () {
     this.root.innerHTML = `
@@ -154,7 +154,7 @@ new ComponentBwilder()
   .bwild()
 ```
 
-The type parameter is optional and TypeScript-only (zero runtime cost). The bang suffix applies to all field types: `.wElement()`, `.wAttr()`, and `.wState()`.
+The type parameter is optional and TypeScript-only (zero runtime cost). The bang suffix applies to all field types: `.wSubElement()`, `.wAttr()`, and `.wState()`.
 
 ### 3. CSS modes and sharing
 ```ts
@@ -303,7 +303,7 @@ Generated names are only unique within the current runtime. Do not use them for 
 - `wAttr(name: string, defaultValue?: string)` — expose an attribute value without observing changes. Append `!` to name to mark as required.
 - `wAttrRender(name: string, defaultValue?: string)` — rerender when the attribute changes. Append `!` to name to mark as required.
 - `wAttrBind(name: string, callback, options?)` — invoke a manual binding callback when the attribute changes. Use `{initial: true}` to invoke it after the initial render as well.
-- `wElement(name: string, elementType?: ElementConstructor)` — declare a sub-element. Append `!` to name to mark required (e.g., `'email!'` → non-null, no null-check needed). Pass an HTMLElement constructor as second parameter for type-safe property access.
+- `wSubElement(name: string, elementType?: ElementConstructor)` — declare a sub-element. Append `!` to name to mark required (e.g., `'email!'` → non-null, no null-check needed). Pass an HTMLElement constructor as second parameter for type-safe property access.
 - `wState(name: string, initial: value | factory)` — declare per-instance state; assignments do not automatically render. Append `!` to name if the value can never be null/undefined.
 - `wRender(fn)` — render function
 - `wAfterUpdateFn(fn)` — runs after each render
@@ -336,13 +336,13 @@ Generated names are only unique within the current runtime. Do not use them for 
 
 ### Strict mode validation
 
-Once you declare a field as required with `!` (e.g., `wElement('email!')`), it becomes part of your component's contract. The builder currently enforces this only at the TypeScript level. A future "strict mode" could add **runtime validation on component mount** to catch missing required fields early.
+Once you declare a field as required with `!` (e.g., `wSubElement('email!')`), it becomes part of your component's contract. The builder currently enforces this only at the TypeScript level. A future "strict mode" could add **runtime validation on component mount** to catch missing required fields early.
 
 Example idea:
 - When a component with required fields mounts, validate that all marked fields are actually present in the rendered output.
 - Log or throw errors if a required field is missing, helping developers catch rendering bugs immediately rather than when code tries to access the field.
 - Could be opt-in via `.wStrictMode(true)` or environment-based (dev only).
-- Applies to required elements (`.wElement('x!')`), attributes (`.wAttr('role!')`), and state (`.wState('count!')`).
+- Applies to required elements (`.wSubElement('x!')`), attributes (`.wAttr('role!')`), and state (`.wState('count!')`).
 
 This would provide an additional layer of safety beyond TypeScript's compile-time guarantees, especially useful for complex or dynamically rendered components.
 

@@ -18,7 +18,7 @@ This package exposes a small, TypeScript-first fluent API for defining custom el
 - **Attribute access** (`.wAttr`): expose attribute values on the instance without observing changes.
 - **Attribute rerendering** (`.wAttrRender`): rerender the component whenever the attribute changes.
 - **Manual attribute binding** (`.wAttrBind`): update stable sub-elements without replacing the rendered DOM.
-- **Sub-elements** (`.wElement` + selectors/elements returned from `render`): `this.subElements` holds strongly typed references after render completes.
+- **Sub-elements** (`.wSubElement` + selectors/elements returned from `render`): `this.subElements` holds strongly typed references after render completes.
 - **CSS modes** (`.wCSS(cssText, mode?)`): defaults to `adopted` (shared `CSSStyleSheet`) with inline fallback, logging a single transition warning per component class when necessary.
 - **Shadow DOM modes**: `.wShadowDOM('open'|'closed'|'none')` — when `'none'` rendering happens on the host element itself.
 - **State management** (`.wState`): declare reactive properties with `.wState(name, initialValue)`. State values are accessible via `this.state[name]`. Assigning to state properties automatically triggers a rerender. Initial values can be static or factory functions (called once per instance).
@@ -31,8 +31,8 @@ This package exposes a small, TypeScript-first fluent API for defining custom el
 ### 1. Observed vs unobserved attributes
 ### 2. Sub-element wiring
 **Marking elements as required vs. optional** — Append `!` to a field name to mark it as required (non-null):
-**Sub-element type hints** — pass a type parameter to `.wElement()` for type-safe property access:
-The type parameter is optional and TypeScript-only (zero runtime cost). The bang suffix applies to all field types: `.wElement()`, `.wAttr()`, `.wAttrRender()`, and `.wState()`.
+**Sub-element type hints** — pass a type parameter to `.wSubElement()` for type-safe property access:
+The type parameter is optional and TypeScript-only (zero runtime cost). The bang suffix applies to all field types: `.wSubElement()`, `.wAttr()`, `.wAttrRender()`, and `.wState()`.
 ### 3. CSS modes and sharing
 ### 4. Async render / lifecycle hooks
 ### 5. State management
@@ -54,7 +54,7 @@ The handler fires immediately when elements are dynamically assigned to slots af
 - `wAttr(name: string, defaultValue?: string)` — unobserved attribute. Append `!` to name to mark as required (e.g., `'role!'` → always a string, never undefined).
 - `wAttrRender(name: string, defaultValue?: string)` — rerender when the attribute changes. Append `!` to name to mark as required.
 - `wAttrBind(name: string, callback, options?)` — invoke a manual binding callback when the attribute changes. Use `{initial: true}` to invoke it after the initial render as well.
-- `wElement(name: string, elementType?: ElementConstructor)` — declare a sub-element. Append `!` to name to mark required (e.g., `'email!'` → non-null, no null-check needed). Pass an HTMLElement constructor as second parameter for type-safe property access.
+- `wSubElement(name: string, elementType?: ElementConstructor)` — declare a sub-element. Append `!` to name to mark required (e.g., `'email!'` → non-null, no null-check needed). Pass an HTMLElement constructor as second parameter for type-safe property access.
 - `wState(name: string, initial: value | factory)` — reactive state. Append `!` to name if the value can never be null/undefined.
 - `wRender(fn)` — render function
 - `wAfterUpdateFn(fn)` — runs after each render
@@ -81,13 +81,13 @@ The handler fires immediately when elements are dynamically assigned to slots af
 ## Future ideas
 ### Strict mode validation
 
-Once you declare a field as required with `!` (e.g., `wElement('email!')`), it becomes part of your component's contract. The builder currently enforces this only at the TypeScript level. A future "strict mode" could add **runtime validation on component mount** to catch missing required fields early.
+Once you declare a field as required with `!` (e.g., `wSubElement('email!')`), it becomes part of your component's contract. The builder currently enforces this only at the TypeScript level. A future "strict mode" could add **runtime validation on component mount** to catch missing required fields early.
 
 Example idea:
 - When a component with required fields mounts, validate that all marked fields are actually present in the rendered output.
 - Log or throw errors if a required field is missing, helping developers catch rendering bugs immediately rather than when code tries to access the field.
 - Could be opt-in via `.wStrictMode(true)` or environment-based (dev only).
-- Applies to required elements (`.wElement('x!')`), attributes (`.wAttr('role!')`), and state (`.wState('count!')`).
+- Applies to required elements (`.wSubElement('x!')`), attributes (`.wAttr('role!')`), and state (`.wState('count!')`).
 
 This would provide an additional layer of safety beyond TypeScript's compile-time guarantees, especially useful for complex or dynamically rendered components.
 ## Guiding principles:

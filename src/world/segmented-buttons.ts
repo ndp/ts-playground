@@ -10,7 +10,7 @@ const SegmentedButtons = new ComponentBwilder()
   .wTagName('segmented-buttons' as TagName)
   .wShadowDOM('open')
   .wCSS(css)
-  .wElement('slotEl!', HTMLSlotElement)
+  .wSubElement('slotEl!', HTMLSlotElement)
   .wAttrBind('data-value', function () {
     applySelectedClasses(this)
   })
@@ -74,6 +74,8 @@ const SegmentedButtons = new ComponentBwilder()
   .bwild()
 
 export default SegmentedButtons
+
+type Host = InstanceType<typeof SegmentedButtons>
 
 function handleSelect(host: HTMLElementWithSubElements, el: HTMLElement) {
   const val = el.getAttribute('data-value')

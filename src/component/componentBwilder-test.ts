@@ -1161,16 +1161,16 @@ describe('ComponentBwilder render', () => {
   test('duplicate sub-element declarations throw', () => {
     assert.throws(() => {
       new ComponentBwilder()
-        .wElement('title')
-        .wElement('title!')
+        .wSubElement('title')
+        .wSubElement('title!')
     }, /Sub-element "title" is already defined\./)
   })
 
-  test('wElement can be chained without runtime side effects', () => {
+  test('wSubElement can be chained without runtime side effects', () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('with-element-chain'))
-      .wElement('title')
-      .wElement('content')
+      .wSubElement('title')
+      .wSubElement('content')
       .wShadowDOM('none')
       .wRender(function () {
         this.root.innerHTML = '<h1 id="title">T</h1><div id="content">C</div>'
@@ -1193,8 +1193,8 @@ describe('ComponentBwilder render', () => {
 
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('subelements-selector-map'))
-      .wElement('title')
-      .wElement('content')
+      .wSubElement('title')
+      .wSubElement('content')
       .wShadowDOM('none')
       .wRender(function () {
         this.root.innerHTML = '<h1 id="title">My Title</h1><div id="content">My Content</div>'
@@ -1219,7 +1219,7 @@ describe('ComponentBwilder render', () => {
   test('subElements accept direct element map returned by render', async () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('subelements-element-map'))
-      .wElement('title')
+      .wSubElement('title')
       .wShadowDOM('none')
       .wRender(function () {
         this.root.innerHTML = '<h1 id="title">Direct Element</h1>'
@@ -1238,7 +1238,7 @@ describe('ComponentBwilder render', () => {
   test('required subElements resolve successfully from selectors', async () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('required-subelements-success'))
-      .wElement('title!')
+      .wSubElement('title!')
       .wShadowDOM('none')
       .wRender(function () {
         this.root.innerHTML = '<h1 id="title">Required Title</h1>'
@@ -1255,7 +1255,7 @@ describe('ComponentBwilder render', () => {
   test('required subElements log when a selector is missing', async () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('required-subelements-missing'))
-      .wElement('title!')
+      .wSubElement('title!')
       .wShadowDOM('none')
       .wRender(function () {
         this.root.innerHTML = '<div>Missing title</div>'
@@ -1279,7 +1279,7 @@ describe('ComponentBwilder render', () => {
   test('required subElements log when a direct element is null or omitted', async () => {
     const NullComponentClass = new ComponentBwilder()
       .wTagName(nextTag('required-subelements-null'))
-      .wElement('title!')
+      .wSubElement('title!')
       .wShadowDOM('none')
       .wRender(function () {
         this.root.innerHTML = '<div>Null title</div>'
@@ -1289,7 +1289,7 @@ describe('ComponentBwilder render', () => {
 
     const OmittedComponentClass = new ComponentBwilder()
       .wTagName(nextTag('required-subelements-omitted'))
-      .wElement('title!')
+      .wSubElement('title!')
       .wShadowDOM('none')
       .wRender(function () {
         this.root.innerHTML = '<div>Omitted title</div>'
@@ -1316,7 +1316,7 @@ describe('ComponentBwilder render', () => {
 
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('subelements-post-mount'))
-      .wElement('content')
+      .wSubElement('content')
       .wShadowDOM('open')
       .wRender(function () {
         this.root.innerHTML = '<div id="content">Mounted Content</div>'
@@ -1331,7 +1331,7 @@ describe('ComponentBwilder render', () => {
       .wAttrBind('data-update', function() {
         assert.equal(this.subElements.content?.textContent, 'Mounted Content')
       })
-      .wElement<'more', HTMLSlotElement>('more')
+      .wSubElement<'more', HTMLSlotElement>('more')
       .wAttrBind('data-more', function() {
         assert.equal(this.subElements.content?.textContent, 'Mounted Content')
         assert.equal(this.subElements.more, null)
@@ -1687,10 +1687,10 @@ describe('ComponentBwilder render', () => {
     assert.equal(transitions[1].newValue, 'b')
   })
 
-  test('wElement declared but render returns void leaves subElements entries as null', () => {
+  test('wSubElement declared but render returns void leaves subElements entries as null', () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('subelements-void'))
-      .wElement('myEl')
+      .wSubElement('myEl')
       .wShadowDOM('none')
       .wRender(function () {
         this.root.innerHTML = '<div id="myEl">content</div>'
@@ -2060,9 +2060,9 @@ describe('wState', () => {
   test('bang (!) suffix marks elements as required, stripping bang from actual name', async () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('bang-required'))
-      .wElement('email!')
-      .wElement('submit!')
-      .wElement('status')
+      .wSubElement('email!')
+      .wSubElement('submit!')
+      .wSubElement('status')
       .wShadowDOM('none')
       .wRender(function () {
         this.root.innerHTML = `
@@ -2111,8 +2111,8 @@ describe('wState', () => {
   test('bang suffix is stripped from subElement names at declaration time', async () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('bang-strip'))
-      .wElement('email!')
-      .wElement('status')
+      .wSubElement('email!')
+      .wSubElement('status')
       .wShadowDOM('none')
       .wRender(function () {
         this.root.innerHTML = `
@@ -2236,7 +2236,7 @@ describe('attribute declaration APIs', () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('wattr-bind-initial'))
       .wShadowDOM('none')
-      .wElement('value!')
+      .wSubElement('value!')
       .wAttrBind('data-v', function ({newValue, initial}) {
         events.push(`${initial ? 'initial' : 'change'}:${newValue}`)
         this.subElements.value.textContent = String(newValue ?? '')
