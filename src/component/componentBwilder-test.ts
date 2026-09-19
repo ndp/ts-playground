@@ -2203,6 +2203,30 @@ describe('wState', () => {
     assert.equal(c['required-attr'], 'req-value')
   })
 
+  test('required attributes are enforced during connectedCallback', async () => {
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('required-attr-missing'))
+      .wAttr('required-attr!')
+      .wShadowDOM('none')
+      .wRender(function () {
+        this.root.innerHTML = '<div>ready</div>'
+      })
+      .bwild()
+
+    const c = new MyComponentClass()
+    const errors: unknown[][] = []
+    const originalError = console.error
+    try {
+      console.error = (...args: unknown[]) => errors.push(args)
+      await c.connectedCallback()
+    } finally {
+      console.error = originalError
+    }
+
+    assert.match(String(errors[0]?.[0]), /ComponentBwilder:.*connectedCallback failed/)
+    assert.match(String(errors[0]?.[1]), /Required attribute "required-attr" is missing/)
+  })
+
   test('bang suffix is stripped from subElement names at declaration time', async () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('bang-strip'))

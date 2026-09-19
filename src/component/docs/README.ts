@@ -414,7 +414,9 @@ example('slot assigned-element handling', () => {
 
 // ### Strict mode validation
 //
-// Once you declare a field as required with `!` (e.g., `wSubElement('email!')`), it becomes part of your component's contract. The builder currently enforces this only at the TypeScript level. A future "strict mode" could add **runtime validation on component mount** to catch missing required fields early.
+// (`.wAttr('role!')`, `.wAttrRender('role!')`, or `.wAttrBind('role!')`) are validated
+// during `connectedCallback()`. Missing required fields are reported through the same
+// connected-callback error path as render failures.
 //
 // Example idea:
 // - When a component with required fields mounts, validate that all marked fields are actually present in the rendered output.

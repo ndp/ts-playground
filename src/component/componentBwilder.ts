@@ -56,6 +56,7 @@ export class ComponentBwilder<
   private attrDefaults: Record<string, unknown> = {}
   private attrParsers: Record<string, AttrParser<unknown>> = {}
   private definedAttrs = new Set<string>()
+  private requiredAttrs = new Set<string>()
   private unobservedAttrs = new Set<string>()
   private subElementDefinitions: Array<{name: string, required: boolean}> = []
   private stateDefinitions: Record<string, unknown | (() => unknown)> = {}
@@ -127,6 +128,8 @@ export class ComponentBwilder<
     const parsed = parseFieldName(attr)
     this.assertAttrNotDefined(parsed.name)
     this.definedAttrs.add(parsed.name)
+    if (parsed.required)
+      this.requiredAttrs.add(parsed.name)
     this.unobservedAttrs.add(parsed.name)
     if (options.parse)
       this.attrParsers[parsed.name] = options.parse as AttrParser<unknown>
@@ -154,6 +157,8 @@ export class ComponentBwilder<
     const parsed = parseFieldName(attr)
     this.assertAttrNotDefined(parsed.name)
     this.definedAttrs.add(parsed.name)
+    if (parsed.required)
+      this.requiredAttrs.add(parsed.name)
     this.observedAttrs[parsed.name] = null
     if (options.parse)
       this.attrParsers[parsed.name] = options.parse as AttrParser<unknown>
@@ -182,6 +187,8 @@ export class ComponentBwilder<
     const parsed = parseFieldName(attr)
     this.assertAttrNotDefined(parsed.name)
     this.definedAttrs.add(parsed.name)
+    if (parsed.required)
+      this.requiredAttrs.add(parsed.name)
     const {handler} = options
     this.observedAttrs[parsed.name] = handler as unknown as AttrChangeHandler<ComponentType>
     this.attrBindings[parsed.name] = {
@@ -346,6 +353,7 @@ export class ComponentBwilder<
       connectedCallback(): Promise<void> {
         const context = this as unknown as ComponentType
         return this.render()
+          .then(() => this.validateRequiredAttributes())
           .then(() => this.runInitialAttrBindings(context))
           .then(() => builder.postMountFn?.call(context, context))
           .then(async (cleanup) => {
@@ -371,6 +379,13 @@ export class ComponentBwilder<
 
       requestUpdate() {
         return this.render()
+      }
+
+      private validateRequiredAttributes() {
+        for (const name of builder.requiredAttrs) {
+          if (!this.hasAttribute(name))
+            throw new Error(`Required attribute "${name}" is missing.`)
+        }
       }
 
       render(): Promise<void> {
