@@ -7,25 +7,26 @@ const LocaleSelector = (new ComponentBwilder())
   .wShadowDOM('none')
   .wSubElement('segmentedButtons')
   .wState('languages', () => new RiggedQueue<string>(10, [navigator.language]))
-  .wAttrBind('data-country', function ({newValue}) {
-    if (!newValue) return // Don't change if they don't send any value
+  .wAttrBind('data-country', {
+    handler({newValue}) {
+      if (!newValue) return // Don't change if they don't send any value
 
-    const countryLocales = teenyDb.langs(newValue as ISO2CountryCode);
-    if (!countryLocales || countryLocales.length === 0) return // If we have no data, don't do anything
+      const countryLocales = teenyDb.langs(newValue as ISO2CountryCode);
+      if (!countryLocales || countryLocales.length === 0) return // If we have no data, don't do anything
 
-    const isLocked = this.subElements.segmentedButtons!.hasAttribute('locked')
-    if (isLocked) {
-      const lockedLocale = this.subElements.segmentedButtons!.getAttribute('data-locked')
-      this.state.languages.use(lockedLocale!)
+      const isLocked = this.subElements.segmentedButtons!.hasAttribute('locked')
+      if (isLocked) {
+        const lockedLocale = this.subElements.segmentedButtons!.getAttribute('data-locked')
+        this.state.languages.use(lockedLocale!)
+      }
+      this.state.languages.add(...countryLocales)
+      this.subElements.segmentedButtons!.setAttribute('suggested', countryLocales.join(','))
+
+      if (countryLocales.length === 0 || isLocked) return
+
+      this.subElements.segmentedButtons!.setAttribute('data-value', countryLocales[0])
+      this.root.dispatchEvent(new CustomEvent('change', {bubbles: true, detail: {value: countryLocales[0]}}))
     }
-    this.state.languages.add(...countryLocales)
-    this.subElements.segmentedButtons!.setAttribute('suggested', countryLocales.join(','))
-
-    if (countryLocales.length === 0 || isLocked) return
-
-    this.subElements.segmentedButtons!.setAttribute('data-value', countryLocales[0])
-    this.root.dispatchEvent(new CustomEvent('change', {bubbles: true, detail: {value: countryLocales[0]}}))
-
   })
   .wRender(function () {
     let segmentedButtons = this.subElements.segmentedButtons

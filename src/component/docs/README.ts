@@ -1,4 +1,4 @@
-import './docs/setup-jsdom.js'
+import './setup-jsdom.js'
 import { example } from '@ndp-software/lit-md'
 import assert from 'assert'
 import { ComponentBwilder } from '../componentBwilder.ts'
@@ -43,6 +43,7 @@ example('quick example', () => {
 // - **Attribute access** (`.wAttr`): expose attribute values on the instance without observing changes.
 // - **Attribute rerendering** (`.wAttrRender`): rerender the component whenever the attribute changes.
 // - **Manual attribute binding** (`.wAttrBind`): update stable sub-elements without replacing the rendered DOM.
+// - **Parsed attributes**: deserialize DOM attribute strings into native values with inferred TypeScript types.
 // - **Sub-elements** (`.wSubElement` + selectors/elements returned from `render`): `this.subElements` holds strongly typed references after render completes.
 // - **CSS modes** (`.wCSS(cssText, mode?)`): defaults to `adopted` (shared `CSSStyleSheet`) with inline fallback, logging a single transition warning per component class when necessary.
 // - **Shadow DOM modes**: `.wShadowDOM('open'|'closed'|'none')` — when `'none'` rendering happens on the host element itself.
@@ -73,7 +74,7 @@ example('attribute-triggered rerendering', () => {
 example('unobserved attributes', () => {
   new ComponentBwilder()
     .wTagName('c-unobserved')
-    .wAttr('info', 'default')
+    .wAttr('info', {ifMissing: 'default'})
     .wShadowDOM('none')
     .wRender(function () {
       this.root.innerHTML = `<div>Info: ${this['info']}</div>`
@@ -89,9 +90,12 @@ example('manual attribute binding', () => {
     .wTagName('c-bound')
     .wShadowDOM('none')
     .wSubElement('count')
-    .wAttrBind('data-count', function ({newValue}) {
-      this.subElements.count!.textContent = String(newValue ?? '0')
-    }, {initial: true})
+    .wAttrBind('data-count', {
+      initial: true,
+      handler({newValue}) {
+        this.subElements.count!.textContent = String(newValue ?? '0')
+      }
+    })
     .wRender(function () {
       this.root.innerHTML = '<span data-count></span>'
       return {count: '[data-count]'}
@@ -99,6 +103,32 @@ example('manual attribute binding', () => {
     .bwild()
 
   assert.ok(customElements.get('c-bound'))
+})
+
+// ### Parsed attributes
+//
+// All attribute declarations accept an options object. `parse` receives the DOM representation (`string | null`) and determines the instance property type. `ifMissing` is already that native type, so it is returned directly instead of being parsed. For `wAttrBind`, put the callback in `handler`; its `newValue` and `oldValue` are parsed before it runs.
+
+example('parsed attributes', () => {
+  const Counter = new ComponentBwilder()
+    .wTagName('c-parsed-count')
+    .wShadowDOM('none')
+    .wAttrBind('data-count', {
+      initial: true,
+      ifMissing: 0,
+      parse: raw => Number(raw),
+      handler({newValue}) {
+        const count: number = newValue
+        this.root.textContent = String(count)
+      }
+    })
+    .wRender(function () {
+      this.root.innerHTML = '<output></output>'
+    })
+    .bwild()
+
+  const counter = new Counter()
+  assert.equal(counter['data-count'], 0)
 })
 
 // ### 2. Sub-element wiring
@@ -348,9 +378,9 @@ example('slot assigned-element handling', () => {
 // - `wTagName(tag: string | null)` — custom element tag name (or null to skip registration)
 // - `wShadowDOM(mode: 'open' | 'closed' | 'none')` — shadow DOM mode
 // - `wCSS(cssText: string, mode?: 'adopted' | 'inline')` — inject CSS
-// - `wAttr(name: string, defaultValue?: string)` — expose an attribute value without observing changes. Append `!` to name to mark as required.
-// - `wAttrRender(name: string, defaultValue?: string)` — rerender when the attribute changes. Append `!` to name to mark as required.
-// - `wAttrBind(name: string, callback, options?)` — invoke a manual binding callback when the attribute changes. Use `{initial: true}` to invoke it after the initial render as well.
+// - `wAttr(name, {parse?, ifMissing?})` — expose an attribute value without observing changes. Parsed values have the inferred return type of `parse`; `ifMissing` uses that same native type. Append `!` to name to mark as required.
+// - `wAttrRender(name, {parse?, ifMissing?})` — rerender when the attribute changes. Parsed values have the inferred return type of `parse`; `ifMissing` uses that same native type. Append `!` to name to mark as required.
+// - `wAttrBind(name, {handler, parse?, ifMissing?, initial?})` — invoke `handler` when the attribute changes. `parse` parses `oldValue` and `newValue`; use `initial: true` to invoke the handler after the initial render as well.
 // - `wSubElement(name: string, elementType?: ElementConstructor)` — declare a sub-element. Append `!` to name to mark required (e.g., `'email!'` → non-null, no null-check needed). Pass an HTMLElement constructor as second parameter for type-safe property access.
 // - `wState(name: string, initial: value | factory)` — declare per-instance state; assignments do not automatically render. Append `!` to name if the value can never be null/undefined.
 // - `wRender(fn)` — render function

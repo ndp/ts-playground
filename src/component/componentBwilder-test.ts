@@ -68,12 +68,97 @@ describe('ComponentBwilder tag names', () => {
 })
 
 describe('ComponentBwilder observed attributes', () => {
+  test('wAttr parses attribute values into the inferred native type', () => {
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('parsed-attribute'))
+      .wShadowDOM('none')
+      .wAttr('data-count', {
+        ifMissing: 0,
+        parse: (raw) => {
+          if (raw === null) throw new Error('parse should not receive missing values')
+          return Number(raw)
+        }
+      })
+      .wRender(function () {
+        const count: number = this['data-count']
+        // @ts-expect-error parsed attributes are not strings
+        this['data-count'].toUpperCase()
+        this.root.textContent = String(count)
+      })
+      .bwild()
+
+    const c = new MyComponentClass()
+    assert.equal(c['data-count'], 0)
+
+    c.setAttribute('data-count', '42')
+    assert.equal(c['data-count'], 42)
+  })
+
+  test('wAttrRender reparses values before rendering', async () => {
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('parsed-render-attribute'))
+      .wShadowDOM('none')
+      .wAttrRender('data-count', {
+        parse: (raw) => raw === null ? 0 : Number(raw)
+      })
+      .wRender(function () {
+        const count: number = this['data-count']
+        const expectNumber = (value: number) => {
+          // @ts-expect-error parsed attributes are not strings
+          value.trim()
+        }
+        void expectNumber
+        this.root.textContent = String(count * 2)
+      })
+      .bwild()
+
+    const c = new MyComponentClass()
+    await c.connectedCallback()
+    assert.equal(c.textContent, '0')
+
+    c.setAttribute('data-count', '21')
+    await Promise.resolve()
+    assert.equal(c.textContent, '42')
+  })
+
+  test('wAttrBind receives parsed values for initial, changed, and removed attributes', async () => {
+    const transitions: Array<{oldValue: number, newValue: number, initial: boolean}> = []
+
+    const MyComponentClass = new ComponentBwilder()
+      .wTagName(nextTag('parsed-bound-attribute'))
+      .wAttrBind('data-count', {
+        handler({oldValue, newValue, initial}) {
+          const oldCount: number = oldValue
+          const newCount: number = newValue
+          transitions.push({oldValue: oldCount, newValue: newCount, initial})
+        },
+        ifMissing: 0,
+        initial: true,
+        parse: (raw) => Number(raw)
+      })
+      .wRender(stubRender)
+      .bwild()
+
+    const c = new MyComponentClass()
+    await c.connectedCallback()
+    c.setAttribute('data-count', '12')
+    c.removeAttribute('data-count')
+
+    assert.deepEqual(transitions, [
+      {oldValue: 0, newValue: 0, initial: true},
+      {oldValue: 0, newValue: 12, initial: false},
+      {oldValue: 12, newValue: 0, initial: false}
+    ])
+  })
+
   test('basic definition', () => {
     const MyBuilder =
       new ComponentBwilder()
         .wTagName(nextTag('observed-attrs-component'))
-        .wAttrBind('data-id', ({newValue, oldValue}) => {
-          console.log(`data-id changed from ${oldValue} to ${newValue}`)
+        .wAttrBind('data-id', {
+          handler({newValue, oldValue}) {
+            console.log(`data-id changed from ${oldValue} to ${newValue}`)
+          }
         })
         .wAttrRender('role')
         .wRender(stubRender)
@@ -92,7 +177,7 @@ describe('ComponentBwilder observed attributes', () => {
       new ComponentBwilder()
         .wTagName(nextTag('duplicate-attr'))
         .wAttr('data-id')
-        .wAttrBind('data-id', () => {})
+        .wAttrBind('data-id', {handler() {}})
     }, /Attr "data-id" is already defined\./)
 
     assert.throws(() => {
@@ -130,8 +215,10 @@ describe('ComponentBwilder observed attributes', () => {
 
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('observed-attrs-remove'))
-      .wAttrBind('data-id', ({oldValue, newValue}) => {
-        transitions.push({oldValue, newValue})
+      .wAttrBind('data-id', {
+        handler({oldValue, newValue}) {
+          transitions.push({oldValue, newValue})
+        }
       })
       .wRender(stubRender)
       .bwild()
@@ -180,7 +267,7 @@ describe('ComponentBwilder render', () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('rendered-component-with-unobs-attr'))
       .wShadowDOM('none')
-      .wAttr('data-info')
+      .wAttr('data-info', {parse: raw => raw})
       .wRender(function () {
         unobservedValue = this['data-info']
         this.root.innerHTML = `<div>Info: ${unobservedValue}</div>`;
@@ -214,7 +301,7 @@ describe('ComponentBwilder render', () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('rendered-component-with-unobs-attr-null'))
       .wShadowDOM('none')
-      .wAttr('data-info')
+      .wAttr('data-info', {parse: raw => raw})
       .wRender(function () {
         unobservedValue = this['data-info']
         this.root.innerHTML = `<div>Info: ${unobservedValue}</div>`;
@@ -234,7 +321,7 @@ describe('ComponentBwilder render', () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('rendered-component-with-unobs-attr-default'))
       .wShadowDOM('none')
-      .wAttr('data-info', 'a default value')
+      .wAttr('data-info', {ifMissing: 'a default value'})
       .wRender(function () {
         this.root.innerHTML = `<div>Info: ${this['data-info']}</div>`;
       })
@@ -252,7 +339,7 @@ describe('ComponentBwilder render', () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('rendered-component-with-empty-string-default'))
       .wShadowDOM('none')
-      .wAttr('data-info', 'fallback-default')
+      .wAttr('data-info', {ifMissing: 'fallback-default'})
       .wRender(function () {
         this.root.innerHTML = `<div>Info: ${this['data-info']}</div>`
       })
@@ -277,7 +364,7 @@ describe('ComponentBwilder render', () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('rendered-component-with-attr'))
       .wShadowDOM('none')
-      .wAttrRender('data-name')
+      .wAttrRender('data-name', {parse: raw => raw})
       .wRender(function () {
         observedValue = this['data-name']
         this.root.innerHTML = `<div>Hello, ${observedValue}</div>`;
@@ -341,8 +428,10 @@ describe('ComponentBwilder render', () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('obs-callback-no-rerender'))
       .wShadowDOM('none')
-      .wAttrBind('data-id', () => {
-        callbackCount += 1
+      .wAttrBind('data-id', {
+        handler() {
+          callbackCount += 1
+        }
       })
       .wRender(function () {
         renderCount += 1
@@ -1328,13 +1417,17 @@ describe('ComponentBwilder render', () => {
         assert.equal(subElements.content?.textContent, 'Mounted Content')
         assert.equal(this.subElements.content?.textContent, 'Mounted Content')
       })
-      .wAttrBind('data-update', function() {
-        assert.equal(this.subElements.content?.textContent, 'Mounted Content')
+      .wAttrBind('data-update', {
+        handler() {
+          assert.equal(this.subElements.content?.textContent, 'Mounted Content')
+        }
       })
       .wSubElement<'more', HTMLSlotElement>('more')
-      .wAttrBind('data-more', function() {
-        assert.equal(this.subElements.content?.textContent, 'Mounted Content')
-        assert.equal(this.subElements.more, null)
+      .wAttrBind('data-more', {
+        handler() {
+          assert.equal(this.subElements.content?.textContent, 'Mounted Content')
+          assert.equal(this.subElements.more, null)
+        }
       })
       .bwild()
   })
@@ -1672,8 +1765,10 @@ describe('ComponentBwilder render', () => {
 
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('old-value-second'))
-      .wAttrBind('data-val', ({oldValue, newValue}) => {
-        transitions.push({oldValue, newValue})
+      .wAttrBind('data-val', {
+        handler({oldValue, newValue}) {
+          transitions.push({oldValue, newValue})
+        }
       })
       .wRender(stubRender)
       .bwild()
@@ -2144,7 +2239,7 @@ describe('attribute declaration APIs', () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('wattr-ifmissing'))
       .wShadowDOM('none')
-      .wAttr('data-color', 'blue')
+      .wAttr('data-color', {ifMissing: 'blue'})
       .wRender(stubRender)
       .bwild()
 
@@ -2160,7 +2255,7 @@ describe('attribute declaration APIs', () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('wattr-ifmissing-null'))
       .wShadowDOM('none')
-      .wAttr('data-color', 'blue')
+      .wAttr('data-color', {ifMissing: 'blue'})
       .wRender(stubRender)
       .bwild()
 
@@ -2198,7 +2293,11 @@ describe('attribute declaration APIs', () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('wattr-observe-fn'))
       .wShadowDOM('none')
-      .wAttrBind('data-v', ({ newValue }) => { received = newValue })
+      .wAttrBind('data-v', {
+        handler({newValue}) {
+          received = newValue
+        }
+      })
       .wRender(stubRender)
       .bwild()
 
@@ -2214,9 +2313,11 @@ describe('attribute declaration APIs', () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('wattr-observe-fn-args'))
       .wShadowDOM('none')
-      .wAttrBind('data-v', function (this: HTMLElement, args) {
-        callbackThis = this
-        callbackArgs = args
+      .wAttrBind('data-v', {
+        handler(this: HTMLElement, args) {
+          callbackThis = this
+          callbackArgs = args
+        }
       })
       .wRender(stubRender)
       .bwild()
@@ -2237,10 +2338,13 @@ describe('attribute declaration APIs', () => {
       .wTagName(nextTag('wattr-bind-initial'))
       .wShadowDOM('none')
       .wSubElement('value!')
-      .wAttrBind('data-v', function ({newValue, initial}) {
-        events.push(`${initial ? 'initial' : 'change'}:${newValue}`)
-        this.subElements.value.textContent = String(newValue ?? '')
-      }, {initial: true})
+      .wAttrBind('data-v', {
+        initial: true,
+        handler({newValue, initial}) {
+          events.push(`${initial ? 'initial' : 'change'}:${newValue}`)
+          this.subElements.value.textContent = String(newValue ?? '')
+        }
+      })
       .wRender(function () {
         this.root.innerHTML = '<span id="value"></span>'
         return {value: '#value'}
@@ -2264,7 +2368,7 @@ describe('attribute declaration APIs', () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('wattr-no-rerender'))
       .wShadowDOM('none')
-      .wAttrBind('data-v', () => {})
+      .wAttrBind('data-v', {handler() {}})
       .wRender(function () {
         renderCount++
         this.root.innerHTML = '<div></div>'
@@ -2285,7 +2389,12 @@ describe('attribute declaration APIs', () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('wattr-fn-ifmissing'))
       .wShadowDOM('none')
-      .wAttrBind('data-v', ({ newValue }) => { received = newValue }, {ifMissing: 'default'})
+      .wAttrBind('data-v', {
+        ifMissing: 'default',
+        handler({newValue}) {
+          received = newValue
+        }
+      })
       .wRender(stubRender)
       .bwild()
 
@@ -2304,7 +2413,7 @@ describe('attribute declaration APIs', () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('wattr-rerender-ifmissing'))
       .wShadowDOM('none')
-      .wAttrRender('data-v', 'fallback')
+      .wAttrRender('data-v', {ifMissing: 'fallback'})
       .wRender(function () {
         renderCount++
         this.root.innerHTML = `<div>${this['data-v']}</div>`
@@ -2335,7 +2444,7 @@ describe('attribute declaration APIs', () => {
       .wTagName(nextTag('wattr-observed-list'))
       .wShadowDOM('none')
       .wAttrRender('data-x')
-      .wAttrBind('data-y', () => {})
+      .wAttrBind('data-y', {handler() {}})
       .wAttr('data-z')
       .wRender(stubRender)
       .bwild()

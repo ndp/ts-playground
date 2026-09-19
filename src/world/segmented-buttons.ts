@@ -6,28 +6,49 @@ type HTMLElementWithSubElements = HTMLElement  & {
   subElements: { slotEl: HTMLSlotElement }
 }
 
+type SegmentedButtonsHost = HTMLElementWithSubElements & {
+  'data-value': string[]
+  'data-locked': string[]
+  suggested: string[]
+}
+
 const SegmentedButtons = new ComponentBwilder()
   .wTagName('segmented-buttons' as TagName)
   .wShadowDOM('open')
   .wCSS(css)
   .wSubElement('slotEl!', HTMLSlotElement)
-  .wAttrBind('data-value', function () {
-    applySelectedClasses(this)
+  .wAttrBind('data-value', {
+    handler({newValue}) {
+      applySelectedClasses(this, newValue)
+    },
+    parse: parseCommaSeparated
   })
-  .wAttrBind('required', function () {
-    enforceRequired(this)
+  .wAttrBind('suggested', {
+    handler({newValue}) {
+      applySuggestedClasses(this, newValue)
+    },
+    parse: parseCommaSeparated
   })
-  .wAttrBind('multi', function () {
-    normalizeSelectionForMode(this)
+  .wAttrBind('data-locked', {
+    handler({newValue}) {
+      applyLockedAttrs(this, newValue)
+    },
+    parse: parseCommaSeparated
   })
-  .wAttrBind('suggested', function () {
-    applySuggestedClasses(this)
+  .wAttrBind('required', {
+    handler() {
+      enforceRequired(this)
+    }
   })
-  .wAttrBind('lockable', function () {
-    applyLockedAttrs(this)
+  .wAttrBind('multi', {
+    handler() {
+      normalizeSelectionForMode(this)
+    }
   })
-  .wAttrBind('data-locked', function () {
-    applyLockedAttrs(this)
+  .wAttrBind('lockable', {
+    handler() {
+      applyLockedAttrs(this, this['data-locked'])
+    }
   })
   .wRender(function () {
     const slotEl = document.createElement('slot')
@@ -49,9 +70,9 @@ const SegmentedButtons = new ComponentBwilder()
       })
       setSelectedValues(this, values, {emitChange: false})
     }
-    enforceRequired(this as HTMLElementWithSubElements)
-    applySuggestedClasses(this)
-    applyLockedAttrs(this)
+    enforceRequired(this)
+    applySuggestedClasses(this, this.suggested)
+    applyLockedAttrs(this, this['data-locked'])
   })
   .wSlotAddedHandler(function(context, el: HTMLElement) {
     const handler = (ev: Event) => {
@@ -61,15 +82,15 @@ const SegmentedButtons = new ComponentBwilder()
     if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0')
     el.addEventListener('click', handler)
     enforceRequired(context, el)
-    applySelectedClasses(context)
-    applySuggestedClasses(context)
-    applyLockedAttrs(context)
+    applySelectedClasses(context, context['data-value'])
+    applySuggestedClasses(context, context.suggested)
+    applyLockedAttrs(context, context['data-locked'])
     return () => el.removeEventListener('click', handler)
   })
-  .wAfterUpdateFn(function (this: HTMLElementWithSubElements) {
-    applySelectedClasses(this)
-    applySuggestedClasses(this)
-    applyLockedAttrs(this)
+  .wAfterUpdateFn(function () {
+    applySelectedClasses(this, this['data-value'])
+    applySuggestedClasses(this, this.suggested)
+    applyLockedAttrs(this, this['data-locked'])
   })
   .bwild()
 
@@ -77,7 +98,7 @@ export default SegmentedButtons
 
 type Host = InstanceType<typeof SegmentedButtons>
 
-function handleSelect(host: HTMLElementWithSubElements, el: HTMLElement) {
+function handleSelect(host: SegmentedButtonsHost, el: HTMLElement) {
   const val = el.getAttribute('data-value')
   if (val === null) return
 
@@ -146,7 +167,7 @@ function handleSelect(host: HTMLElementWithSubElements, el: HTMLElement) {
  * @param fallback - optional element to consider when `assignedElements()` is empty
  *                   (e.g. in JSDOM where slot assignment may lag behind DOM insertion)
  */
-function enforceRequired(host: HTMLElementWithSubElements, fallback?: HTMLElement) {
+function enforceRequired(host: SegmentedButtonsHost, fallback?: HTMLElement) {
   if (!host.hasAttribute('required')) return
   if (getSelectedValues(host).length > 0) return
 
@@ -163,9 +184,8 @@ function enforceRequired(host: HTMLElementWithSubElements, fallback?: HTMLElemen
   // No change event here — this is an automatic enforcement, not user interaction
 }
 
-function applySelectedClasses(host: HTMLElementWithSubElements) {
+function applySelectedClasses(host: HTMLElementWithSubElements, selectedValues: readonly string[]) {
   const slot = host.subElements?.slotEl
-  const selectedValues = getSelectedValues(host)
   const assigned = slot?.assignedElements({flatten: true}) ?? []
 
   assigned.forEach((node) => {
@@ -175,13 +195,13 @@ function applySelectedClasses(host: HTMLElementWithSubElements) {
   })
 }
 
-function normalizeSelectionForMode(host: HTMLElementWithSubElements) {
+function normalizeSelectionForMode(host: SegmentedButtonsHost) {
   // Re-apply data-value in the correct shape when toggling multi on/off without emitting
   setSelectedValues(host, getSelectedValues(host), {emitChange: false})
   enforceRequired(host)
 }
 
-function setSelectedValues(host: HTMLElementWithSubElements, values: string[], options?: {emitChange?: boolean}) {
+function setSelectedValues(host: SegmentedButtonsHost, values: string[], options?: {emitChange?: boolean}) {
   const unique = dedupe(values)
   const multi = isMulti(host)
   const normalized = multi ? unique : unique.slice(0, 1)
@@ -194,7 +214,6 @@ function setSelectedValues(host: HTMLElementWithSubElements, values: string[], o
   const oldValue = multi ? prev : prev[0] ?? null
 
   if (options?.emitChange !== false) emitChange(host, newValue, oldValue)
-  applySelectedClasses(host)
   // In lockable mode, keep data-locked in sync: remove locks for deselected values
   if (isLockable(host)) {
     const currentLocked = getLockedValues(host)
@@ -203,48 +222,42 @@ function setSelectedValues(host: HTMLElementWithSubElements, values: string[], o
   }
 }
 
-function getSelectedValues(host: HTMLElement) {
-  const raw = host.getAttribute('data-value')
-  if (!raw) return []
-  return dedupe(
-    raw
-      .split(',')
-      .map((v) => v.trim())
-      .filter(Boolean)
-  )
+function getSelectedValues(host: SegmentedButtonsHost) {
+  return host['data-value']
 }
 
-function dedupe(values: string[]) {
+function parseCommaSeparated(raw: string | null) {
+  if (!raw) return []
+  return dedupe(raw.split(',').map(value => value.trim()).filter(Boolean))
+}
+
+function dedupe(values: readonly string[]) {
   return [...(new Set<string>(values))]
 }
 
-function isMulti(host: HTMLElement) {
+function isMulti(host: SegmentedButtonsHost) {
   return host.hasAttribute('multi')
 }
 
-function isLockable(host: HTMLElement) {
+function isLockable(host: SegmentedButtonsHost) {
   return host.hasAttribute('lockable')
 }
 
-function getLockedValues(host: HTMLElement) {
-  const raw = host.getAttribute('data-locked')
-  if (!raw) return []
-  return dedupe(raw.split(',').map(v => v.trim()).filter(Boolean))
+function getLockedValues(host: SegmentedButtonsHost) {
+  return host['data-locked']
 }
 
-function setLockedValues(host: HTMLElementWithSubElements, values: string[]) {
+function setLockedValues(host: SegmentedButtonsHost, values: string[]) {
   const unique = dedupe(values)
   if (unique.length === 0) {
     host.removeAttribute('data-locked')
   } else {
     host.setAttribute('data-locked', unique.join(','))
   }
-  applyLockedAttrs(host)
 }
 
-function applyLockedAttrs(host: HTMLElementWithSubElements) {
+function applyLockedAttrs(host: HTMLElementWithSubElements, lockedValues: readonly string[]) {
   const slot = host.subElements.slotEl
-  const lockedValues = getLockedValues(host)
   const assigned = slot?.assignedElements({flatten: true}) ?? []
 
   assigned.forEach((node) => {
@@ -260,10 +273,8 @@ function applyLockedAttrs(host: HTMLElementWithSubElements) {
   else host.removeAttribute('locked')
 }
 
-function applySuggestedClasses(host: HTMLElementWithSubElements) {
+function applySuggestedClasses(host: HTMLElementWithSubElements, suggested: readonly string[]) {
   const slot = host.subElements.slotEl
-  const raw = host.getAttribute('suggested') ?? ''
-  const suggested = raw.split(',').map(v => v.trim()).filter(Boolean)
   const assigned = slot?.assignedElements({flatten: true}) ?? []
 
   assigned.forEach((node) => {
