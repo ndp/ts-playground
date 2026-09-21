@@ -1998,13 +1998,13 @@ describe('ComponentBwilder render', () => {
 
 })
 
-describe('wState', () => {
+describe('wStateVar', () => {
 
   test('throws when the same state name is defined more than once', () => {
     assert.throws(() => {
       new ComponentBwilder()
-        .wState('count', 0)
-        .wState('count', 1)
+        .wStateVar('count', 0)
+        .wStateVar('count', 1)
     }, /State "count" is already defined\./)
   })
 
@@ -2014,7 +2014,7 @@ describe('wState', () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('wstate-basic'))
       .wShadowDOM('none')
-      .wState('count', 0)
+      .wStateVar('count', 0)
       .wRender(function () {
         stateVal = this.state.count
         this.root.innerHTML = `<div>${this.state.count}</div>`
@@ -2032,7 +2032,7 @@ describe('wState', () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('wstate-factory'))
       .wShadowDOM('none')
-      .wState('items', () => [] as string[])
+      .wStateVar('items', () => [] as string[])
       .wRender(function () {
         this.root.innerHTML = `<div>${this.state.items.length}</div>`
       })
@@ -2056,7 +2056,7 @@ describe('wState', () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('wstate-set'))
       .wShadowDOM('none')
-      .wState('count', 0)
+      .wStateVar('count', 0)
       .wRender(function () {
         renderCount += 1
         this.root.innerHTML = `<div>${this.state.count}</div>`
@@ -2080,7 +2080,7 @@ describe('wState', () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('wstate-independent'))
       .wShadowDOM('none')
-      .wState('count', 0)
+      .wStateVar('count', 0)
       .wRender(function () {
         this.root.innerHTML = `<div>${this.state.count}</div>`
       })
@@ -2104,12 +2104,12 @@ describe('wState', () => {
     assert.equal(b.querySelector('div')!.textContent, '99')
   })
 
-  test('multiple wState values are all accessible on this.state', async () => {
+  test('multiple wStateVar values are all accessible on this.state', async () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('wstate-multiple'))
       .wShadowDOM('none')
-      .wState('name', 'Alice')
-      .wState('age', 30)
+      .wStateVar('name', 'Alice')
+      .wStateVar('age', 30)
       .wRender(function () {
         this.root.innerHTML = `<div>${this.state.name}:${this.state.age}</div>`
       })
@@ -2133,7 +2133,7 @@ describe('wState', () => {
     const MyComponentClass = new ComponentBwilder()
       .wTagName(nextTag('wstate-hooks'))
       .wShadowDOM('none')
-      .wState('value', 'hello')
+      .wStateVar('value', 'hello')
       .wRender(function () {
         this.root.innerHTML = '<div>ready</div>'
       })

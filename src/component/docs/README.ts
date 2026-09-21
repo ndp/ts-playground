@@ -47,7 +47,7 @@ example('quick example', () => {
 // - **Sub-elements** (`.wSubElement` + selectors/elements returned from `render`): `this.subElements` holds strongly typed references after render completes.
 // - **CSS modes** (`.wCSS(cssText, mode?)`): defaults to `adopted` (shared `CSSStyleSheet`) with inline fallback, logging a single transition warning per component class when necessary.
 // - **Shadow DOM modes**: `.wShadowDOM('open'|'closed'|'none')` — when `'none'` rendering happens on the host element itself.
-// - **State management** (`.wState`): declare per-instance state with `.wState(name, initialValue)`. State values are accessible via `this.state[name]`. Assignments update the state object but do not automatically rerender; call `requestUpdate()` when the DOM should be refreshed. Initial values can be static or factory functions (called once per instance).
+// - **State management** (`.wStateVar`): declare per-instance state with `.wStateVar(name, initialValue)`. State values are accessible via `this.state[name]`. Assignments update the state object but do not automatically rerender; call `requestUpdate()` when the DOM should be refreshed. Initial values can be static or factory functions (called once per instance).
 // - **Lifecycle hooks**:
 //   - `.wRender(fn)` — called each time the component needs to update; always returns `Promise<void>`.
 //   - `.wAfterUpdateFn(fn)` — runs as a microtask after each render completes; supports `async` functions.
@@ -212,7 +212,7 @@ example('typed sub-elements', () => {
   assert.ok(customElements.get('c-form-typed'))
 })
 
-// The type parameter is optional and TypeScript-only (zero runtime cost). The bang suffix applies to all field types: `.wSubElement()`, `.wAttr()`, and `.wState()`.
+// The type parameter is optional and TypeScript-only (zero runtime cost). The bang suffix applies to all field types: `.wSubElement()`, `.wAttr()`, and `.wStateVar()`.
 
 // ### 3. CSS modes and sharing
 
@@ -272,8 +272,8 @@ example('state management', () => {
   new ComponentBwilder()
     .wTagName('c-counter')
     .wShadowDOM('none')
-    .wState('count', 0)
-    .wState('items', () => []) // factory ensures unique instance
+    .wStateVar('count', 0)
+    .wStateVar('items', () => []) // factory ensures unique instance
     .wRender(function () {
       this.root.innerHTML = `
         <div>Count: ${this.state.count}</div>
@@ -382,7 +382,7 @@ example('slot assigned-element handling', () => {
 // - `wAttrRender(name, {parse?, ifMissing?})` — rerender when the attribute changes. Parsed values have the inferred return type of `parse`; `ifMissing` uses that same native type. Append `!` to name to mark as required.
 // - `wAttrBind(name, {handler, parse?, ifMissing?, initial?})` — invoke `handler` when the attribute changes. `parse` parses `oldValue` and `newValue`; use `initial: true` to invoke the handler after the initial render as well.
 // - `wSubElement(name: string, elementType?: ElementConstructor)` — declare a sub-element. Append `!` to name to mark required (e.g., `'email!'` → non-null, no null-check needed). Pass an HTMLElement constructor as second parameter for type-safe property access.
-// - `wState(name: string, initial: value | factory)` — declare per-instance state; assignments do not automatically render. Append `!` to name if the value can never be null/undefined.
+// - `wStateVar(name: string, initial: value | factory)` — declare per-instance state; assignments do not automatically render. Append `!` to name if the value can never be null/undefined.
 // - `wRender(fn)` — render function
 // - `wAfterUpdateFn(fn)` — runs after each render
 // - `wConnectedFn(fn)` — runs once after initial connection; can return cleanup
@@ -422,7 +422,7 @@ example('slot assigned-element handling', () => {
 // - When a component with required fields mounts, validate that all marked fields are actually present in the rendered output.
 // - Log or throw errors if a required field is missing, helping developers catch rendering bugs immediately rather than when code tries to access the field.
 // - Could be opt-in via `.wStrictMode(true)` or environment-based (dev only).
-// - Applies to required elements (`.wSubElement('x!')`), attributes (`.wAttr('role!')`), and state (`.wState('count!')`).
+// - Applies to required elements (`.wSubElement('x!')`), attributes (`.wAttr('role!')`), and state (`.wStateVar('count!')`).
 //
 // This would provide an additional layer of safety beyond TypeScript's compile-time guarantees, especially useful for complex or dynamically rendered components.
 

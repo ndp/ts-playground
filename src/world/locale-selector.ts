@@ -6,7 +6,7 @@ const LocaleSelector = (new ComponentBwilder())
   .wTagName('locale-selector' as TagName)
   .wShadowDOM('none')
   .wSubElement('segmentedButtons')
-  .wState('languages', () => new RiggedQueue<string>(10, [navigator.language]))
+  .wStateVar('languages', () => new RiggedQueue<string>(10, [navigator.language]))
   .wAttrBind('data-country', {
     handler({newValue}) {
       if (!newValue) return // Don't change if they don't send any value

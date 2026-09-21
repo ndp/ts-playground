@@ -233,7 +233,7 @@ export class ComponentBwilder<
   /**
    * Declare a typed per-instance field. `initial` may be a value or a factory called per instance.
    */
-  wState<N extends string, T>(name: N, initial: T | (() => T)) {
+  wStateVar<N extends string, T>(name: N, initial: T | (() => T)) {
     const parsed = parseFieldName(name)
     if (this.definedStates.has(parsed.name))
       throw new Error(`State "${parsed.name}" is already defined.`)
