@@ -2,8 +2,8 @@ import {type ISO2CountryCode, type OfficialLanguages, teenyDb} from './teeny-db.
 import {ComponentBwilder, assertValidTagName} from '@ndp-software/component-bwilder';
 import {maybeFetchText} from './util.ts'
 
-type PanelContext = {root: HTMLElement, 'data-iso2': string, locale: string}
-type MainContext = {root: HTMLElement, 'data-iso2': string, mode: string, locale: string}
+type PanelContext = {root: HTMLElement, state: {'data-iso2': string, locale: string}}
+type MainContext = {root: HTMLElement, state: {'data-iso2': string, mode: string, locale: string}}
 
 
 function panel(name: string) {
@@ -13,13 +13,13 @@ function panel(name: string) {
   return new ComponentBwilder()
     .wTagName(panelTag)
     .wShadowDOM('none')
-    .wAttrRender('data-iso2', {ifMissing: ''})
-    .wAttrRender('locale', {ifMissing: navigator.language || 'en-US'})
+    .wAttr('data-iso2', {fullRerender: true, ifMissing: ''})
+    .wAttr('locale', {fullRerender: true, ifMissing: navigator.language || 'en-US'})
 }
 
 panel('name')
   .wRender(function (context: PanelContext) {
-    const iso2 = context['data-iso2'] as ISO2CountryCode;
+    const iso2 = context.state['data-iso2'] as ISO2CountryCode;
     const listFormat = new Intl.ListFormat('en-US', {type: 'conjunction', style: 'narrow'});
     const nameEng = teenyDb.countryName(iso2);
     const langs = teenyDb.langs(iso2) || [];
@@ -39,7 +39,7 @@ panel('name')
 
 panel('language')
   .wRender(function (context: PanelContext) {
-    const iso2 = context['data-iso2'] as ISO2CountryCode;
+    const iso2 = context.state['data-iso2'] as ISO2CountryCode;
     const listFormat = new Intl.ListFormat('en-US', {type: 'conjunction', style: 'narrow'});
     const nameEng = teenyDb.countryName(iso2);
     const langs = teenyDb.langs(iso2) || [];
@@ -54,12 +54,12 @@ panel('language')
 
 panel('currency')
   .wRender(function (context: PanelContext) {
-    const iso2 = context['data-iso2'] as ISO2CountryCode;
+    const iso2 = context.state['data-iso2'] as ISO2CountryCode;
     const nameEng = teenyDb.countryName(iso2);
     const codes = teenyDb.misc(iso2, 'ISO4217-currency_alphabetic_code')?.split(',') ?? [];
     const names = teenyDb.misc(iso2, 'ISO4217-currency_name')?.split(',') ?? [];
     const currencies = (teenyDb.misc(iso2, 'ISO4217-currency_alphabetic_code') ?? '').split(',');
-    const locale = context.locale || 'en-US';
+    const locale = context.state.locale || 'en-US';
     const monies = currencies.map(currency => new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: currency
@@ -80,9 +80,9 @@ ${monies.map(money => `<p>${money}</p>`).join('')}
 
 panel('numbers')
   .wRender(function (context: PanelContext) {
-    const iso2 = context['data-iso2'] as ISO2CountryCode;
+    const iso2 = context.state['data-iso2'] as ISO2CountryCode;
     const nameEng = teenyDb.countryName(iso2);
-    const locale = context.locale || 'en-US';
+    const locale = context.state.locale || 'en-US';
     const num1 = 1234567.89;
     const formattedNum1 = num1.toLocaleString(locale);
     const meters = new Intl.NumberFormat(locale, {
@@ -112,7 +112,7 @@ panel('numbers')
 
 panel('tech')
   .wRender(function (context: PanelContext) {
-    const iso2 = context['data-iso2'] as ISO2CountryCode;
+    const iso2 = context.state['data-iso2'] as ISO2CountryCode;
     const nameEng = teenyDb.countryName(iso2);
     context.root.innerHTML = `
       <h2>${nameEng}</h2>
@@ -127,21 +127,21 @@ panel('tech')
 
 panel('time')
   .wRender(function (context: PanelContext) {
-    const iso2 = context['data-iso2'] as ISO2CountryCode;
+    const iso2 = context.state['data-iso2'] as ISO2CountryCode;
     const nameEng = teenyDb.countryName(iso2);
     const date = new Date()
     context.root.innerHTML = `
       <h2>${nameEng}</h2>
       <h3>Time</h3>
-      <p>${date.toLocaleTimeString(context.locale, {timeStyle: 'short'})}</p>
-      <p>${date.toLocaleTimeString(context.locale, {timeStyle: 'medium'})}</p>
-      <p>${date.toLocaleTimeString(context.locale, {timeStyle: 'long'})}</p>
-      <p>${date.toLocaleTimeString(context.locale, {timeStyle: 'full'})}</p>
+      <p>${date.toLocaleTimeString(context.state.locale, {timeStyle: 'short'})}</p>
+      <p>${date.toLocaleTimeString(context.state.locale, {timeStyle: 'medium'})}</p>
+      <p>${date.toLocaleTimeString(context.state.locale, {timeStyle: 'long'})}</p>
+      <p>${date.toLocaleTimeString(context.state.locale, {timeStyle: 'full'})}</p>
       <h3>Date</h3>
-      <p>${date.toLocaleDateString(context.locale, {dateStyle: 'short'})}</p>
-      <p>${date.toLocaleDateString(context.locale, {dateStyle: 'medium'})}</p>
-      <p>${date.toLocaleDateString(context.locale, {dateStyle: 'long'})}</p>
-      <p>${date.toLocaleDateString(context.locale, {dateStyle: 'full'})}</p>
+      <p>${date.toLocaleDateString(context.state.locale, {dateStyle: 'short'})}</p>
+      <p>${date.toLocaleDateString(context.state.locale, {dateStyle: 'medium'})}</p>
+      <p>${date.toLocaleDateString(context.state.locale, {dateStyle: 'long'})}</p>
+      <p>${date.toLocaleDateString(context.state.locale, {dateStyle: 'full'})}</p>
     `;
   })
   .bwild()
@@ -152,12 +152,12 @@ const stylesheetPromise = maybeFetchText(new URL('../country-summary.css', impor
 export default new ComponentBwilder()
   .wTagName('country-summary')
   .wShadowDOM('open')
-  .wAttrRender('data-iso2', {ifMissing: ''})
-  .wAttrRender('mode', {ifMissing: 'name'})
-  .wAttrRender('locale', {ifMissing: navigator.language || 'en-US'})
+  .wAttr('data-iso2', {fullRerender: true, ifMissing: ''})
+  .wAttr('mode', {fullRerender: true, ifMissing: 'name'})
+  .wAttr('locale', {fullRerender: true, ifMissing: navigator.language || 'en-US'})
   .wCSS(await stylesheetPromise)
   .wRender(function (context: MainContext) {
-    const iso2 = context['data-iso2'] as ISO2CountryCode;
+    const iso2 = context.state['data-iso2'] as ISO2CountryCode;
     let frame = context.root.querySelector('.frame') as HTMLElement;
     if (!frame) {
       context.root.innerHTML = `<div class="frame"></div>`;
@@ -167,8 +167,8 @@ export default new ComponentBwilder()
       frame.innerHTML = '';
       return
     }
-    const locale = context.locale || 'en-US';
-    switch (context.mode ?? 'name') {
+    const locale = context.state.locale || 'en-US';
+    switch (context.state.mode ?? 'name') {
       case 'name': {
         frame.innerHTML = `<country-summary-name-panel data-iso2="${iso2}" locale="${locale}"></country-summary-name-panel>`;
         break

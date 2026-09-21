@@ -21,7 +21,7 @@ const Greeting = new ComponentBwilder()
   .wAttr('name')
   .wSubElement('greetee')
   .wRender(function () {
-    this.root.innerHTML = `<div>Hello <span>${this['name'] ?? 'world'}</span></div>`
+    this.root.innerHTML = `<div>Hello <span>${this.state['name'] ?? 'world'}</span></div>`
     return { greetee: 'span' }
   })
   .bwild()
@@ -38,16 +38,16 @@ const Greeting = new ComponentBwilder()
 
 ### Parsed attributes
 
-All attribute declarations accept an options object. `parse` receives the DOM representation (`string | null`) and determines the instance property type. `ifMissing` is already that native type, so it is returned directly instead of being parsed. For `wAttrBind`, put the callback in `handler`; its `newValue` and `oldValue` are parsed before it runs.
+All attribute declarations accept an options object. `parse` receives the DOM representation (`string | null`) and determines the instance property type. `ifMissing` is already that native type, so it is returned directly instead of being parsed. Put the change callback in `onChange`; its `newValue` and `oldValue` are parsed before it runs. Add `fullRerender: true` to queue an asynchronous full rerender after `onChange` runs.
 ```ts
 const Counter = new ComponentBwilder()
   .wTagName('c-parsed-count')
   .wShadowDOM('none')
-  .wAttrBind('data-count', {
+  .wAttr('data-count', {
     initial: true,
     ifMissing: 0,
-    parse: raw => Number(raw),
-    handler({newValue}) {
+    parse: (raw: string | null) => raw === null ? 0 : Number(raw),
+    onChange({newValue}) {
       const count: number = newValue
       this.root.textContent = String(count)
     }
@@ -58,7 +58,7 @@ const Counter = new ComponentBwilder()
   .bwild()
 
 const counter = new Counter()
-counter['data-count'] // => 0
+counter.state['data-count'] // => 0
 ```
 
 ### 2. Sub-element wiring
@@ -199,14 +199,14 @@ new ComponentBwilder()
     if (btn) {
       btn.onclick = () => {
         this.state.count++
-        void this.requestUpdate() // explicitly refreshes the DOM
+        void this.requestRerender() // explicitly refreshes the DOM
       }
     }
   })
   .bwild()
 ```
 
-State properties are plain, per-instance values: assigning to `this.state.propName` changes the state but does not automatically trigger rendering. Call `requestUpdate()` (or `render()`) to apply state changes to the DOM and run the normal update lifecycle. Initial values can be static primitives, objects, or factory functions (called once per instance to avoid sharing mutable defaults).
+State properties declared with `wStateVar` are plain, per-instance values: assigning to `this.state.propName` changes the state but does not automatically trigger rendering. Call `requestRerender()` (or `render()`) to apply state changes to the DOM and run the normal update lifecycle. Initial values can be static primitives, objects, or factory functions (called once per instance to avoid sharing mutable defaults). Attributes declared with `wAttr` are also exposed on `this.state` as read-only properties that reflect the current DOM attribute value.
 
 ### 6. Type-preserved sub-elements with `ElementDescriptor`
 
@@ -279,9 +279,7 @@ Generated names are only unique within the current runtime. Do not use them for 
 - `wTagName(tag: string | null)` — custom element tag name (or null to skip registration)
 - `wShadowDOM(mode: 'open' | 'closed' | 'none')` — shadow DOM mode
 - `wCSS(cssText: string, mode?: 'adopted' | 'inline')` — inject CSS
-- `wAttr(name, {parse?, ifMissing?})` — expose an attribute value without observing changes. Parsed values have the inferred return type of `parse`; `ifMissing` uses that same native type. Append `!` to name to mark as required.
-- `wAttrRender(name, {parse?, ifMissing?})` — rerender when the attribute changes. Parsed values have the inferred return type of `parse`; `ifMissing` uses that same native type. Append `!` to name to mark as required.
-- `wAttrBind(name, {handler, parse?, ifMissing?, initial?})` — invoke `handler` when the attribute changes. `parse` parses `oldValue` and `newValue`; use `initial: true` to invoke the handler after the initial render as well.
+- `wAttr(name, {parse?, ifMissing?, onChange?, initial?, fullRerender?})` — expose an attribute value on `this.state`. Parsed values have the inferred return type of `parse`; `ifMissing` uses that same native type. `onChange` is called when the attribute changes; add `fullRerender: true` to queue an asynchronous full rerender after `onChange` runs. Use `initial: true` to invoke `onChange` after the initial render as well. Append `!` to name to mark as required.
 - `wSubElement(name: string, elementType?: ElementConstructor)` — declare a sub-element. Append `!` to name to mark required (e.g., `'email!'` → non-null, no null-check needed). Pass an HTMLElement constructor as second parameter for type-safe property access.
 - `wStateVar(name: string, initial: value | factory)` — declare per-instance state; assignments do not automatically render. Append `!` to name if the value can never be null/undefined.
 - `wRender(fn)` — render function
@@ -293,7 +291,7 @@ Generated names are only unique within the current runtime. Do not use them for 
 ### Instance properties & methods
 - `this.root` — `ShadowRoot` (or `HTMLElement` if shadowDOM='none')
 - `this.subElements` — typed map of sub-elements
-- `this.state` — plain per-instance state object (properties accessible and settable; call `requestUpdate()` to render changes)
+- `this.state` — plain per-instance state object. State variables declared with `wStateVar` are settable and do not auto-render. Attributes declared with `wAttr` are exposed as read-only properties that always reflect the current DOM attribute value.
 - `connectedCallback(): Promise<void>` — lifecycle hook (always returns Promise)
 - `disconnectedCallback(): void` — lifecycle hook (runs cleanup)
 - `render(): Promise<void>` — manual rerender (always returns Promise)
@@ -302,9 +300,9 @@ Generated names are only unique within the current runtime. Do not use them for 
 ## Notes & gotchas
 - **Always-async lifecycle**: `connectedCallback()`, `render()`, and `rerender()` always return `Promise<void>`. Test code and production code that needs post-render DOM state must `await` these calls.
 - **Slot handlers fire after connected**: Handlers registered with `.wSlotAddedHandler` do not fire for pre-assigned elements (elements slotted at connection time) until after `connectedFn` completes, preventing race conditions during mount.
-- Use `.wAttrRender()` when an attribute change should replace the rendered structure. Use `.wAttrBind()` when the structure is stable and only named sub-elements need updating.
+- Use `fullRerender: true` when an attribute change should replace the rendered structure. Use `onChange` when the structure is stable and only named sub-elements need updating.
 - **Cleanup on disconnect**: `connectedFn` can return a cleanup function (including an async cleanup) that runs when the component disconnects, allowing cleanup of subscriptions, listeners, or timers. `slotAddedHandler` cleanup also runs at this time. Cleanup failures are logged with component context, and remaining cleanup still runs.
-- **Error handling**: Explicit `render()` and `requestUpdate()` calls reject when rendering, `afterUpdate`, or slot handlers fail. All slot handlers run before an aggregated failure is reported. Browser-triggered work (attribute changes and slot changes) catches failures and logs them with the component tag and lifecycle phase. `connectedCallback()` logs failures and resolves because the browser does not await its returned Promise.
+- **Error handling**: Explicit `render()` and `requestRerender()` calls reject when rendering, `afterUpdate`, or slot handlers fail. All slot handlers run before an aggregated failure is reported. Browser-triggered work (attribute changes and slot changes) catches failures and logs them with the component tag and lifecycle phase. `connectedCallback()` logs failures and resolves because the browser does not await its returned Promise.
 - **Reconnection resets state**: Disconnecting and reconnecting a component resets `connectedComplete` flag and reruns the full lifecycle (render → afterUpdate → connected).
 - `.wTagName(null)` returns the class without calling `customElements.define`, useful in test harnesses or subclassing scenarios.
 - Use `ComponentBwilder.generateUniqueTagName('test-widget')` when a runtime-generated tag should be registered without colliding with existing components. Generated names are not stable across page loads.
@@ -315,7 +313,7 @@ Generated names are only unique within the current runtime. Do not use them for 
 
 ### Strict mode validation
 
-(`.wAttr('role!')`, `.wAttrRender('role!')`, or `.wAttrBind('role!')`) are validated
+(`.wAttr('role!')`) are validated
 during `connectedCallback()`. Missing required fields are reported through the same
 connected-callback error path as render failures.
 

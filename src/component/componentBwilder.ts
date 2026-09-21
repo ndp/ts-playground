@@ -19,14 +19,12 @@ type AttrChangeArgs<T = unknown> = {
 
 type AttrParser<T> = (raw: string | null) => T
 
-type AttrOptions<T> = {
+type AttrOptions<TContext, T> = {
   parse?: AttrParser<T>
   ifMissing?: T
-}
-
-type AttrBindOptions<TContext, T> = AttrOptions<T> & {
-  handler: AttrChangeHandler<TContext, T>
+  onChange?: AttrChangeHandler<TContext, T>
   initial?: boolean
+  fullRerender?: boolean
 }
 
 type AttrChangeHandler<TContext, TValue = unknown> = (this: TContext, args: AttrChangeArgs<TValue>) => void
@@ -46,13 +44,13 @@ export class ComponentBwilder<
   SubElements extends SubElementsMap = {},
   StateRecord extends Record<string, unknown> = {},
   AttrsRecord extends {} = {},
-  ComponentType extends RenderContext<{}, SubElementsMap> = Prettify<HTMLElement & RenderContext<AttrsRecord, SubElements, StateRecord> & {requestUpdate: () => void|Promise<void>}>> {
+  ComponentType extends RenderContext<{}, SubElementsMap> = Prettify<HTMLElement & RenderContext<AttrsRecord, SubElements, StateRecord> & {requestRerender: () => void|Promise<void>}>> {
 
   private tagName?: string | null
   private css: { text: string, requestedMode: CSSMode } | undefined
   private shadowDOM: 'open' | 'closed' | 'none' = 'open'
   private observedAttrs: Record<string, AttrChangeHandler<ComponentType> | null> = {}
-  private attrBindings: Record<string, {handler: AttrChangeHandler<ComponentType>, initial: boolean}> = {}
+  private attrBindings: Record<string, {onChange: AttrChangeHandler<ComponentType> | null, initial: boolean, fullRerender: boolean}> = {}
   private attrDefaults: Record<string, unknown> = {}
   private attrParsers: Record<string, AttrParser<unknown>> = {}
   private definedAttrs = new Set<string>()
@@ -114,12 +112,21 @@ export class ComponentBwilder<
   }
 
   /**
-   * Expose an attribute value on the component without observing changes.
-   * Pass `{parse, ifMissing?}` to expose a parsed native value.
+   * Declare an attribute exposed on `this.state`.
+   *
+   * Options:
+   * - `parse` converts the DOM string value to a typed value.
+   * - `ifMissing` provides a fallback when the attribute is absent.
+   * - `onChange` callback runs when the attribute changes.
+   * - `initial: true` runs `onChange` after the initial render on mount.
+   * - `fullRerender: true` queues a full asynchronous rerender after `onChange`.
+   *
+   * An attribute is observed (triggers `attributeChangedCallback`) when `onChange`
+   * or `fullRerender` is provided. Otherwise it is unobserved.
    */
   wAttr<A extends string, T>(
     attr: A,
-    options: AttrOptions<T> = {}
+    options: AttrOptions<ComponentType, T> = {}
   ): ComponentBwilder<
     SubElements,
     StateRecord,
@@ -130,71 +137,20 @@ export class ComponentBwilder<
     this.definedAttrs.add(parsed.name)
     if (parsed.required)
       this.requiredAttrs.add(parsed.name)
-    this.unobservedAttrs.add(parsed.name)
-    if (options.parse)
-      this.attrParsers[parsed.name] = options.parse as AttrParser<unknown>
-    if (options.ifMissing !== undefined)
-      this.attrDefaults[parsed.name] = options.ifMissing
-    return this as unknown as ComponentBwilder<
-      SubElements,
-      StateRecord,
-      AttrsRecord & Record<ExtractFieldName<A>, T>
-    >;
-  }
 
-  /**
-   * Observe an attribute and rerender the component whenever it changes.
-   * Pass `{parse, ifMissing?}` to expose a parsed native value.
-   */
-  wAttrRender<A extends string, T>(
-    attr: A,
-    options: AttrOptions<T> = {}
-  ): ComponentBwilder<
-    SubElements,
-    StateRecord,
-    AttrsRecord & Record<ExtractFieldName<A>, T>
-  > {
-    const parsed = parseFieldName(attr)
-    this.assertAttrNotDefined(parsed.name)
-    this.definedAttrs.add(parsed.name)
-    if (parsed.required)
-      this.requiredAttrs.add(parsed.name)
-    this.observedAttrs[parsed.name] = null
-    if (options.parse)
-      this.attrParsers[parsed.name] = options.parse as AttrParser<unknown>
-    if (options.ifMissing !== undefined)
-      this.attrDefaults[parsed.name] = options.ifMissing
-    return this as unknown as ComponentBwilder<
-      SubElements,
-      StateRecord,
-      AttrsRecord & Record<ExtractFieldName<A>, T>
-    >;
-  }
-
-  /**
-   * Observe an attribute and invoke a manual binding callback when it changes.
-   * With `initial: true`, the callback also runs after the initial render on mount.
-   * `options.parse` parses old and new values before invoking the callback.
-   */
-  wAttrBind<A extends string, T>(
-    attr: A,
-    options: AttrBindOptions<ComponentType, T>
-  ): ComponentBwilder<
-    SubElements,
-    StateRecord,
-    AttrsRecord & Record<ExtractFieldName<A>, T>
-  > {
-    const parsed = parseFieldName(attr)
-    this.assertAttrNotDefined(parsed.name)
-    this.definedAttrs.add(parsed.name)
-    if (parsed.required)
-      this.requiredAttrs.add(parsed.name)
-    const {handler} = options
-    this.observedAttrs[parsed.name] = handler as unknown as AttrChangeHandler<ComponentType>
-    this.attrBindings[parsed.name] = {
-      handler: handler as unknown as AttrChangeHandler<ComponentType>,
-      initial: options.initial === true
+    const observed = options.onChange !== undefined || options.fullRerender === true
+    if (observed) {
+      const onChange = options.onChange as AttrChangeHandler<ComponentType> | undefined
+      this.observedAttrs[parsed.name] = onChange ?? null
+      this.attrBindings[parsed.name] = {
+        onChange: onChange ?? null,
+        initial: options.initial === true,
+        fullRerender: options.fullRerender === true
+      }
+    } else {
+      this.unobservedAttrs.add(parsed.name)
     }
+
     if (options.parse)
       this.attrParsers[parsed.name] = options.parse as AttrParser<unknown>
     if (options.ifMissing !== undefined)
@@ -203,12 +159,14 @@ export class ComponentBwilder<
       SubElements,
       StateRecord,
       AttrsRecord & Record<ExtractFieldName<A>, T>
-    >
+    >;
   }
 
   private assertAttrNotDefined(name: string) {
     if (this.definedAttrs.has(name))
       throw new Error(`Attr "${name}" is already defined.`)
+    if (this.definedStates.has(name))
+      throw new Error(`Attr "${name}" collides with an already-defined state variable.`)
   }
 
   /**
@@ -237,6 +195,8 @@ export class ComponentBwilder<
     const parsed = parseFieldName(name)
     if (this.definedStates.has(parsed.name))
       throw new Error(`State "${parsed.name}" is already defined.`)
+    if (this.definedAttrs.has(parsed.name))
+      throw new Error(`State "${parsed.name}" collides with an already-defined attribute.`)
     this.definedStates.add(parsed.name)
     this.stateDefinitions[parsed.name] = initial
     return this as unknown as ComponentBwilder<SubElements, StateRecord & Record<ExtractFieldName<N>, T>, AttrsRecord>
@@ -261,7 +221,7 @@ export class ComponentBwilder<
   /**
    * Hook executed after each render; intended for side-effects.
    */
-  wAfterUpdateFn(postRenderFn: (this: ComponentType & {render: never}, context: ComponentType & {requestUpdate: never}) => void | Promise<void>) {
+  wAfterUpdateFn(postRenderFn: (this: ComponentType & {render: never}, context: ComponentType & {requestRerender: never}) => void | Promise<void>) {
     this.postRenderFn = postRenderFn as any
     return this as this & { wAfterUpdateFn: never }
   }
@@ -313,7 +273,7 @@ export class ComponentBwilder<
       constructor() {
         super()
 
-        this.requestUpdate = this.requestUpdate.bind(this)
+        this.requestRerender = this.requestRerender.bind(this)
 
         if (builder.shadowDOM !== 'none')
           this.root = this.attachShadow({mode: builder.shadowDOM})
@@ -327,6 +287,18 @@ export class ComponentBwilder<
             ? (initialOrFactory as () => unknown)()
             : initialOrFactory
         }
+
+        // Expose declared attributes as read-only properties on state
+        const element = this
+        for (const name of builder.definedAttrs) {
+          Object.defineProperty(stateData, name, {
+            get: () => readAttribute(element, name, builder.attrDefaults, builder.attrParsers),
+            set: () => { /* read-only: assignments are ignored */ },
+            enumerable: true,
+            configurable: true
+          })
+        }
+
         ;(this as any).state = stateData
       }
 
@@ -336,18 +308,26 @@ export class ComponentBwilder<
 
       attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
         const action = builder.observedAttrs[name];
-        if (action) {
+        if (action !== undefined) {
           const binding = builder.attrBindings[name]
           if (!this._isConnected && binding?.initial)
             return
-          this.runInternal('attributeChangedCallback', () => action.call(this as unknown as ComponentType, {
+
+          const args = {
             name,
             oldValue: parseAttributeValue(oldValue, name, builder.attrDefaults, builder.attrParsers),
             newValue: parseAttributeValue(newValue, name, builder.attrDefaults, builder.attrParsers),
             initial: false
-          }))
-        } else
-          this.runInternal('attributeChangedCallback render', () => this.render())
+          }
+
+          if (action) {
+            this.runInternal('attributeChangedCallback', () => action.call(this as unknown as ComponentType, args))
+          }
+
+          if (binding?.fullRerender) {
+            this.runInternal('attributeChangedCallback fullRerender', () => this.requestRerender())
+          }
+        }
       }
 
       connectedCallback(): Promise<void> {
@@ -377,7 +357,7 @@ export class ComponentBwilder<
           this.teardownSlotHandlers()
       }
 
-      requestUpdate() {
+      requestRerender() {
         return this.render()
       }
 
@@ -489,12 +469,18 @@ export class ComponentBwilder<
         for (const [name, binding] of Object.entries(builder.attrBindings)) {
           if (!binding.initial)
             continue
-          binding.handler.call(context, {
+          const args = {
             name,
             newValue: readAttribute(this, name, builder.attrDefaults, builder.attrParsers),
             oldValue: parseAttributeValue(null, name, builder.attrDefaults, builder.attrParsers),
             initial: true
-          })
+          }
+          if (binding.onChange) {
+            this.runInternal('runInitialAttrBindings', () => binding.onChange!.call(context, args))
+          }
+          if (binding.fullRerender) {
+            this.runInternal('runInitialAttrBindings fullRerender', () => this.requestRerender())
+          }
         }
       }
 
@@ -511,25 +497,6 @@ export class ComponentBwilder<
 
     }
 
-    for (let a in builder.observedAttrs)
-      Object.defineProperty(elementClass.prototype, a, {
-        get: function (this: HTMLElement) {
-          return readAttribute(this, a, builder.attrDefaults, builder.attrParsers)
-        },
-        enumerable: true,
-        configurable: true
-      });
-
-    for (const a of builder.unobservedAttrs)
-      if (!(a in builder.observedAttrs))
-        Object.defineProperty(elementClass.prototype, a, {
-          get: function (this: HTMLElement) {
-            return readAttribute(this, a, builder.attrDefaults, builder.attrParsers)
-          },
-          enumerable: true,
-          configurable: true
-        });
-
     if (this.tagName !== null)
       customElements.define(this.tagName, elementClass)
 
@@ -544,7 +511,7 @@ type BuiltComponentInstance<
 > = Prettify<TComponent & HTMLElement & {
   connectedCallback(): Promise<void>
   render(): Promise<void>
-  requestUpdate(): Promise<void>
+  requestRerender(): Promise<void>
   disconnectedCallback(): void
   root: ShadowRoot | HTMLElement
   subElements: TSubElements

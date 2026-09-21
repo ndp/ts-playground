@@ -7,13 +7,13 @@ export default new ComponentBwilder()
   .wTagName('locale-timeline' as TagName)
   .wShadowDOM('open')
   .wCSS(css)
-  .wAttrRender('locale', {ifMissing: navigator.language || 'en-US'})
+  .wAttr('locale', {fullRerender: true, ifMissing: navigator.language || 'en-US'})
   .wConnectedFn(function () {
-    const timerId = setInterval(() => this.requestUpdate(), 1000)
+    const timerId = setInterval(() => this.requestRerender(), 1000)
     return () => clearInterval(timerId)
   })
   .wRender(function () {
-    const locale = this['locale']
+    const locale = this.state['locale']
     const now = new Date()
     const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' })
     this.root.innerHTML = `

@@ -7,8 +7,8 @@ const LocaleSelector = (new ComponentBwilder())
   .wShadowDOM('none')
   .wSubElement('segmentedButtons')
   .wStateVar('languages', () => new RiggedQueue<string>(10, [navigator.language]))
-  .wAttrBind('data-country', {
-    handler({newValue}) {
+  .wAttr('data-country', {
+    onChange({newValue}) {
       if (!newValue) return // Don't change if they don't send any value
 
       const countryLocales = teenyDb.langs(newValue as ISO2CountryCode);
@@ -42,7 +42,7 @@ const LocaleSelector = (new ComponentBwilder())
     return {segmentedButtons}
   })
   .wConnectedFn(function () {
-    this.state.languages.onChange(this.requestUpdate)
+    this.state.languages.onChange(this.requestRerender)
   })
   .bwild();
 

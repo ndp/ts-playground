@@ -30,13 +30,13 @@ export interface ElementDescriptor<T extends HTMLElement = HTMLElement> {
 
 /*
 The context object "this" passed to render functions.
-Includes the root element and any attributes that are defined on the class
+Includes the root element, sub-elements, and state (which includes declared attributes).
  */
 export type RenderContext<Attrs extends {} = {}, TSubElements extends SubElementsMap = {}, TState extends Record<string, unknown> = Record<string, unknown>> = {
   root: HTMLElement
   subElements: TSubElements
-  state: TState
-} & { [k in keyof Attrs]: Attrs[k] }
+  state: TState & Attrs
+}
 
 /*
 A map of subElement names to CSS selectors or ElementDescriptors.

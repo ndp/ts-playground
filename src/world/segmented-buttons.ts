@@ -7,9 +7,11 @@ type HTMLElementWithSubElements = HTMLElement  & {
 }
 
 type SegmentedButtonsHost = HTMLElementWithSubElements & {
-  'data-value': string[]
-  'data-locked': string[]
-  suggested: string[]
+  state: {
+    'data-value': string[]
+    'data-locked': string[]
+    suggested: string[]
+  }
 }
 
 const SegmentedButtons = new ComponentBwilder()
@@ -17,37 +19,37 @@ const SegmentedButtons = new ComponentBwilder()
   .wShadowDOM('open')
   .wCSS(css)
   .wSubElement('slotEl!', HTMLSlotElement)
-  .wAttrBind('data-value', {
-    handler({newValue}) {
+  .wAttr('data-value', {
+    onChange({newValue}) {
       applySelectedClasses(this, newValue)
     },
     parse: parseCommaSeparated
   })
-  .wAttrBind('suggested', {
-    handler({newValue}) {
+  .wAttr('suggested', {
+    onChange({newValue}) {
       applySuggestedClasses(this, newValue)
     },
     parse: parseCommaSeparated
   })
-  .wAttrBind('data-locked', {
-    handler({newValue}) {
+  .wAttr('data-locked', {
+    onChange({newValue}) {
       applyLockedAttrs(this, newValue)
     },
     parse: parseCommaSeparated
   })
-  .wAttrBind('required', {
-    handler() {
+  .wAttr('required', {
+    onChange() {
       enforceRequired(this)
     }
   })
-  .wAttrBind('multi', {
-    handler() {
+  .wAttr('multi', {
+    onChange() {
       normalizeSelectionForMode(this)
     }
   })
-  .wAttrBind('lockable', {
-    handler() {
-      applyLockedAttrs(this, this['data-locked'])
+  .wAttr('lockable', {
+    onChange() {
+      applyLockedAttrs(this, this.state['data-locked'])
     }
   })
   .wRender(function () {
@@ -71,8 +73,8 @@ const SegmentedButtons = new ComponentBwilder()
       setSelectedValues(this, values, {emitChange: false})
     }
     enforceRequired(this)
-    applySuggestedClasses(this, this.suggested)
-    applyLockedAttrs(this, this['data-locked'])
+    applySuggestedClasses(this, this.state.suggested)
+    applyLockedAttrs(this, this.state['data-locked'])
   })
   .wSlotAddedHandler(function(context, el: HTMLElement) {
     const handler = (ev: Event) => {
@@ -82,15 +84,15 @@ const SegmentedButtons = new ComponentBwilder()
     if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0')
     el.addEventListener('click', handler)
     enforceRequired(context, el)
-    applySelectedClasses(context, context['data-value'])
-    applySuggestedClasses(context, context.suggested)
-    applyLockedAttrs(context, context['data-locked'])
+    applySelectedClasses(context, context.state['data-value'])
+    applySuggestedClasses(context, context.state.suggested)
+    applyLockedAttrs(context, context.state['data-locked'])
     return () => el.removeEventListener('click', handler)
   })
   .wAfterUpdateFn(function () {
-    applySelectedClasses(this, this['data-value'])
-    applySuggestedClasses(this, this.suggested)
-    applyLockedAttrs(this, this['data-locked'])
+    applySelectedClasses(this, this.state['data-value'])
+    applySuggestedClasses(this, this.state.suggested)
+    applyLockedAttrs(this, this.state['data-locked'])
   })
   .bwild()
 
@@ -223,7 +225,7 @@ function setSelectedValues(host: SegmentedButtonsHost, values: string[], options
 }
 
 function getSelectedValues(host: SegmentedButtonsHost) {
-  return host['data-value']
+  return host.state['data-value']
 }
 
 function parseCommaSeparated(raw: string | null) {
@@ -244,7 +246,7 @@ function isLockable(host: SegmentedButtonsHost) {
 }
 
 function getLockedValues(host: SegmentedButtonsHost) {
-  return host['data-locked']
+  return host.state['data-locked']
 }
 
 function setLockedValues(host: SegmentedButtonsHost, values: string[]) {
