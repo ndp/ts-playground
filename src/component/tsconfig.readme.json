@@ -1,8 +1,0 @@
-{
-  "extends": "./tsconfig.check.json",
-  "compilerOptions": {
-  },
-  "include": [
-    "./docs/README.ts"
-  ]
-}

@@ -1,19 +1,16 @@
 # @ndp-software/component-bwilder
 
-Typed, minimal helpers for building compact Web Components used in this repository.
+Typed, minimal helpers for building compact Web Components.
 
 This package exposes a small, TypeScript-first fluent API for defining custom elements with:
-- an explicit, always-async render lifecycle (`render()`, `afterUpdate()`, `connected()`),
-- observed vs. unobserved attributes,
+- an explicit, always-async render lifecycle
 - simple typed sub-element wiring,
 - optional adopted (`CSSStyleSheet`) or inline CSS injection,
 - slot / assigned-element wiring helpers with cleanup on disconnect.
 
 ## Overview
 - **Purpose**: provide a lightweight, predictable, TypeScript-friendly workflow for declaring custom elements without a large framework.
-- **Philosophy**: explicit, lifecycle hooks (`connectedFn`, `render()`, and `afterUpdate()`), minimal runtime, strong typing for attributes/sub-elements, and a fluent builder syntax.
-- **Primary class**: `ComponentBwilder` — use its chained helpers (tag name, shadow DOM, CSS, attributes, sub-elements, render/lifecycle hooks) and call `.bwild()`
-                      to return (and register) the strongly typed component class.
+- **Philosophy**: strong typing; explicit; lifecycle hooks (`connectedFn`, `render()`, and `afterUpdate()`); fluent builder syntax.
 
 ## Quick example
 ```ts
@@ -22,69 +19,22 @@ const Greeting = new ComponentBwilder()
   .wShadowDOM('open')
   .wCSS(':host{display:block;padding:4px;}')
   .wAttr('name')
-  .wSubElement('label')
+  .wSubElement('greetee')
   .wRender(function () {
-    this.root.innerHTML = `<div><span>${this['name'] ?? 'world'}</span></div>`
-    return { label: 'span' }
+    this.root.innerHTML = `<div>Hello <span>${this['name'] ?? 'world'}</span></div>`
+    return { greetee: 'span' }
   })
   .bwild()
 ```
 
 ## Feature highlights
-- **Attribute access** (`.wAttr`): expose attribute values on the instance without observing changes.
-- **Attribute rerendering** (`.wAttrRender`): rerender the component whenever the attribute changes.
-- **Manual attribute binding** (`.wAttrBind`): update stable sub-elements without replacing the rendered DOM.
 - **Parsed attributes**: deserialize DOM attribute strings into native values with inferred TypeScript types.
 - **Sub-elements** (`.wSubElement` + selectors/elements returned from `render`): `this.subElements` holds strongly typed references after render completes.
 - **CSS modes** (`.wCSS(cssText, mode?)`): defaults to `adopted` (shared `CSSStyleSheet`) with inline fallback, logging a single transition warning per component class when necessary.
 - **Shadow DOM modes**: `.wShadowDOM('open'|'closed'|'none')` — when `'none'` rendering happens on the host element itself.
-- **State management** (`.wStateVar`): declare per-instance state with `.wStateVar(name, initialValue)`. State values are accessible via `this.state[name]`. Assignments update the state object but do not automatically rerender; call `requestUpdate()` when the DOM should be refreshed. Initial values can be static or factory functions (called once per instance).
-- **Lifecycle hooks**:
-  - `.wRender(fn)` — called each time the component needs to update; always returns `Promise<void>`.
-  - `.wAfterUpdateFn(fn)` — runs as a microtask after each render completes; supports `async` functions.
-  - `.wConnectedFn(fn)` — runs once after the initial `connectedCallback` render + afterUpdate; supports async. Can return a cleanup function (sync or `Promise<() => void>`) that runs on disconnect.
 - **Slot handling**: `.wSlotAddedHandler` gives you per-assigned-element callbacks that can return cleanup functions, called when elements are assigned or removed.
 
 ## Usage recipes
-
-### 1. Observed vs unobserved attributes
-```ts
-new ComponentBwilder()
-  .wTagName('c-observed')
-  .wAttrRender('data-count')
-  .wShadowDOM('none')
-  .wRender(function () {
-    this.root.innerHTML = `<div>Count: ${this['data-count'] ?? '0'}</div>`
-  })
-  .bwild()
-
-new ComponentBwilder()
-  .wTagName('c-unobserved')
-  .wAttr('info', {ifMissing: 'default'})
-  .wShadowDOM('none')
-  .wRender(function () {
-    this.root.innerHTML = `<div>Info: ${this['info']}</div>`
-  })
-  .bwild()
-
-// Manually call `instance.render()` after attribute changes to refresh output.
-
-new ComponentBwilder()
-  .wTagName('c-bound')
-  .wShadowDOM('none')
-  .wSubElement('count')
-  .wAttrBind('data-count', {
-    initial: true,
-    handler({newValue}) {
-      this.subElements.count!.textContent = String(newValue ?? '0')
-    }
-  })
-  .wRender(function () {
-    this.root.innerHTML = '<span data-count></span>'
-    return {count: '[data-count]'}
-  })
-  .bwild()
-```
 
 ### Parsed attributes
 
