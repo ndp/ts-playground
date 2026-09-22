@@ -1,10 +1,21 @@
 import {ComponentBwilder} from '@ndp-software/component-bwilder';
 
 
+const styles = `
+drag-float {
+}
+drag-float:hover {
+  border-color: black;
+  background-color: #eee;
+}`
+const styleEl = document.createElement('style');
+styleEl.textContent = styles;
+document.body.prepend(styleEl);
+
+
 const DragFloat = new ComponentBwilder()
     .wTagName('drag-float')
     .wShadowDOM('none')
-    .wSubElement('floatWindow', HTMLDivElement)
     .wRender(function () {
 
             this.style.cursor = "grab"
@@ -38,13 +49,7 @@ const DragFloat = new ComponentBwilder()
                     this.style.top = `${endY - offsetTop}px`;
                 }
             })
-
-            this.addEventListener("drag", (e) => {
-                console.log('drag')
-            })
-
-
-            return {floatWindow: this}
+            return {}
         }
     )
     .bwild()
