@@ -39,12 +39,12 @@ const DragFloat = new ComponentBwilder()
                 if (dragging) e.preventDefault()
             })
 
-            positioningContext.addEventListener('drop', (e: DragEvent) => {
+            positioningContext.addEventListener('drop', (e: Event) => {
                 if (dragging) {
                     e.preventDefault()
                     dragging = false
-                    const endX = e.clientX;
-                    const endY = e.clientY;
+                    const endX = (e as DragEvent).clientX;
+                    const endY = (e as DragEvent).clientY;
                     this.style.left = `${endX - offsetLeft}px`;
                     this.style.top = `${endY - offsetTop}px`;
                 }

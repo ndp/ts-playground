@@ -152,16 +152,19 @@ panel('time')
     const nameEng = teenyDb.countryName(iso2);
     const date = new Date()
     const localeObj = new Intl.Locale(locale) as Intl.Locale & { getTimeZones: () => Array<string> }
-    const timeZones = (localeObj.getTimeZones() || []).map(tz => `<p>${tz}</p>`).join('');
+    const timeZones = (localeObj.getTimeZones() || []);
+    const listFormat = new Intl.ListFormat('en-US', {type: 'conjunction', style: 'narrow'});
+    const timeZoneStr = listFormat.format(timeZones)
+    const timeZone = timeZones[0] || 'GMT'
     context.root.innerHTML = `
       <h2>${nameEng}</h2>
       <h3>Time</h3>
-      <p>${date.toLocaleTimeString(context.state.locale, {timeStyle: 'short'})}</p>
-      <p>${date.toLocaleTimeString(context.state.locale, {timeStyle: 'medium'})}</p>
-      <p>${date.toLocaleTimeString(context.state.locale, {timeStyle: 'long'})}</p>
-      <p>${date.toLocaleTimeString(context.state.locale, {timeStyle: 'full'})}</p>
+      <p>${date.toLocaleTimeString(locale, {timeStyle: 'short', timeZone})}</p>
+      <p>${date.toLocaleTimeString(locale, {timeStyle: 'medium', timeZone})}</p>
+      <p>${date.toLocaleTimeString(locale, {timeStyle: 'long', timeZone})}</p>
+      <p>${date.toLocaleTimeString(locale, {timeStyle: 'full', timeZone})}</p>
       <h3>Time Zones</h3>
-      ${timeZones}
+      <p>${timeZoneStr}</p>
     `;
   })
   .bwild()
