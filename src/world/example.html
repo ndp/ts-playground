@@ -109,9 +109,7 @@
   let gCountryIso2 = null
   import {teenyDb} from './build/teeny-db.js'
 
-
   const wm = document.getElementById("world-map");
-
 
   wm.addEventListener("country-click", (ev) => {
     const detail = ev.detail
@@ -173,6 +171,18 @@
       listFormatEl.innerHTML = `Conjunction: ${cons} <br> Disjunction: ${disj}`;
     }
   }
+
+  navigator.geolocation.getCurrentPosition(
+      position => {
+          const el = document.createElement('div')
+          el.innerHTML='&bull;'
+          el.style.color = 'red'
+          el.setAttribute('data-lat', position.coords.latitude)
+          el.setAttribute('data-lon', position.coords.longitude)
+          el.setAttribute('slot', 'inset')
+          document.getElementById('world-map').appendChild(el)
+      }
+  );
 </script>
 
 </html>
