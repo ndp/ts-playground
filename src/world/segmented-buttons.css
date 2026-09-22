@@ -35,8 +35,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 14px;
-  min-width: 44px;
+  padding: 8px;
+  min-width: 32px;
   box-sizing: border-box;
   font-size: var(--font-size);
   color: var(--text);
