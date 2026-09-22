@@ -13,7 +13,10 @@ function panel(name: string) {
   return new ComponentBwilder()
     .wTagName(panelTag)
     .wShadowDOM('none')
-    .wAttr('data-iso2', {fullRerender: true, ifMissing: ''})
+    .wAttr<'data-iso2', ISO2CountryCode>('data-iso2', {
+      fullRerender: true,
+      ifMissing: '' as ISO2CountryCode
+    })
     .wAttr('locale', {fullRerender: true, ifMissing: navigator.language || 'en-US'})
 }
 
@@ -125,11 +128,31 @@ panel('tech')
   .bwild()
 
 
-panel('time')
+panel('date')
   .wRender(function (context: PanelContext) {
     const iso2 = context.state['data-iso2'] as ISO2CountryCode;
     const nameEng = teenyDb.countryName(iso2);
     const date = new Date()
+    context.root.innerHTML = `
+      <h2>${nameEng}</h2>
+      <h3>Date</h3>
+      <p>${date.toLocaleDateString(context.state.locale, {dateStyle: 'short'})}</p>
+      <p>${date.toLocaleDateString(context.state.locale, {dateStyle: 'medium'})}</p>
+      <p>${date.toLocaleDateString(context.state.locale, {dateStyle: 'long'})}</p>
+      <p>${date.toLocaleDateString(context.state.locale, {dateStyle: 'full'})}</p>
+    `;
+  })
+  .bwild()
+
+
+panel('time')
+  .wRender(function (context: PanelContext) {
+    const iso2 = context.state['data-iso2'] as ISO2CountryCode;
+    const locale = context.state['locale']
+    const nameEng = teenyDb.countryName(iso2);
+    const date = new Date()
+    const localeObj = new Intl.Locale(locale) as Intl.Locale & { getTimeZones: () => Array<string> }
+    const timeZones = (localeObj.getTimeZones() || []).map(tz => `<p>${tz}</p>`).join('');
     context.root.innerHTML = `
       <h2>${nameEng}</h2>
       <h3>Time</h3>
@@ -137,11 +160,8 @@ panel('time')
       <p>${date.toLocaleTimeString(context.state.locale, {timeStyle: 'medium'})}</p>
       <p>${date.toLocaleTimeString(context.state.locale, {timeStyle: 'long'})}</p>
       <p>${date.toLocaleTimeString(context.state.locale, {timeStyle: 'full'})}</p>
-      <h3>Date</h3>
-      <p>${date.toLocaleDateString(context.state.locale, {dateStyle: 'short'})}</p>
-      <p>${date.toLocaleDateString(context.state.locale, {dateStyle: 'medium'})}</p>
-      <p>${date.toLocaleDateString(context.state.locale, {dateStyle: 'long'})}</p>
-      <p>${date.toLocaleDateString(context.state.locale, {dateStyle: 'full'})}</p>
+      <h3>Time Zones</h3>
+      ${timeZones}
     `;
   })
   .bwild()
@@ -187,6 +207,10 @@ export default new ComponentBwilder()
       }
       case 'tech': {
         frame.innerHTML = `<country-summary-tech-panel data-iso2="${iso2}" locale="${locale}"></country-summary-tech-panel>`;
+        break
+      }
+      case 'date': {
+        frame.innerHTML = `<country-summary-date-panel data-iso2="${iso2}" locale="${locale}"></country-summary-date-panel>`;
         break
       }
       case 'time': {

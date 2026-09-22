@@ -19,6 +19,38 @@ Things to change:
 - currency
 - units (meters, kilometers, miles, feet, inches, etc)
 
+Things to add:
+- fix ltr and rtl text direction
+- format range
+- The Intl.DisplayNames() object generates names for languages, scripts, regions, and currencies. You would typically use it to create language or similar selectors (English, inglés, anglais etc.) Initialize it with:
 
+      A locale object, string, or empty array for the user’s current locale, and
+      An options object.
+      Use the name builder tool…
+    
+      The tool generates code for example names using options properties listed on MDN.
+    
+      The .of() method returns a string according to a code passed. Examples:
+    
+      // French language in Italian: "francese (Francia)"
+      new Intl.DisplayNames(
+      "it-IT",
+      { "type": "language" }
+      ).of( "fr-FR" );
+      // Egyptian hieroglyphs in German: "Ägyptische Hieroglyphen"
+      new Intl.DisplayNames(
+      "de-DE",
+      { "type": "script" }
+      ).of( "Egyp" );
+      // Australia in French: "Australie"
+      new Intl.DisplayNames(
+      "fr-FR",
+      { "type": "region" }
+      ).of( "AU" );
+      // British Pounds in Polish: "funt szterling"
+      new Intl.DisplayNames(
+      "pl-PL",
+      { "type": "currency" }
+      ).of( "GBP" );
 
 "Who needs a map when you have an astrolabe?" - @sindresorhus @purplepeterson
