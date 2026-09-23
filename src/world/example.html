@@ -43,6 +43,9 @@
     }
 
     .inset-boxed-set {
+        left: 5px;
+        top: 50%;
+        position: fixed;
         background: rgba(255, 255, 255, 0.5);
         border-radius: 6px;
         border: 1px solid #33333380;
@@ -79,21 +82,21 @@
   <!--    <div slot="inset" class="inset-box" data-country="AR">AR</div>-->
   <!--    <div slot="inset" class="inset-box" data-country="CH">CH</div>-->
 
-  <drag-float slot="inset" class="inset-boxed-set"  data-lon="-142" data-lat="-30">
-    <segmented-buttons id='mode-chooser' style="">
-      <div slot="option" data-value='name' selected title='Political'>⚐</div>
-      <div slot="option" data-value="language" title='Language'>😛</div>
-      <div slot="option" data-value="numbers" title='Numbers'>#</div>
-      <div slot="option" data-value="currency" title='Currency'>¤</div>
-      <div slot="option" data-value="date" title='Date'>📅</div>
-      <div slot="option" data-value="time" title='Time'>⌚</div>
-      <div slot="option" data-value="tech" title='Technical'>⚙</div>
-    </segmented-buttons>
-    <country-summary id="country-summary"></country-summary>
-  </drag-float>
   <!--  <div id="number-format" slot="inset" class="inset-box" data-lon="80" data-lat="-30"></div>-->
   <!--  <div id="list-format" slot="inset" class="inset-box" data-lon="-50" data-lat="30">List Format</div>-->
 </world-map>
+<draggable-window id='country-summary-window2' class="inset-boxed-set"  >
+  <segmented-buttons id='mode-chooser' style="">
+    <div slot="option" data-value='name' selected title='Political'>⚐</div>
+    <div slot="option" data-value="language" title='Language'>😛</div>
+    <div slot="option" data-value="numbers" title='Numbers'>#</div>
+    <div slot="option" data-value="currency" title='Currency'>¤</div>
+    <div slot="option" data-value="date" title='Date'>📅</div>
+    <div slot="option" data-value="time" title='Time'>⌚</div>
+    <div slot="option" data-value="tech" title='Technical'>⚙</div>
+  </segmented-buttons>
+  <country-summary id="country-summary"></country-summary>
+</draggable-window>
 <locale-timeline id="timeline"></locale-timeline>
 <locale-selector></locale-selector>
 <segmented-buttons id='country-overlay-mode' style="position: fixed; top: 5px; right: 5px;">

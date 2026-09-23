@@ -24,7 +24,7 @@
   },
   "sideEffects": [
     "./country-summary.ts",
-    "./drag-float.ts",
+    "./draggable-window.ts",
     "./locale-selector.ts",
     "./segmented-buttons.ts",
     "./timeline.ts",
