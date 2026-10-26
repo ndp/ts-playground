@@ -25,6 +25,9 @@ const DraggableWindow = new ComponentBwilder()
     return {}
   })
   .wConnectedFn(function () {
+    const id = this.state['id']
+    const storageKey = `draggable-window:${id}`
+
     const isWithinViewport = (left: number, top: number) => {
       const right = left + this.offsetWidth
       const bottom = top + this.offsetHeight
@@ -32,13 +35,31 @@ const DraggableWindow = new ComponentBwilder()
     }
 
     const rememberPosition = () => {
-      const id = this.state['id']
-      const payload = {
+      localStorage.setItem(storageKey, JSON.stringify({
         left: this.style.left,
         top: this.style.top,
-      }
-      localStorage.setItem(`draggable-window:${id}`, JSON.stringify(payload))
+      }))
     }
+
+
+    const restorePosition = () => {
+      const saved = localStorage.getItem(storageKey)
+      if (!saved) return
+
+      try {
+        const {left, top} = JSON.parse(saved) as {left?: string, top?: string}
+        const leftValue = Number.parseFloat(left ?? '')
+        const topValue = Number.parseFloat(top ?? '')
+
+        if (Number.isFinite(leftValue) && Number.isFinite(topValue) && isWithinViewport(leftValue, topValue)) {
+          this.style.left = left!
+          this.style.top = top!
+        }
+      } catch {
+        // Ignore malformed saved state and fall back to the default placement.
+      }
+    }
+    restorePosition()
 
     const handlePointerMove = (event: MouseEvent | TouchEvent) => {
       const clientX = 'touches' in event ? event.touches[0].clientX : event.clientX
@@ -67,32 +88,6 @@ const DraggableWindow = new ComponentBwilder()
       document.addEventListener('touchmove', handlePointerMove)
       document.addEventListener('mouseup', handlePointerUp)
       document.addEventListener('touchend', handlePointerUp)
-    }
-
-    const id = this.state['id']
-    let parsedPosition: {left?: string, top?: string} | null = null
-    const savedPosition = localStorage.getItem(`draggable-window:${id}`)
-    if (savedPosition) {
-      try {
-        parsedPosition = JSON.parse(savedPosition) as {left?: string, top?: string}
-      } catch {
-        parsedPosition = null
-      }
-    }
-
-    const left = parsedPosition?.left
-    const top = parsedPosition?.top
-
-    if (left && top) {
-      const leftValue = Number.parseFloat(left)
-      const topValue = Number.parseFloat(top)
-      if (Number.isFinite(leftValue) && Number.isFinite(topValue) && isWithinViewport(leftValue, topValue)) {
-        this.style.left = left
-        this.style.top = top
-      } else {
-        this.style.left = `calc(95svw - ${this.offsetWidth}px)`
-        this.style.top = `calc(95svh - ${this.offsetHeight}px)`
-      }
     }
 
     this.addEventListener('mousedown', handlePointerDown)
